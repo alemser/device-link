@@ -23,6 +23,7 @@ O **núcleo** vale para toda ponte. As outras rotas só existem se a ponte lista
 ## Transporte
 
 - HTTP/1.1 sem TLS, só na rede local, com IP fixo pelo roteador. Não conte com nomes `.local`.
+- A ponte só tem API: não há página web.
 - Sem autenticação, com exceção das rotas de envio do `update`, que pedem o cabeçalho `x-password`.
 - Cada resposta fecha a conexão (`Connection: close`), com exceção de `/events`.
 - Respostas em JSON, com `Cache-Control: no-store` e `Access-Control-Allow-Origin: *`.
@@ -104,11 +105,8 @@ SP103 estão em `docs/api-estado.md` do `sp103-display-proxy`. Os demais são ex
         "music": false, "showing": false, "error": null},
  "info": {"on": true, "packets": 29362, "last_packet_ms": 578, "playing": false, "side_end": false,
           "artist": null, "title": null, "stream": null},
- "screens": {"on": true, "mode": "temp", "showing": null, "error": null},
- "vu_glyphs": {"bars": [], "deck": [], "scale": [], "kx393": []}}
+ "screens": {"on": true, "mode": "temp", "showing": null, "error": null}}
 ```
-
-`vu_glyphs` vem com os bytes dos caracteres do VU; aqui as listas estão vazias só para encurtar.
 
 `PUT` recebe o objeto `config` e responde igual ao `GET`, ou `400` com `{"error": "..."}`, em inglês, pronto para mostrar.
 
@@ -154,7 +152,8 @@ Regras de `config`:
 
 ## Para o cliente
 
-1. **Uma conexão `/events` por cliente**, e só na tela que mostra o estado ao vivo.
+1. **Uma conexão `/events` por cliente**, e só na tela que mostra o estado ao vivo. A ponte guarda uma conexão por IP e
+   poucas no total (3 no SP103): uma conexão nova do mesmo IP derruba a antiga, e com o teto cheio sai a mais antiga.
 2. **Feche o `/events` quando a app for para segundo plano.** Uma conexão morta, como a de um celular dormindo, prende a
    memória de rede da ponte e pode travar o display por 10 s.
 3. **Sem nada por 5 s, considere o estado desconhecido** e reconecte com espera crescente, de 1 s a 30 s.
@@ -172,8 +171,3 @@ Decidir quando o MR 780 for aberto, porque dependem de haver um segundo amp:
 - **`/names`:** o nome e a estrutura são do SP103. Pode virar `/config`, com as entradas pelo `id`.
 - **`/bus.*`:** o formato vem do HD44780, e o MR 780 pode ter outro display.
 - **`screen`:** os valores são do SP103.
-
-Decidir antes:
-
-- **`vu_glyphs`:** a página web precisa deles hoje. Quando a página sair, eles podem ir para dentro da app e sair de
-  `/names`, que fica menor.

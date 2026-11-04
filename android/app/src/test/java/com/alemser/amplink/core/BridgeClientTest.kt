@@ -46,7 +46,6 @@ private const val NAMES = """{"inputs": ["PHONO", "TUNER"], "proxy": {"reads": 1
  "defaults": {"about": ["Amplifier SP103", "SW version 1.0"], "boot": ["ACOUSTIC", "SOLUTIONS"]},
  "vu": {"on": true, "auto": true, "frames": 139405, "layout": "deck", "music": false, "floor": -42, "top": -22,
         "last_frame_ms": 21, "showing": false, "error": null},
- "vu_glyphs": {"bars": [1, 2]},
  "config": {"vu": {"on": true, "relay": "192.168.178.99", "auto": true, "layout": "deck"},
             "info": {"alert": true, "eu_dst": true, "mode": "temp", "show": ["pos", "side"], "on": true,
                      "scroll": true, "utc_offset": 0, "secs": 8, "source": "", "clock": true,
