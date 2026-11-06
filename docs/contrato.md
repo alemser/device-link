@@ -143,11 +143,13 @@ O cliente pede o resultado, e a ponte cuida dos cliques no amp.
 |---|---|
 | `POST /control?target=<t>&dir=<up ou down>` | Um passo. `t`: `volume`, `bass`, `treble` ou `balance` |
 | `POST /control?target=<t>&on=<1 ou 0>` | Liga ou desliga. `t`: `loudness` ou `speakers` |
+| `POST /control?target=key&name=<tecla>` | Uma tecla do controle, como `power_toggle` ou `select_cd`. Vale também em standby |
 | `POST /ir/send?cmd=<comando>` | Uma tecla do controle, como `power_toggle` ou `select_cd`. A lista está em `GET /ir` |
 
 `/control` responde com o estado depois da mudança, ou `400` com `{"error": "..."}`, em inglês, pronto para mostrar. A
 resposta pode levar alguns segundos: balance, loudness e speakers andam pelo menu do amp, e o volume espera um menu
-aberto fechar. Só um pedido por vez, e só com `power` = `on`. Passos seguidos reaproveitam o menu aberto.
+aberto fechar. Só um pedido por vez, e, com exceção de `target=key`, só com `power` = `on`. Passos seguidos reaproveitam
+o menu aberto.
 
 `power_toggle` liga e desliga: o cliente deve conferir o `power` antes. No SP103, um clique no menu às vezes também troca
 a entrada para PHONO por cerca de 1 s, até a ponte devolver a anterior.
