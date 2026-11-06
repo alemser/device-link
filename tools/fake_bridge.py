@@ -68,6 +68,11 @@ class Handler(BaseHTTPRequestHandler):
         else:
             self.send_error(404)
 
+    def do_POST(self):
+        """Só mostra o comando: a ponte falsa não muda o estado."""
+        print("POST", self.path, flush=True)
+        self.answer(STATE)
+
     def do_PUT(self):
         global config
         body = self.rfile.read(int(self.headers.get("Content-Length", 0)))

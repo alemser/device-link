@@ -2,8 +2,8 @@
 
 O que liga os amplificadores modificados aos outros aparelhos: o contrato e a app Android.
 
-Uma **ponte** é a placa instalada dentro do amp, que lê o que ele mostra e publica na rede. Um **cliente** é quem usa
-esses dados: a app Android, o groove-rig, um `curl`.
+Uma **ponte** é a placa instalada dentro do amp, que lê o que ele mostra, publica na rede e recebe comandos. Um
+**cliente** é quem usa a ponte: a app Android, o groove-rig, um `curl`.
 
 | Onde | O quê |
 |---|---|

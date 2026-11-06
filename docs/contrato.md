@@ -17,6 +17,7 @@ O **núcleo** vale para toda ponte. As outras rotas só existem se a ponte lista
 | `GET /state` | Núcleo | Existe |
 | `GET /events` | Núcleo | Existe |
 | `GET /names`, `PUT /names` | `config` | Existe |
+| `POST /control`, `POST /ir/send` | `control` | Existe |
 | `GET /bus.json`, `GET /bus.csv`, `POST /bus/clear` | `bus_log` | Existe |
 | `GET /update` e as rotas de envio | `update` | Existe; fora da app (`tools/enviar.py`) |
 
@@ -36,11 +37,11 @@ Quem é a ponte e o que ela sabe fazer. Não muda enquanto a ponte roda, então 
 ```json
 {"api": 1, "model": "Acoustic Solutions SP103", "bridge_version": "eb50a51b",
  "volume_db": {"min": -78.75, "max": 0, "step": 1.25},
- "tone_db": {"min": -14, "max": 14, "step": 1},
+ "tone_db": {"min": -14, "max": 14, "step": 2},
  "inputs": [{"id": "phono", "name": "PHONO"}, {"id": "tuner", "name": "TUNER"}, {"id": "tape_aux", "name": "TAPE/AUX"},
             {"id": "cd", "name": "CD"}, {"id": "dvd", "name": "DVD"}, {"id": "dab", "name": "DAB"}],
  "display": {"columns": 16, "rows": 2},
- "features": ["tone", "balance", "loudness", "speakers", "config", "vu", "info_screens", "bus_log", "update"]}
+ "features": ["tone", "balance", "loudness", "speakers", "config", "vu", "info_screens", "bus_log", "update", "control"]}
 ```
 
 | Campo | Significado |
@@ -59,6 +60,7 @@ Quem é a ponte e o que ela sabe fazer. Não muda enquanto a ponte roda, então 
 | `config` | `GET` e `PUT /names` |
 | `vu`, `info_screens` | A ponte tem VU e telas de informação; exigem `config` |
 | `bus_log` | As rotas `/bus.*` |
+| `control` | Comandos ao amp, por `POST /control` e `POST /ir/send` |
 | `update` | Atualização pela rede |
 
 ## `GET /state` e `GET /events`
@@ -132,6 +134,23 @@ Regras de `config`:
 | `info.utc_offset` | Horas de −12 a 14, em quartos de hora |
 | `info.source` | IPv4, ou vazio para usar o mesmo de `vu.relay` |
 | `info.turntable` | Lista de entradas, pelos nomes originais |
+
+## `control`
+
+O cliente pede o resultado, e a ponte cuida dos cliques no amp.
+
+| Rota | O que faz |
+|---|---|
+| `POST /control?target=<t>&dir=<up ou down>` | Um passo. `t`: `volume`, `bass`, `treble` ou `balance` |
+| `POST /control?target=<t>&on=<1 ou 0>` | Liga ou desliga. `t`: `loudness` ou `speakers` |
+| `POST /ir/send?cmd=<comando>` | Uma tecla do controle, como `power_toggle` ou `select_cd`. A lista está em `GET /ir` |
+
+`/control` responde com o estado depois da mudança, ou `400` com `{"error": "..."}`, em inglês, pronto para mostrar. A
+resposta pode levar alguns segundos: balance, loudness e speakers andam pelo menu do amp, e o volume espera um menu
+aberto fechar. Só um pedido por vez, e só com `power` = `on`. Passos seguidos reaproveitam o menu aberto.
+
+`power_toggle` liga e desliga: o cliente deve conferir o `power` antes. No SP103, um clique no menu às vezes também troca
+a entrada para PHONO por cerca de 1 s, até a ponte devolver a anterior.
 
 ## `bus_log`
 

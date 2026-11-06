@@ -65,6 +65,25 @@ class BridgeClient(val host: String) {
         send(request("/bus/clear").newBuilder().post(ByteArray(0).toRequestBody()).build())
     }
 
+    /** One step of `volume`, `bass`, `treble` or `balance`. The bridge does the clicks and waits for the amp. */
+    suspend fun step(target: String, up: Boolean) {
+        post("/control?target=$target&dir=${if (up) "up" else "down"}")
+    }
+
+    /** `loudness` or `speakers`. */
+    suspend fun switch(target: String, on: Boolean) {
+        post("/control?target=$target&on=${if (on) 1 else 0}")
+    }
+
+    /** One key of the remote, such as `power_toggle` or `select_cd`. */
+    suspend fun key(command: String) {
+        post("/ir/send?cmd=$command")
+    }
+
+    private suspend fun post(path: String) {
+        send(request(path).newBuilder().post(ByteArray(0).toRequestBody()).build())
+    }
+
     /**
      * The amp's state, live. The connection stays open only while this is collected, so collect
      * it from one screen, and only while that screen is on show.

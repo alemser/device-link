@@ -166,6 +166,27 @@ class BridgeClientTest {
         while (!done() && System.currentTimeMillis() < until) Thread.sleep(10)
         assertTrue(done())
     }
+
+    @Test
+    fun controlsGoToTheBridgeAsPosts() = runBlocking {
+        repeat(3) { server.enqueue(MockResponse().setBody(STATE)) }
+        client.step("bass", up = true)
+        client.switch("loudness", on = false)
+        client.key("select_cd")
+        val requests = List(3) { server.takeRequest() }
+        assertEquals(listOf("POST", "POST", "POST"), requests.map { it.method })
+        assertEquals(
+            listOf("/control?target=bass&dir=up", "/control?target=loudness&on=0", "/ir/send?cmd=select_cd"),
+            requests.map { it.path },
+        )
+    }
+
+    @Test
+    fun aRefusedControlShowsTheBridgesText() = runBlocking {
+        server.enqueue(MockResponse().setResponseCode(400).setBody("""{"error": "The amp isn't on"}"""))
+        val error = runCatching { client.step("volume", up = false) }.exceptionOrNull()
+        assertEquals("The amp isn't on", error?.message)
+    }
 }
 
 class ParsingTest {
