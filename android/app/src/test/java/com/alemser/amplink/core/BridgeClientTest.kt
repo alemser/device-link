@@ -159,6 +159,14 @@ class BridgeClientTest {
         assertEquals(1, server.requestCount)
     }
 
+    @Test
+    fun theVuSourceMayBeEmptyOnlyWithTheVuOff() {
+        assertFalse(relayInvalid(VuConfig(on = false, relay = "")))
+        assertTrue(relayInvalid(VuConfig(on = true, relay = "")))
+        assertTrue(relayInvalid(VuConfig(on = false, relay = "192.168.")))
+        assertFalse(relayInvalid(VuConfig(on = true, relay = "192.168.1.50")))
+    }
+
     private fun runBlockingLoad(store: ConfigStore) = runBlocking { store.load() }
 
     private fun waitFor(done: () -> Boolean) {

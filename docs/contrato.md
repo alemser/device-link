@@ -124,7 +124,7 @@ Regras de `config`:
 | Todos os textos do LCD | Até 16 caracteres, ASCII de `" "` a `"}"`, sem `"\"` e sem acentos |
 | `vu.on` | Booleano |
 | `vu.layout` | `bars`, `deck`, `scale` ou `kx393` |
-| `vu.relay` | IPv4 da fonte do VU |
+| `vu.relay` | IPv4 da fonte do VU. Vem vazio; com `vu.on` verdadeiro, é obrigatório |
 | `vu.auto` | Sempre `true`; a ponte ignora o valor enviado |
 | `info.on`, `alert`, `clock`, `scroll`, `eu_dst` | Booleanos |
 | `info.mode` | `temp` ou `fixed` |

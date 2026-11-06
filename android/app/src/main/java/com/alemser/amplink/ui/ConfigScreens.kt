@@ -38,6 +38,7 @@ import com.alemser.amplink.core.VuStatus
 import com.alemser.amplink.core.centred
 import com.alemser.amplink.core.isIpv4
 import com.alemser.amplink.core.lcdText
+import com.alemser.amplink.core.relayInvalid
 import kotlinx.coroutines.launch
 import java.util.Locale
 
@@ -112,7 +113,7 @@ private fun VuSection(store: ConfigStore, config: Config, status: VuStatus?) {
     fun set(change: (com.alemser.amplink.core.VuConfig) -> com.alemser.amplink.core.VuConfig) =
         store.edit { it.copy(vu = change(it.vu)) }
     Section("VU meter") {
-        SwitchRow("Show the VU meter", vu.on, vuText(status)) { on -> set { it.copy(on = on) } }
+        SwitchRow("Show the VU meter", vu.on, vuText(status, vu.relay)) { on -> set { it.copy(on = on) } }
         if (vu.on) {
             Column {
                 VU_LAYOUTS.forEach { (key, name) ->
@@ -128,7 +129,7 @@ private fun VuSection(store: ConfigStore, config: Config, status: VuStatus?) {
                 }
             }
         }
-        IpField("VU source (IP)", vu.relay, !isIpv4(vu.relay)) { ip -> set { it.copy(relay = ip) } }
+        IpField("VU source (IP)", vu.relay, relayInvalid(vu)) { ip -> set { it.copy(relay = ip) } }
     }
 }
 
@@ -221,11 +222,11 @@ private fun InfoSection(store: ConfigStore, info: InfoConfig, config: Config, na
     }
 }
 
-private fun vuText(status: VuStatus?): String = when {
+private fun vuText(status: VuStatus?, relay: String): String = when {
     status?.error != null -> "Turned off after an error: ${status.error}"
     status == null || !status.on -> "Off"
     status.showing -> "On the display now, scale ${status.floor} to ${status.top} dB"
-    status.lastFrameMs == null || status.lastFrameMs > 1000 -> "No data from the VU source"
+    status.lastFrameMs == null || status.lastFrameMs > 1000 -> "No data from $relay. Is the VU relay running there?"
     status.music -> "Amp screen for a moment"
     else -> "Waiting for music"
 }
@@ -233,7 +234,7 @@ private fun vuText(status: VuStatus?): String = when {
 private fun infoText(info: InfoStatus?, screens: ScreensStatus?): String {
     if (screens?.error != null) return "Turned off after an error: ${screens.error}"
     if (screens == null || !screens.on || info == null) return "Off"
-    if (info.lastPacketMs == null || info.lastPacketMs > 15_000) return "No data from the info source"
+    if (info.lastPacketMs == null || info.lastPacketMs > 15_000) return "No data from the info source. Is the VU relay running there?"
     val now = when {
         info.playing && info.title != null -> "Playing: " + listOfNotNull(info.artist, info.title).joinToString(" – ")
         info.stream != null -> "Streaming: ${info.stream}"

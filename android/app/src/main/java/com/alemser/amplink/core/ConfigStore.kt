@@ -98,8 +98,11 @@ class ConfigStore(
     }
 }
 
+/** Empty is fine only with the VU off: the bridge ships without a source. */
+internal fun relayInvalid(vu: VuConfig): Boolean = !isIpv4(vu.relay) && (vu.on || vu.relay.isNotEmpty())
+
 internal fun invalidReason(config: Config): String? = when {
-    !isIpv4(config.vu.relay) -> "The VU source must be an IP address"
+    relayInvalid(config.vu) -> "The VU source must be an IP address"
     config.info.source.isNotEmpty() && !isIpv4(config.info.source) ->
         "The info source must be an IP address, or empty"
     else -> null
