@@ -29,7 +29,7 @@ def names_reply():
     return {"config": config, "inputs": list(names.INPUTS),
             "defaults": {"boot": ["ACOUSTIC", "SOLUTIONS"], "about": ["Amplifier SP103", "SW version 1.0"]},
             "vu": {"on": config["vu"]["on"], "last_frame_ms": None, "music": False, "showing": False, "error": None},
-            "info": {"last_packet_ms": None, "playing": False, "side_end": False},
+            "info": {"last_packet_ms": None, "playing": False},
             "screens": {"on": config["info"]["on"], "showing": None, "error": None}}
 
 

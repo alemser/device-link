@@ -50,14 +50,11 @@ private val VU_LAYOUTS = listOf(
 )
 
 private val INFO_SCREENS = listOf(
-    "track" to "Artist and title",
-    "pos" to "Track and position",
-    "side" to "Time left on the side",
     "stylus" to "Stylus hours",
     "quality" to "Bluetooth quality",
 )
 
-private val INFO_NOTES = mapOf("stylus" to "When a side starts", "quality" to "When Bluetooth starts on DAB")
+private val INFO_NOTES = mapOf("stylus" to "On the turntable inputs", "quality" to "On DAB, with Bluetooth")
 
 private const val SECS_MIN = 3
 private const val SECS_MAX = 60
@@ -138,11 +135,12 @@ private fun VuSection(store: ConfigStore, config: Config, status: VuStatus?) {
 private fun InfoSection(store: ConfigStore, info: InfoConfig, config: Config, names: Names) {
     fun set(change: (InfoConfig) -> InfoConfig) = store.edit { it.copy(info = change(it.info)) }
     Section("Info screens") {
-        SwitchRow("Show what is playing", info.on, infoText(names.info, names.screens)) { on -> set { it.copy(on = on) } }
+        SwitchRow("Stylus and Bluetooth quality", info.on, infoText(names.info, names.screens)) { on ->
+            set { it.copy(on = on) }
+        }
         if (info.on) {
-            Hint("While playing")
             SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth()) {
-                listOf("temp" to "On track change", "fixed" to "All the time").forEachIndexed { i, (key, name) ->
+                listOf("temp" to "For a few seconds", "fixed" to "All the time").forEachIndexed { i, (key, name) ->
                     SegmentedButton(
                         selected = info.mode == key,
                         onClick = { set { it.copy(mode = key) } },
@@ -151,34 +149,23 @@ private fun InfoSection(store: ConfigStore, info: InfoConfig, config: Config, na
                 }
             }
             if (info.mode == "fixed") {
-                Column {
-                    INFO_SCREENS.forEach { (key, name) ->
-                        Row(
-                            Modifier
-                                .fillMaxWidth()
-                                .selectable(info.fixed == key) { set { it.copy(fixed = key) } },
-                            verticalAlignment = Alignment.CenterVertically,
-                        ) {
-                            RadioButton(selected = info.fixed == key, onClick = null, modifier = Modifier.padding(10.dp))
-                            Text(name)
-                        }
-                    }
-                }
                 Hint("The VU meter is not shown in this mode")
             } else {
+                Hint("Stylus: when you switch to a turntable input and when a record starts. " +
+                    "Bluetooth: when it starts or the quality changes.")
                 Stepper(
-                    "Seconds per screen",
+                    "Seconds on the display",
                     "${info.secs} s",
                     info.secs > SECS_MIN,
                     info.secs < SECS_MAX,
                     { set { it.copy(secs = it.secs - 1) } },
                     { set { it.copy(secs = it.secs + 1) } },
                 )
-                Column {
-                    INFO_SCREENS.forEach { (key, name) ->
-                        CheckRow(name, key in info.show, INFO_NOTES[key]) { on ->
-                            set { it.copy(show = if (on) it.show + key else it.show - key) }
-                        }
+            }
+            Column {
+                INFO_SCREENS.forEach { (key, name) ->
+                    CheckRow(name, key in info.show, INFO_NOTES[key]) { on ->
+                        set { it.copy(show = if (on) it.show + key else it.show - key) }
                     }
                 }
             }
@@ -186,7 +173,7 @@ private fun InfoSection(store: ConfigStore, info: InfoConfig, config: Config, na
     }
     if (info.on) {
         Section("Turntable inputs") {
-            Hint("The stylus screen and the end-of-side warning only appear on these")
+            Hint("The stylus screen only appears on these")
             Column {
                 names.inputs.forEach { input ->
                     CheckRow(config.inputs[input]?.ifEmpty { null } ?: input, input in info.turntable) { on ->
@@ -194,13 +181,9 @@ private fun InfoSection(store: ConfigStore, info: InfoConfig, config: Config, na
                     }
                 }
             }
-            SwitchRow("End of side", info.alert, "Last minute and \"Flip the record\"") { on ->
-                set { it.copy(alert = on) }
-            }
         }
-        Section("Clock and text") {
+        Section("Clock") {
             SwitchRow("Clock in standby", info.clock) { on -> set { it.copy(clock = on) } }
-            SwitchRow("Scroll long names", info.scroll) { on -> set { it.copy(scroll = on) } }
             Stepper(
                 "UTC offset",
                 String.format(Locale.US, "%+.2f h", info.utcOffset),
@@ -235,13 +218,11 @@ private fun infoText(info: InfoStatus?, screens: ScreensStatus?): String {
     if (screens?.error != null) return "Turned off after an error: ${screens.error}"
     if (screens == null || !screens.on || info == null) return "Off"
     if (info.lastPacketMs == null || info.lastPacketMs > 15_000) return "No data from the info source. Is the VU relay running there?"
-    val now = when {
-        info.playing && info.title != null -> "Playing: " + listOfNotNull(info.artist, info.title).joinToString(" – ")
-        info.stream != null -> "Streaming: ${info.stream}"
-        info.sideEnd -> "Side ended"
-        else -> "Nothing playing"
+    return when (screens.showing) {
+        null -> "On"
+        "vu" -> "On · the VU meter is on the display"
+        else -> "On · on the display: ${screens.showing}"
     }
-    return now + (screens.showing?.let { " · on the display: $it" } ?: "")
 }
 
 @Composable

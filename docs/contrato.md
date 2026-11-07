@@ -97,16 +97,15 @@ SP103 estão em `docs/api-estado.md` do `sp103-display-proxy`. Os demais são ex
 ```json
 {"config": {"inputs": {"TUNER": "Rega Planar 2"}, "boot": ["", ""], "about": ["Oceano Amp", "AS SP103"],
             "vu": {"on": true, "auto": true, "layout": "deck", "relay": "192.168.178.99"},
-            "info": {"on": true, "mode": "temp", "fixed": "quality", "show": ["pos", "side", "stylus", "quality"],
-                     "secs": 8, "alert": true, "clock": true, "scroll": true, "utc_offset": 0, "eu_dst": true,
+            "info": {"on": true, "mode": "temp", "show": ["stylus", "quality"],
+                     "secs": 8, "clock": true, "utc_offset": 0, "eu_dst": true,
                      "source": "", "turntable": ["PHONO", "TUNER", "CD"]}},
  "inputs": ["PHONO", "TUNER", "TAPE/AUX", "CD", "DVD", "DAB"],
  "defaults": {"boot": ["ACOUSTIC", "SOLUTIONS"], "about": ["Amplifier SP103", "SW version 1.0"]},
  "proxy": {"reads": 11968, "writes": 11968, "busy_high": 0},
  "vu": {"on": true, "auto": true, "layout": "deck", "floor": -42, "top": -22, "frames": 139405, "last_frame_ms": 21,
         "music": false, "showing": false, "error": null},
- "info": {"on": true, "packets": 29362, "last_packet_ms": 578, "playing": false, "side_end": false,
-          "artist": null, "title": null, "stream": null},
+ "info": {"on": true, "packets": 29362, "last_packet_ms": 578, "playing": false, "stream": null},
  "screens": {"on": true, "mode": "temp", "showing": null, "error": null}}
 ```
 
@@ -126,10 +125,9 @@ Regras de `config`:
 | `vu.layout` | `bars`, `deck`, `scale` ou `kx393` |
 | `vu.relay` | IPv4 da fonte do VU. Vem vazio; com `vu.on` verdadeiro, é obrigatório |
 | `vu.auto` | Sempre `true`; a ponte ignora o valor enviado |
-| `info.on`, `alert`, `clock`, `scroll`, `eu_dst` | Booleanos |
-| `info.mode` | `temp` ou `fixed` |
-| `info.fixed` | Um entre `track`, `pos`, `side`, `stylus`, `quality` |
-| `info.show` | Lista com alguns desses valores |
+| `info.on`, `clock`, `eu_dst` | Booleanos |
+| `info.mode` | `temp` (cada tela entra por `secs`) ou `fixed` (a tela da entrada de agora o tempo todo; sem VU) |
+| `info.show` | Lista com `stylus` (entradas de `turntable`) e/ou `quality` (Bluetooth na DAB). `track`, `pos` e `side` (telas que saíram em 2026-11-07) são aceitos e ignorados, e também `fixed`, `alert` e `scroll` |
 | `info.secs` | Inteiro de 3 a 60 |
 | `info.utc_offset` | Horas de −12 a 14, em quartos de hora |
 | `info.source` | IPv4, ou vazio para usar o mesmo de `vu.relay` |

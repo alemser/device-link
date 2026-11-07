@@ -74,12 +74,9 @@ data class VuConfig(
 data class InfoConfig(
     val on: Boolean = false,
     val mode: String = "temp",
-    val fixed: String = "track",
     val show: List<String> = emptyList(),
     val secs: Int = 8,
-    val alert: Boolean = true,
     val clock: Boolean = true,
-    val scroll: Boolean = true,
     val utcOffset: Double = 0.0,
     val euDst: Boolean = true,
     val source: String = "",
@@ -114,9 +111,6 @@ data class VuStatus(
 data class InfoStatus(
     val lastPacketMs: Long? = null,
     val playing: Boolean = false,
-    val sideEnd: Boolean = false,
-    val artist: String? = null,
-    val title: String? = null,
     val stream: String? = null,
 )
 
