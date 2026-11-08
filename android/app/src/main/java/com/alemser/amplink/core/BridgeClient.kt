@@ -133,34 +133,7 @@ class BridgeClient(val host: String) {
 
     private fun request(path: String) = Request.Builder().url("http://$host$path").build()
 
-    private suspend fun send(request: Request): String = suspendCancellableCoroutine { waiting ->
-        val call = http.newCall(request)
-        waiting.invokeOnCancellation { call.cancel() }
-        call.enqueue(object : Callback {
-            override fun onFailure(call: Call, e: IOException) {
-                if (waiting.isActive) waiting.resumeWithException(e)
-            }
-
-            override fun onResponse(call: Call, response: Response) {
-                val outcome = runCatching {
-                    response.use {
-                        val body = it.body?.string().orEmpty()
-                        if (!it.isSuccessful) throw BridgeError(errorMessage(body, it.code))
-                        body
-                    }
-                }
-                if (waiting.isActive) outcome.fold(waiting::resume, waiting::resumeWithException)
-            }
-        })
-    }
-
-    private inline fun <reified T> decode(body: String): T = try {
-        Wire.decodeFromString<T>(body)
-    } catch (e: SerializationException) {
-        throw BridgeError("Couldn't read the bridge's answer: ${e.message}")
-    } catch (e: IllegalArgumentException) {
-        throw BridgeError("Couldn't read the bridge's answer: ${e.message}")
-    }
+    private suspend fun send(request: Request): String = http.fetch(request)
 
     private fun namesReply(body: String): NamesReply = try {
         val rawConfig = Wire.parseToJsonElement(body).jsonObject["config"]?.jsonObject
@@ -182,6 +155,36 @@ class BridgeClient(val host: String) {
         const val RETRY_MIN_MS = 1_000L
         const val RETRY_MAX_MS = 30_000L
     }
+}
+
+/** One request, answered or failed: a bridge error comes back as [BridgeError] with the bridge's own message. */
+internal suspend fun OkHttpClient.fetch(request: Request): String = suspendCancellableCoroutine { waiting ->
+    val call = newCall(request)
+    waiting.invokeOnCancellation { call.cancel() }
+    call.enqueue(object : Callback {
+        override fun onFailure(call: Call, e: IOException) {
+            if (waiting.isActive) waiting.resumeWithException(e)
+        }
+
+        override fun onResponse(call: Call, response: Response) {
+            val outcome = runCatching {
+                response.use {
+                    val body = it.body?.string().orEmpty()
+                    if (!it.isSuccessful) throw BridgeError(errorMessage(body, it.code))
+                    body
+                }
+            }
+            if (waiting.isActive) outcome.fold(waiting::resume, waiting::resumeWithException)
+        }
+    })
+}
+
+internal inline fun <reified T> decode(body: String): T = try {
+    Wire.decodeFromString<T>(body)
+} catch (e: SerializationException) {
+    throw BridgeError("Couldn't read the bridge's answer: ${e.message}")
+} catch (e: IllegalArgumentException) {
+    throw BridgeError("Couldn't read the bridge's answer: ${e.message}")
 }
 
 /** One line of the stream: the state in a `data:` line. Comments and bad events give null. */

@@ -13,6 +13,8 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawingPadding
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Edit
 import androidx.compose.material.icons.outlined.GraphicEq
@@ -28,6 +30,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -51,7 +54,11 @@ import androidx.core.content.edit
 import com.alemser.amplink.core.BridgeClient
 import com.alemser.amplink.core.ConfigStore
 import com.alemser.amplink.core.Device
+import com.alemser.amplink.core.FoundBridge
+import com.alemser.amplink.core.LocalNetwork
 import com.alemser.amplink.core.SUPPORTED_API
+import com.alemser.amplink.core.WifiSetupClient
+import com.alemser.amplink.core.discover
 import com.alemser.amplink.core.isIpv4
 import com.alemser.amplink.ui.AmpLinkTheme
 import com.alemser.amplink.ui.DiagnosticsScreen
@@ -60,11 +67,12 @@ import com.alemser.amplink.ui.Hint
 import com.alemser.amplink.ui.IpField
 import com.alemser.amplink.ui.NamesScreen
 import com.alemser.amplink.ui.NowScreen
+import com.alemser.amplink.ui.WifiSetupScreen
+import kotlinx.coroutines.launch
 import java.io.IOException
 
 private const val PREFS = "amp-link"
 private const val KEY_HOST = "host"
-private const val DEFAULT_HOST = "192.168.178.108"
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -78,14 +86,26 @@ class MainActivity : ComponentActivity() {
     }
 }
 
+/** Where finding the bridge stands, before the tabs. */
+private sealed interface Finding {
+    data class Trying(val host: String) : Finding
+    data object Searching : Finding
+
+    /** The saved address didn't answer (or there's none), and the search gave this. */
+    data class Result(val error: String?, val found: List<FoundBridge>) : Finding
+}
+
 @Composable
 private fun Root() {
-    val prefs = LocalContext.current.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
-    var host by rememberSaveable { mutableStateOf(prefs.getString(KEY_HOST, null) ?: DEFAULT_HOST) }
+    val context = LocalContext.current
+    val prefs = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+    val local = remember { LocalNetwork(context.applicationContext) }
+    var host by rememberSaveable { mutableStateOf(prefs.getString(KEY_HOST, null)) }
     var attempt by remember { mutableIntStateOf(0) }
-    val client = remember(host) { BridgeClient(host) }
+    var settingUp by rememberSaveable { mutableStateOf(false) }
+    val client = remember(host) { host?.let(::BridgeClient) }
     var device by remember(client) { mutableStateOf<Device?>(null) }
-    var error by remember(client) { mutableStateOf<String?>(null) }
+    var finding by remember(client) { mutableStateOf<Finding>(Finding.Searching) }
 
     fun connectTo(address: String) {
         prefs.edit { putString(KEY_HOST, address) }
@@ -93,55 +113,124 @@ private fun Root() {
         attempt++
     }
 
-    // /device doesn't change while the bridge runs: one read per connection.
+    // The saved address first; if it doesn't answer (the router gave the bridge another IP, or it's the first
+    // run), the bridges on the network answer the discovery broadcast. One of them: connect to it at once.
     LaunchedEffect(client, attempt) {
-        if (device != null) return@LaunchedEffect
-        error = null
-        try {
-            val found = client.device()
-            if (found.api == SUPPORTED_API) {
-                device = found
-            } else {
+        if (device != null || settingUp) return@LaunchedEffect
+        var error: String? = null
+        if (client != null) {
+            finding = Finding.Trying(client.host)
+            try {
+                val found = client.device()
+                if (found.api == SUPPORTED_API) {
+                    device = found
+                    return@LaunchedEffect
+                }
                 error = "This bridge speaks API ${found.api}, and this app speaks $SUPPORTED_API"
+            } catch (e: IOException) {
+                error = e.message ?: "Couldn't reach the bridge"
             }
-        } catch (e: IOException) {
-            error = e.message ?: "Couldn't reach the bridge"
+        }
+        finding = Finding.Searching
+        val found = runCatching { discover(open = local::wifiSocket) }.getOrDefault(emptyList())
+        val other = found.singleOrNull()
+        if (other != null && other.ip != client?.host) {
+            connectTo(other.ip)
+        } else {
+            finding = Finding.Result(error, found)
         }
     }
 
     val found = device
-    if (found == null) {
-        ConnectScreen(host, error, onConnect = ::connectTo)
-    } else {
-        Tabs(client, found, onHost = ::connectTo)
+    when {
+        settingUp -> WifiSetupScreen(
+            local,
+            onDone = {
+                settingUp = false
+                connectTo(it)
+            },
+            onCancel = {
+                settingUp = false
+                attempt++
+            },
+        )
+        found == null || client == null -> ConnectScreen(
+            finding,
+            host.orEmpty(),
+            onConnect = ::connectTo,
+            onSearch = { attempt++ },
+            onSetup = { settingUp = true },
+        )
+        else -> Tabs(
+            client,
+            found,
+            onHost = ::connectTo,
+            onSearch = {
+                prefs.edit { remove(KEY_HOST) }
+                host = null
+                attempt++
+            },
+            onSetup = { settingUp = true },
+        )
     }
 }
 
 @Composable
-private fun ConnectScreen(host: String, error: String?, onConnect: (String) -> Unit) {
+private fun ConnectScreen(
+    finding: Finding,
+    host: String,
+    onConnect: (String) -> Unit,
+    onSearch: () -> Unit,
+    onSetup: () -> Unit,
+) {
     var address by remember(host) { mutableStateOf(host) }
+    var typing by remember { mutableStateOf(false) }
     Column(
         Modifier
             .fillMaxSize()
             .safeDrawingPadding()
             .imePadding()
+            .verticalScroll(rememberScrollState())
             .padding(24.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp, Alignment.CenterVertically),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         Text("Amp Link", style = MaterialTheme.typography.headlineMedium)
-        if (error == null) {
-            CircularProgressIndicator()
-            Hint("Looking for the bridge at $host")
-        } else {
-            Text("Couldn't connect: $error", color = MaterialTheme.colorScheme.error)
-            Hint("The phone must be on the same Wi-Fi as the amp")
-            IpField("Bridge address (IP)", address, !isIpv4(address)) { address = it }
-            Button(
-                onClick = { onConnect(address) },
-                enabled = isIpv4(address),
-                modifier = Modifier.fillMaxWidth(),
-            ) { Text("Connect") }
+        when (finding) {
+            is Finding.Trying -> {
+                CircularProgressIndicator()
+                Hint("Looking for the bridge at ${finding.host}")
+            }
+            Finding.Searching -> {
+                CircularProgressIndicator()
+                Hint("Looking for bridges on this Wi-Fi")
+            }
+            is Finding.Result -> {
+                finding.error?.let { Text("Couldn't connect to $host: $it", color = MaterialTheme.colorScheme.error) }
+                if (finding.found.isEmpty()) {
+                    Text("No bridge answered on this Wi-Fi")
+                    Hint("The phone must be on the same Wi-Fi as the amp. An amp that isn't on the Wi-Fi yet opens its own setup network.")
+                } else {
+                    Text("Bridges on this Wi-Fi")
+                    finding.found.forEach { bridge ->
+                        OutlinedButton(onClick = { onConnect(bridge.ip) }, Modifier.fillMaxWidth()) {
+                            Text("${bridge.name}  ·  ${bridge.ip}")
+                        }
+                    }
+                }
+                Button(onClick = onSearch, Modifier.fillMaxWidth()) { Text("Search again") }
+                OutlinedButton(onClick = onSetup, Modifier.fillMaxWidth()) { Text("Set up the amp's Wi-Fi") }
+                if (typing) {
+                    IpField("Bridge address (IP)", address, !isIpv4(address)) { address = it }
+                    Button(
+                        onClick = { onConnect(address) },
+                        enabled = isIpv4(address),
+                        modifier = Modifier.fillMaxWidth(),
+                    ) { Text("Connect") }
+                } else {
+                    TextButton(onClick = { typing = true }) { Text("Type the address") }
+                }
+            }
         }
     }
 }
@@ -165,7 +254,13 @@ private fun tabsOf(device: Device): List<Tab> = buildList {
 /** Only the open tab is composed, so a section asks the bridge for nothing until it's opened. */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun Tabs(client: BridgeClient, device: Device, onHost: (String) -> Unit) {
+private fun Tabs(
+    client: BridgeClient,
+    device: Device,
+    onHost: (String) -> Unit,
+    onSearch: () -> Unit,
+    onSetup: () -> Unit,
+) {
     val tabs = remember(device) { tabsOf(device) }
     var selected by rememberSaveable { mutableStateOf(Tab.NOW) }
     var editingHost by remember { mutableStateOf(false) }
@@ -178,7 +273,7 @@ private fun Tabs(client: BridgeClient, device: Device, onHost: (String) -> Unit)
                 title = { Text(device.model, maxLines = 1) },
                 actions = {
                     IconButton(onClick = { editingHost = true }) {
-                        Icon(Icons.Outlined.Settings, contentDescription = "Bridge address")
+                        Icon(Icons.Outlined.Settings, contentDescription = "Bridge")
                     }
                 },
             )
@@ -209,10 +304,34 @@ private fun Tabs(client: BridgeClient, device: Device, onHost: (String) -> Unit)
 
     if (editingHost) {
         var address by remember { mutableStateOf(client.host) }
+        var wifiError by remember { mutableStateOf<String?>(null) }
         AlertDialog(
             onDismissRequest = { editingHost = false },
-            title = { Text("Bridge address") },
-            text = { IpField("IP", address, !isIpv4(address)) { address = it } },
+            title = { Text("Bridge") },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    IpField("Address (IP)", address, !isIpv4(address)) { address = it }
+                    TextButton(onClick = {
+                        editingHost = false
+                        onSearch()
+                    }) { Text("Search the Wi-Fi again") }
+                    if (device.has("wifi_setup")) {
+                        TextButton(onClick = {
+                            // The bridge opens its setup network for 10 minutes, without leaving this one.
+                            scope.launch {
+                                try {
+                                    WifiSetupClient(client.host).openSetup()
+                                    editingHost = false
+                                    onSetup()
+                                } catch (e: IOException) {
+                                    wifiError = e.message ?: "Couldn't reach the bridge"
+                                }
+                            }
+                        }) { Text("Change the amp's Wi-Fi") }
+                        wifiError?.let { Hint(it, MaterialTheme.colorScheme.error) }
+                    }
+                }
+            },
             confirmButton = {
                 TextButton(
                     onClick = {

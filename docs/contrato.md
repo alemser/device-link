@@ -20,11 +20,13 @@ O **núcleo** vale para toda ponte. As outras rotas só existem se a ponte lista
 | `POST /control`, `POST /ir/send` | `control` | Existe |
 | `GET /bus.json`, `GET /bus.csv`, `POST /bus/clear` | `bus_log` | Existe |
 | `GET /update` e as rotas de envio | `update` | Existe; fora da app (`tools/enviar.py`) |
+| `GET /wifi`, `GET /wifi/networks`, `PUT /wifi`, `POST /wifi/setup`, `DELETE /wifi` | `wifi_setup` | Existe (2026-11-08) |
 
 ## Transporte
 
-- HTTP/1.1 sem TLS, só na rede local, com IP fixo pelo roteador. Não conte com nomes `.local`.
-- A ponte só tem API: não há página web.
+- HTTP/1.1 sem TLS, só na rede local. O cliente acha a ponte pela [descoberta](#wi-fi-e-descoberta-wifi_setup) e guarda
+  o IP; se ele parar de responder, procura de novo. Não conte com nomes `.local`.
+- A ponte só tem API. A única página é a de configuração do Wi-Fi, e só com a rede de configuração aberta.
 - Sem autenticação, com exceção das rotas de envio do `update`, que pedem o cabeçalho `x-password`.
 - Cada resposta fecha a conexão (`Connection: close`), com exceção de `/events`.
 - Respostas em JSON, com `Cache-Control: no-store` e `Access-Control-Allow-Origin: *`.
@@ -41,7 +43,8 @@ Quem é a ponte e o que ela sabe fazer. Não muda enquanto a ponte roda, então 
  "inputs": [{"id": "phono", "name": "PHONO"}, {"id": "tuner", "name": "TUNER"}, {"id": "tape_aux", "name": "TAPE/AUX"},
             {"id": "cd", "name": "CD"}, {"id": "dvd", "name": "DVD"}, {"id": "dab", "name": "DAB"}],
  "display": {"columns": 16, "rows": 2},
- "features": ["tone", "balance", "loudness", "speakers", "config", "vu", "info_screens", "bus_log", "update", "control"]}
+ "features": ["tone", "balance", "loudness", "speakers", "config", "vu", "info_screens", "bus_log", "update", "wifi_setup",
+              "control"]}
 ```
 
 | Campo | Significado |
@@ -169,6 +172,42 @@ a entrada para PHONO por cerca de 1 s, até a ponte devolver a anterior.
 
 `max_gap_ms` é a maior pausa do laço da ponte. Perto de 10000 é o travamento de 10 s do lwIP.
 
+## Wi-Fi e descoberta (`wifi_setup`)
+
+Para configurar o Wi-Fi da ponte sem cabo e achá-la sem IP digitado. Decidido e testado na bancada em 2026-11-08; os
+detalhes do lado da ponte estão em `docs/wifi.md`, no repositório sp103-display-proxy.
+
+**Descoberta.** O cliente manda `AMPLINK?` por broadcast UDP na porta **47800**, três vezes em uns 2 s (o primeiro
+pacote às vezes se perde), e cada ponte responde ao remetente:
+
+```json
+{"name": "SP103-D85E", "model": "sp103", "ip": "192.168.1.77"}
+```
+
+**A rede de configuração.** Sem rede salva, ou sem conseguir conectar por 2 minutos, a ponte abre a própria rede
+`AmpLink-<name>` (por exemplo `AmpLink-SP103-D85E`), WPA2, senha fixa **`amplink-setup`**, e continua tentando a rede de
+casa. Nela, a ponte é `192.168.4.1`. Todas as redes de configuração começam com `AmpLink-`: no Android, a app pede uma
+rede com esse começo (`WifiNetworkSpecifier`) e o sistema mostra as que servem, sem permissão de localização.
+
+| Rota | O quê |
+|---|---|
+| `GET /wifi` | `{"state", "detail", "ip", "ssid", "setup": {"open", "ssid"}}`. `state` e `detail`: a última tentativa (`idle`, `connecting`, `connected`, ou `failed` com o motivo, para mostrar como está). `ip`: o endereço de agora na rede de casa. `ssid`: a rede salva |
+| `GET /wifi/networks` | As redes que a ponte vê, `[{"ssid", "rssi", "secure"}]`, da mais forte para a mais fraca, até 20. Leva ~1 s |
+| `PUT /wifi` | `{"ssid", "psk"}` (`psk` vazio = rede aberta; senão de 8 a 63 caracteres). `202` na hora; o resultado sai no `GET /wifi`. Só com a rede de configuração aberta, senão `403` |
+| `POST /wifi/setup` | Abre a rede de configuração por 10 minutos, sem largar a rede de casa. Para trocar de rede com a ponte conectada |
+| `DELETE /wifi` | Esquece a rede salva. Só com a rede de configuração aberta |
+
+**O fluxo da app:**
+
+1. Entrar na rede `AmpLink-…` e ler `GET /wifi/networks`.
+2. `PUT /wifi` com a rede escolhida, e ler `GET /wifi` a cada segundo até `connected` ou `failed`. Algumas respostas se
+   perdem no meio: o rádio da ponte muda para o canal da rede de casa, e a rede de configuração vai junto. A ponte
+   desiste de uma rede em 15 s e então volta para a anterior; espere até uns 40 s.
+3. Com `connected`, guardar o `ip`, sair da rede de configuração (ela fecha sozinha 60 s depois) e conferir o
+   `GET /device` nesse IP. Se não responder, achar a ponte pela descoberta, pelo `name`.
+4. Com `failed`, mostrar o `detail` e deixar escolher de novo: a ponte voltou para a rede anterior, e a de configuração
+   continua aberta.
+
 ## Para o cliente
 
 1. **Uma conexão `/events` por cliente**, e só na tela que mostra o estado ao vivo. A ponte guarda uma conexão por IP e
@@ -182,6 +221,8 @@ a entrada para PHONO por cerca de 1 s, até a ponte devolver a anterior.
    display, então a ponte não deve receber um por toque.
 6. **Baixe o `/bus.csv` só a pedido.** É a resposta mais pesada da ponte.
 7. **Não trate `null` como desligado.** Depois de a ponte reiniciar com o amp em standby, `power` fica `null`.
+8. **A descoberta é a pedido:** ao abrir a app sem o IP guardado responder, ou quando a pessoa pede. Não fique mandando
+   broadcast em segundo plano.
 
 ## Em aberto
 

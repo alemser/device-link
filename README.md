@@ -10,6 +10,9 @@ Uma **ponte** é a placa instalada dentro do amp, que lê o que ele mostra, publ
 | [docs/contrato.md](docs/contrato.md) | O contrato entre pontes e clientes (rascunho) |
 | `android/` | A app Android |
 
+A app acha a ponte sozinha na rede, sem IP digitado, e configura o Wi-Fi de uma ponte nova pela rede `AmpLink-…` que ela
+abre (contrato, "Wi-Fi e descoberta"). O IP ainda pode ser digitado, em "Type the address".
+
 O firmware de cada amp fica no repositório dele. O do Acoustic Solutions SP103 está em `sp103-display-proxy`. O Magnat
 MR 780 ainda não foi modificado.
 
