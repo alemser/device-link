@@ -76,6 +76,30 @@ fun WifiSetupScreen(local: LocalNetwork, onDone: (String) -> Unit, onCancel: () 
 
     DisposableEffect(Unit) { onDispose { local.leaveSetup() } }
 
+    /** The networks the bridge sees. If the setup network is gone (it closes a minute after the bridge joins a
+     *  Wi-Fi), says so instead of showing an old list. */
+    suspend fun pick(setup: WifiSetupClient, note: String? = null) {
+        try {
+            val networks = setup.networks()
+            val status = runCatching { setup.status() }.getOrNull()
+            step = Step.Picking(
+                networks,
+                note ?: when {
+                    status != null && status.ip.isNotEmpty() && status.ssid.isNotEmpty() ->
+                        "The amp is on ${status.ssid} now (${status.ip}). Pick a network to change it."
+                    networks.isEmpty() -> "The amp found no networks. Search again in a moment."
+                    else -> null
+                },
+            )
+        } catch (e: IOException) {
+            local.leaveSetup()
+            step = Step.Failed(
+                "Lost the amp's setup network (${e.message ?: "no answer"}). The amp closes it a minute after " +
+                    "joining a Wi-Fi, and opens it again when it has no working Wi-Fi.",
+            )
+        }
+    }
+
     LaunchedEffect(attempt) {
         if (!local.canJoinSetup) {
             step = Step.Failed(
@@ -90,7 +114,7 @@ fun WifiSetupScreen(local: LocalNetwork, onDone: (String) -> Unit, onCancel: () 
             val setup = WifiSetupClient(SETUP_HOST, http)
             client = setup
             name = bridgeName(ssid.ifEmpty { runCatching { setup.status().setup.ssid }.getOrDefault("") })
-            step = Step.Picking(setup.networks())
+            pick(setup)
         } catch (e: IOException) {
             local.leaveSetup()
             step = Step.Failed(e.message ?: "Couldn't reach the amp's setup network")
@@ -105,14 +129,11 @@ fun WifiSetupScreen(local: LocalNetwork, onDone: (String) -> Unit, onCancel: () 
                 setup.join(network.ssid, psk)
                 setup.awaitOutcome()
             } catch (e: IOException) {
-                step = Step.Picking(runCatching { setup.networks() }.getOrDefault(emptyList()), e.message)
+                pick(setup, e.message)
                 return@launch
             }
             if (outcome.state != "connected" || outcome.ip.isEmpty()) {
-                step = Step.Picking(
-                    runCatching { setup.networks() }.getOrDefault(emptyList()),
-                    "Didn't join ${network.ssid}: ${outcome.detail}",
-                )
+                pick(setup, "Didn't join ${network.ssid}: ${outcome.detail}")
                 return@launch
             }
             step = Step.Waiting("Joined ${network.ssid}. Coming back to your Wi-Fi…")
@@ -151,7 +172,8 @@ fun WifiSetupScreen(local: LocalNetwork, onDone: (String) -> Unit, onCancel: () 
                 }
                 TextButton(onClick = {
                     val setup = client ?: return@TextButton
-                    scope.launch { step = Step.Picking(runCatching { setup.networks() }.getOrDefault(s.networks)) }
+                    step = Step.Waiting("Asking the amp which networks it sees…")
+                    scope.launch { pick(setup) }
                 }) { Text("Search again") }
             }
             is Step.Password -> {
@@ -182,7 +204,7 @@ fun WifiSetupScreen(local: LocalNetwork, onDone: (String) -> Unit, onCancel: () 
                 ) { Text("Connect") }
                 TextButton(onClick = {
                     val setup = client ?: return@TextButton
-                    scope.launch { step = Step.Picking(runCatching { setup.networks() }.getOrDefault(emptyList())) }
+                    scope.launch { pick(setup) }
                 }) { Text("Back") }
             }
             is Step.Failed -> {
