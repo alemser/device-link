@@ -117,15 +117,11 @@ Antes de ligar qualquer fio no Magnat: ver se o Wi-Fi do Pico atrapalha o som, e
   aberto e ligado, nenhum pino pode encostar em nada, e a mão fica longe. Não chegar perto da fonte
   (`MR780-SMPS-D`) nem da placa das válvulas.
 
-**O que ouvir**, com o Pico perto de cada placa (phono, tom, principal, display) e depois longe de tudo:
-
-| Função | Como | O que pode aparecer |
-|---|---|---|
-| PHONO | Sem disco, volume alto | Chiado, estalos ou zumbido que mudam quando o Pico chega perto |
-| FM | Uma estação fraca | O som piora, mais chiado |
-| DAB | Uma estação | O som corta ou a estação some |
-| Bluetooth | Tocando música do celular | Falhas no áudio |
-| CD ou AUX | Tocando, volume alto | Só para comparar; não é esperado nada |
+**O que ouvir:** só o **PHONO** (decisão do dono, 2026-11-08), sem disco e com o volume alto, com o Pico perto de
+cada placa (phono, tom, principal, display) e depois longe de tudo. Procurar chiado, estalos ou zumbido que mudem
+quando o Pico chega perto. O phono é a entrada mais sensível: se ali não aparece nada, nas outras (CD, AUX, entradas
+digitais) também não deve aparecer. A exceção possível é o FM e o DAB, que sofrem por outro motivo (harmônicos do
+clock do Pico na faixa do rádio); se um dia uma estação piorar com o Pico instalado, a suspeita é essa.
 
 **Anotar** em `docs/medicoes.md`: em que lugar apareceu algo, o quê, e a potência do sinal do Wi-Fi do Pico
 (RSSI) com a tampa fechada. O chassi de metal funciona como blindagem: se o sinal ficar fraco lá dentro, o Pico
