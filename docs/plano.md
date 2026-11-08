@@ -42,8 +42,8 @@ Diferente do SP103, o MR 780 **não leva um Raspberry Pi Zero 2 W dentro**. Dois
   analógico pode meter ruído no som ou atrapalhar a eletrônica.
 
 Fica só o **Pico 2 W**, que gasta pouco (uns 50 a 100 mA em 5 V, com Wi-Fi) e é alimentado pelo `D5V`, a linha que
-fica ligada em standby. Ainda assim, medir a folga do `D5V` antes (passo 2, item 5) e, com o Pico ligado, ouvir se
-aparece ruído no PHONO com o volume alto.
+fica ligada em standby. Ainda assim, medir a folga do `D5V` antes (passo 2, item 5) e testar se o Wi-Fi do Pico
+interfere no som (passo 2b).
 
 ### Grave, médio e agudo
 
@@ -103,6 +103,40 @@ receptor vai ao pino 21); falta a tensão. Os itens 2 a 5 são com o amp ligado.
    não precisa mais (era para o Pi Zero, descartado em 2026-11-08).
 6. Os botões do painel: em quais vias do flat eles aparecem, e se cada botão tem o seu fio ou se vários dividem um fio
    com resistores diferentes (escada de resistores lida pelo microcontrolador). Muda o jeito de imitá-los.
+
+## Passo 2b: teste de interferência do Wi-Fi (dono, 2026-11-08)
+
+Antes de ligar qualquer fio no Magnat: ver se o Wi-Fi do Pico atrapalha o som, e achar o melhor lugar para ele.
+
+**Montagem:**
+
+- O Pico alimentado por um **power bank**, sem nenhum fio até o amp.
+- Um programa de teste que fique **transmitindo sem parar** pelo Wi-Fi (por exemplo, mandando pacotes UDP para o Mac),
+  para o pior caso.
+- O Pico **dentro de um saquinho ou caixinha de plástico**, preso na ponta de um palito ou régua de madeira: com o amp
+  aberto e ligado, nenhum pino pode encostar em nada, e a mão fica longe. Não chegar perto da fonte
+  (`MR780-SMPS-D`) nem da placa das válvulas.
+
+**O que ouvir**, com o Pico perto de cada placa (phono, tom, principal, display) e depois longe de tudo:
+
+| Função | Como | O que pode aparecer |
+|---|---|---|
+| PHONO | Sem disco, volume alto | Chiado, estalos ou zumbido que mudam quando o Pico chega perto |
+| FM | Uma estação fraca | O som piora, mais chiado |
+| DAB | Uma estação | O som corta ou a estação some |
+| Bluetooth | Tocando música do celular | Falhas no áudio |
+| CD ou AUX | Tocando, volume alto | Só para comparar; não é esperado nada |
+
+**Anotar** em `docs/medicoes.md`: em que lugar apareceu algo, o quê, e a potência do sinal do Wi-Fi do Pico
+(RSSI) com a tampa fechada. O chassi de metal funciona como blindagem: se o sinal ficar fraco lá dentro, o Pico
+retransmite mais, o que piora a interferência e a estabilidade.
+
+**Como ler o resultado:**
+
+- Nada aparece: seguir. Se depois, com o Pico alimentado pelo `D5V`, aparecer ruído, o culpado é o terra ou a
+  alimentação, não o rádio (ligar só no `D5V`/`DGND`, nunca no `AGND`, com um capacitor na entrada do Pico).
+- Aparece só perto de uma placa: o Pico fica longe dela.
+- Aparece em todo lugar: pensar em antena externa ou outro jeito antes de seguir.
 
 ## Passo 3: analisador lógico
 
