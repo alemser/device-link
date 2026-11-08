@@ -26,7 +26,8 @@ fora da tomada, foram mapeados no flat os GND, todos os botões, o VOLUME, o SOU
 | VU meter no display enquanto toca | Provável | 2×16 como no SP103; depende de o controlador do VFD aceitar caracteres desenhados |
 | Telas de informação (agulha, qualidade do Bluetooth) | Sim | Mesmo tamanho de tela do SP103 |
 | Ajustar grave e agudo pelo Wi-Fi | Difícil | Botões giratórios, provavelmente analógicos. O DIRECT (liga e desliga o tom) é viável |
-| Alimentação pelo próprio amp, também em standby | A medir | O Pico pelo `D5V`. Novo: um Pi Zero 2 WH dentro, por um conversor DC-DC na linha `VCC` (sem transformador) |
+| Alimentação pelo próprio amp, também em standby | A medir | O Pico pelo `D5V` |
+| Raspberry Pi Zero 2 W dentro do amp | Não | Descartado em 2026-11-08: sem fonte nova dentro do amp e sem risco de interferência na eletrônica |
 
 Tudo isto está detalhado em `docs/plano.md`.
 

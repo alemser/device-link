@@ -18,8 +18,7 @@ O caminho é o mesmo do SP103: primeiro olhar e medir, depois capturar, só ent�
 1. **Saber o estado do amp**: ligado ou standby, entrada, volume, DIRECT, texto do DAB/FM.
 2. **Mudar o que ele escreve no display.**
 3. **Comandar sem depender do controle remoto pelo ar** (sem Broadlink).
-4. **Um Raspberry Pi Zero 2 WH dentro do amp**, além do Pico, **alimentado pelo próprio amp**, sem transformador novo
-   (no SP103 foi preciso pôr um).
+4. ~~Um Raspberry Pi Zero 2 WH dentro do amp~~: **descartado** (dono, 2026-11-08). Ver abaixo.
 5. Bônus: **grave e agudo** pelo Wi-Fi, e **ligar ou desligar o DIRECT**.
 
 O que as fotos já dizem sobre cada um:
@@ -29,26 +28,22 @@ O que as fotos já dizem sobre cada um:
 | 1. Estado | O Pico escuta as vias de dados do VFD no cabo flat e remonta as telas, como no SP103. Ligado ou standby por um sinal da placa principal (`APD`, `SYS` ou `POW/OF`) | Viável. Falta medir as vias |
 | 2. Mudar o display | O Pico no meio das vias de dados, entre duas extensões do flat | Viável, depende do protocolo (capturas) |
 | 3. Comandos sem IR pelo ar | (a) Mandar os códigos do controle remoto **por fio**, direto na saída do receptor de IR, como no SP103 (não passa pelo ar). (b) Imitar os botões do painel (ON/STBY, DIM, DIRECT, ◄◄, ►►, MONO). (c) Imitar o giro dos botões SOURCE e VOLUME, se forem encoders | (a) é o caminho que já funciona no SP103. (b) e (c) dependem de como os botões chegam à placa principal: quase certo que pelo mesmo cabo flat |
-| 4. Pi Zero alimentado pelo amp | Um conversor DC-DC pequeno (não é transformador) puxando da linha `VCC` da placa principal. Ver abaixo | Promissor. Falta medir a tensão e a folga |
+| 4. Pi Zero dentro do amp | — | Descartado (2026-11-08) |
 | 5a. DIRECT | O controle remoto não tem DIRECT, então é imitar o botão do painel (3b). O estado já aparece no display ("DIRECT ON") | Provável |
 | 5b. Grave, médio, agudo | Ver abaixo | Difícil |
 
-### Alimentar o Pi Zero sem transformador
+### Sem Pi Zero dentro do amp (dono, 2026-11-08)
 
-- A fonte de standby (`MR780-SMPS-D`, PN8370) é pequena: não serve.
-- A placa principal recebe do transformador grande, pelo conector de força, as linhas
-  `D5V VCC VCC DGND DGND -12V AGND +12V ACC` (`docs/img/principal-conector-forca.jpg`).
-- Ela tem um regulador chaveado **XL2596S-ADJ** (até 3 A, aceita até 40 V na entrada), que faz a tensão da parte
-  digital (`docs/img/principal-regulador-xl2596.jpg`). Provavelmente ele é alimentado pela linha `VCC`.
-- Plano: **um módulo DC-DC próprio para o Pi Zero** (5 V, 2 a 3 A; ligado à linha `VCC`, depois do fusível), sem
-  carregar o regulador do Magnat. Não usar o `+12V` e o `-12V`: são da parte de áudio, e o Pi Zero mete ruído neles.
-- **A medir antes:** a tensão do `VCC` (com o amp ligado e tocando alto) e quanto o transformador aguenta a mais.
-  O Pi Zero 2 W gasta uns 300 a 500 mA em 5 V (uns 2,5 W).
-- **Consequência:** o transformador grande só liga quando o amp sai do standby (é o relé da fonte que liga). Então o Pi
-  Zero **só fica ligado com o amp ligado**, e perde a energia de repente quando o amp vai para standby. O sistema dele
-  precisa ser só leitura (como a imagem enxuta do Zero 2 W do OceanO) para o cartão não estragar. O Pico continua
-  ligado em standby, pelo `D5V`, e é ele que liga o amp.
-- Coincidência boa: o Pi Zero leva uns 20 a 30 s para iniciar, o mesmo tempo do aquecimento das válvulas.
+Diferente do SP103, o MR 780 **não leva um Raspberry Pi Zero 2 W dentro**. Dois motivos:
+
+- **Alimentação:** não entra fonte nova no amp, e puxar 2 a 3 W da linha `VCC` da placa principal (por um DC-DC)
+  arrisca a folga do transformador e da parte digital do Magnat.
+- **Interferência:** um computador com Wi-Fi e clock de GHz dentro de um amp com válvulas, phono e controle de tom
+  analógico pode meter ruído no som ou atrapalhar a eletrônica.
+
+Fica só o **Pico 2 W**, que gasta pouco (uns 50 a 100 mA em 5 V, com Wi-Fi) e é alimentado pelo `D5V`, a linha que
+fica ligada em standby. Ainda assim, medir a folga do `D5V` antes (passo 2, item 5) e, com o Pico ligado, ouvir se
+aparece ruído no PHONO com o volume alto.
 
 ### Grave, médio e agudo
 
@@ -68,8 +63,8 @@ amp, só escutando o cabo flat. Nada cortado.
 e escreve a sua versão no display. As outras vias passam direto. Como o VFD tem fonte própria e (pelas fotos)
 controlador próprio, dá para escrever qualquer texto. Junto: os comandos (IR por fio e os botões do painel).
 
-**Fase 3: Pi Zero 2 WH dentro do amp**, alimentado pelo Magnat por um conversor DC-DC (acima), recebendo o REC OUT
-por dentro (precisa de um ADC I2S, como o PCM1808).
+~~**Fase 3: Pi Zero 2 WH dentro do amp**~~: **descartada** em 2026-11-08 (ver "Sem Pi Zero dentro do amp"). O
+projeto termina na fase 2, só com o Pico.
 
 ## O cabo flat (medido em 2026-10-30)
 
@@ -104,8 +99,8 @@ receptor vai ao pino 21); falta a tensão. Os itens 2 a 5 são com o amp ligado.
 3. Os fios `D+5V`, `APD`, `SYS` e `POW/OF`: qual tem 5 V em standby (para alimentar o Pico) e qual muda ao ligar
    (para o Pico saber se o amp está ligado).
 4. A saída do receptor do controle remoto (para comandar o amp pelo Wi-Fi, como no SP103).
-5. O conector de força da placa principal: a tensão do `VCC` e do `D5V`, em standby, ligado e ligado tocando alto
-   (para o conversor do Pi Zero).
+5. O conector de força da placa principal: a tensão do `D5V` em standby e ligado (para alimentar o Pico). O `VCC`
+   não precisa mais (era para o Pi Zero, descartado em 2026-11-08).
 6. Os botões do painel: em quais vias do flat eles aparecem, e se cada botão tem o seu fio ou se vários dividem um fio
    com resistores diferentes (escada de resistores lida pelo microcontrolador). Muda o jeito de imitá-los.
 

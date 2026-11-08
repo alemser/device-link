@@ -41,7 +41,7 @@ Em aberto:
 3. Confirmar que o multímetro estava em kΩ.
 4. **Com o amp na tomada**: tensões dos pinos 1, 2, 3, 4, 6, 18 e 21, em standby e ligado. No flat, só com a extensão
    de 22P (passo de 1,0 mm é estreito demais para a ponta com o amp ligado). Antes disso, com segurança: o conector de
-   força da placa principal (`D5V`, `VCC`) e os fios `APD`, `SYS` e `POW/OF`.
+   força da placa principal (`D5V`) e os fios `APD`, `SYS` e `POW/OF`.
 
 ## Regra da numeração do cabo flat
 
