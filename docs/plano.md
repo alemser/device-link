@@ -69,6 +69,7 @@ projeto termina na fase 2, só com o Pico.
 ## O cabo flat (medido em 2026-10-30)
 
 - 21 vias, passo de 1,0 mm, ~22 mm de largura.
+- **Comprados em 2026-11-08** (a caminho): a extensão e o flat.
 - Material escolhido: uma **extensão FFC 22P de 1,0 mm** (existe pronta), com o flat de 21 encostado no pino 1 e a
   folga do pino 22 calçada com plástico ou kapton. **Testar a continuidade via a via antes de ligar.** Flats de 21P,
   1,0 mm, ~10 cm, dos dois tipos (A e B), porque não dá para ver de que lado estão os contatos.
@@ -139,7 +140,11 @@ retransmite mais, o que piora a interferência e a estabilidade.
 O mesmo Pico com o LogicAnalyzer usado no SP103, nas vias de lógica:
 
 - Telas: ligar (contagem do aquecimento), volume, cada entrada, DIM, DIRECT, INFO no DAB e no FM, Bluetooth.
-- O controle remoto: cada botão, para o protocolo e os códigos.
+- O controle remoto: só o que falta. O `groove-rig` já tem códigos do MR 780
+  (`internal/catalog/profiles/magnat_mr780.yaml`): **NEC, endereço 40/BF**, com `next_input` (cmd 1A), `prev_input`
+  (1E) e `volume_down` (1F), no formato do Broadlink. Faltam lá o power e o volume up (nunca capturados limpos;
+  podem estar aprendidos só no oceano) e o ◄◄ e ►► (anterior e próxima no Bluetooth), mais o que mais o controle
+  tiver. Como o controle não precisa do amp, dá para capturar na mesa, com um receptor de IR de 38 kHz.
 
 Decodificar e documentar em `docs/descobertas-protocolo.md`, com as capturas em `captures/`.
 
