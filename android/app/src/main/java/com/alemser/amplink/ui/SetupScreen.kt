@@ -14,7 +14,11 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Lock
+import androidx.compose.material.icons.outlined.Visibility
+import androidx.compose.material.icons.outlined.VisibilityOff
 import androidx.compose.material.icons.outlined.Wifi
+import androidx.compose.material3.IconButton
+import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
@@ -152,14 +156,23 @@ fun WifiSetupScreen(local: LocalNetwork, onDone: (String) -> Unit, onCancel: () 
             }
             is Step.Password -> {
                 var psk by remember(s) { mutableStateOf("") }
+                var shown by remember(s) { mutableStateOf(false) }
                 Text(s.network.ssid, style = MaterialTheme.typography.titleMedium)
                 OutlinedTextField(
                     value = psk,
                     onValueChange = { psk = it },
                     label = { Text("Wi-Fi password") },
                     singleLine = true,
-                    visualTransformation = PasswordVisualTransformation(),
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+                    visualTransformation = if (shown) VisualTransformation.None else PasswordVisualTransformation(),
+                    trailingIcon = {
+                        IconButton(onClick = { shown = !shown }) {
+                            Icon(
+                                if (shown) Icons.Outlined.VisibilityOff else Icons.Outlined.Visibility,
+                                contentDescription = if (shown) "Hide the password" else "Show the password",
+                            )
+                        }
+                    },
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password, autoCorrectEnabled = false),
                     modifier = Modifier.fillMaxWidth(),
                 )
                 Button(
