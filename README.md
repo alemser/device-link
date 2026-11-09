@@ -15,6 +15,11 @@ por um cabo flat de 21 vias e passo de 1,0 mm (`docs/pesquisa-display.md`). Em 2
 fora da tomada, foram mapeados no flat os GND, todos os botões, o VOLUME, o SOURCE e o sinal do controle remoto
 (`docs/medicoes.md`). Próximo passo: as tensões com o amp ligado, e depois o analisador lógico (`docs/plano.md`).
 
+Em 2026-11-09, sem o amp, começou o firmware: a **base da ponte** (`firmware/ponte.py`), que configura o Wi-Fi sem
+cabo pela rede `AmpLink-MR780-XXXX`, é achada pela app Amp Link sem IP digitado e se atualiza pelo Wi-Fi. O `/state`
+ainda vem todo `null`: ler o display e comandar o amp dependem das capturas. Assim o Pico já pode ir para dentro do amp
+e receber o resto pelo Wi-Fi.
+
 ## O que vem do SP103
 
 | No SP103 | No MR 780 | Observação |
@@ -44,7 +49,20 @@ O manual oficial fica só na cópia local, em `docs/manual/` (tem direitos autor
 
 ## Pastas
 
-- `firmware/`: o programa do Pico (vazio por enquanto).
-- `tools/`: testes no computador e ferramentas.
+- `firmware/`: o programa do Pico (MicroPython). `main.py` (o porteiro das atualizações) e `secrets.py` (a senha das
+  atualizações, fora do git) só vão pelo cabo; o resto vai pelo Wi-Fi com `python3 tools/enviar.py`. `wifi.py`,
+  `web.py`, `ota.py`, `udp.py` e `listeners.py` foram copiados do `sp103-display-proxy`: uma correção num vale para o
+  outro.
+- `tools/`: testes no computador (`python3 tools/test_wifi.py`, `python3 tools/test_device.py`) e o `enviar.py`.
+
+## Instalar no Pico (pelo cabo, uma vez)
+
+```sh
+cp firmware/secrets.example.py firmware/secrets.py    # e preencher UPDATE_PASSWORD
+mpremote fs cp firmware/*.py : + reset
+```
+
+Sem rede salva, o Pico abre a rede `AmpLink-MR780-XXXX`: na app Amp Link, "Set up the amp's Wi-Fi". Daí em diante,
+atualizações só pelo Wi-Fi: `python3 tools/enviar.py`.
 - `captures/`: capturas do analisador lógico.
 - `docs/img/`: fotos da placa.

@@ -159,9 +159,16 @@ Aproveitar do `sp103-display-proxy` o que não depende do display:
 
 Novo: o sniffer do VFD serial (PIO) e o leitor das telas do MR 780.
 
+**Feito em 2026-11-09, sem o amp: a base** (`firmware/ponte.py`). O Wi-Fi sem cabo (`wifi.py`, a mesma configuração
+do SP103: rede `AmpLink-MR780-XXXX`, senha fixa, descoberta por broadcast UDP; detalhes em
+`sp103-display-proxy/docs/wifi.md`), a atualização pelo Wi-Fi (`ota.py`, `main.py`, `tools/enviar.py`, que também acha
+o Pico pela descoberta) e o `/device` (15 entradas com os ids do groove-rig). O `/state` existe, todo `null`. Falta:
+o sniffer, o leitor das telas e os comandos.
+
 Lições do SP103 que já valem aqui:
 
-- Sem página web no Pico: a app Android faz esse papel.
+- Sem página web no Pico: a app Android faz esse papel. A exceção é a página de configuração do Wi-Fi, que só existe
+  com a rede de configuração aberta.
 - Evitar conexões longas (`/events`) e respostas grandes: elas travam o Wi-Fi do Pico (lwIP sem memória).
 - Copiar cada parte do SP103 só quando ela for usada, para não carregar código morto.
 
