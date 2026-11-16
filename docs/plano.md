@@ -150,7 +150,7 @@ Decodificar e documentar em `docs/descobertas-protocolo.md`, com as capturas em 
 
 ## Passo 4: o programa (fase 1)
 
-Aproveitar do `sp103-display-proxy` o que não depende do display:
+Aproveitar do `sp103-mod` o que não depende do display:
 
 - Wi-Fi e atualização pelo Wi-Fi com volta automática (`ota.py`, `tools/enviar.py`).
 - O estado e o contrato da app Amp Link (`/state`, `/device`, `/names`), com campos novos: fonte DAB/BT/USB, estação,
@@ -161,7 +161,7 @@ Novo: o sniffer do VFD serial (PIO) e o leitor das telas do MR 780.
 
 **Feito em 2026-11-09, sem o amp: a base** (`firmware/ponte.py`). O Wi-Fi sem cabo (`wifi.py`, a mesma configuração
 do SP103: rede `AmpLink-MR780-XXXX`, senha fixa, descoberta por broadcast UDP; detalhes em
-`sp103-display-proxy/docs/wifi.md`), a atualização pelo Wi-Fi (`ota.py`, `main.py`, `tools/enviar.py`, que também acha
+`sp103-mod/docs/wifi.md`), a atualização pelo Wi-Fi (`ota.py`, `main.py`, `tools/enviar.py`, que também acha
 o Pico pela descoberta) e o `/device` (15 entradas com os ids do groove-rig). O `/state` existe, todo `null`. Falta:
 o sniffer, o leitor das telas e os comandos.
 

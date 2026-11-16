@@ -1,6 +1,6 @@
 # MR 780 mod
 
-As mesmas melhorias do SP103 (repositório `sp103-display-proxy`), agora no receiver híbrido **Magnat MR 780**:
+As mesmas melhorias do SP103 (repositório `sp103-mod`), agora no receiver híbrido **Magnat MR 780**:
 um microcontrolador (provavelmente outro Raspberry Pi Pico 2 W) dentro do amp, que lê o que o amp mostra no display,
 publica o estado na rede e comanda o amp pelo Wi-Fi.
 
