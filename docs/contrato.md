@@ -184,6 +184,10 @@ pacote às vezes se perde), e cada ponte responde ao remetente:
 {"name": "SP103-D85E", "model": "sp103", "ip": "192.168.1.77"}
 ```
 
+As pontes feitas com a `firmware-base/` (2026-11-16) acrescentam `label`, o nome completo para mostrar na lista
+(`"Yamaha CD-S300"`, o mesmo `model` do `GET /device`), e `kind`, o tipo de aparelho (`amplifier` ou `cd_player`). Os
+dois podem faltar: o SP103 ainda não os manda. A resposta cabe com folga num pacote (menos de 200 bytes).
+
 **A rede de configuração.** Sem rede salva, ou sem conseguir conectar por 2 minutos, a ponte abre a própria rede
 `AmpLink-<name>` (por exemplo `AmpLink-SP103-D85E`), WPA2, senha fixa **`amplink-setup`**, e continua tentando a rede de
 casa. Nela, a ponte é `192.168.4.1`. Todas as redes de configuração começam com `AmpLink-`: no Android, a app pede uma

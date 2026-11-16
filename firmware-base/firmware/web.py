@@ -1,0 +1,139 @@
+"""Servidor HTTP do Pico: publica o estado do aparelho na rede (o Wi-Fi fica no wifi.py).
+
+Este arquivo é da base comum (amp-link, firmware-base/): mude lá e copie com o copiar.py, nunca aqui.
+
+    GET /state    o estado em JSON
+    GET /events   Server-Sent Events: um "data: {json}" a cada mudança
+    outras        rotas extras, por prefixo: routes={"/update": ota.handle, "/device": device.handle}
+
+Uso (com asyncio):
+    pub = Publisher(state, routes={...})
+    (routes: handler(req, writer) assíncrono; req = Request, ver abaixo; responde com reply())
+    asyncio.create_task(pub.serve())
+    ...
+    pub.changed()      # chame depois de cada state.update() que devolveu True
+"""
+
+import json
+import asyncio
+
+from listeners import make_room
+
+CHUNK = 1024                    # o corpo vai em pedaços: o Wi-Fi do Pico tem pouca memória
+
+
+class Request:
+    """Um pedido HTTP já lido até os cabeçalhos. O corpo fica em reader (length bytes)."""
+
+    def __init__(self, method, path, headers, reader):
+        self.method = method
+        self.path, _, query = path.partition("?")
+        self.query = {}                 # "?tz=120&x=1" -> {"tz": "120", "x": "1"}
+        for p in query.split("&"):
+            key, _, value = p.partition("=")
+            self.query[key] = value
+        self.headers = headers          # nomes em minúsculas
+        self.reader = reader
+        self.length = int(headers.get("content-length", 0))
+
+
+async def reply(writer, status, ctype, body):
+    # no-store: tudo aqui muda com o estado e com as atualizações por OTA.
+    writer.write(("HTTP/1.1 %s\r\nContent-Type: %s\r\nContent-Length: %d\r\nCache-Control: no-store\r\n"
+                  "Access-Control-Allow-Origin: *\r\nConnection: close\r\n\r\n"
+                  % (status, ctype, len(body))).encode())
+    await writer.drain()
+    # Em pedaços: uma resposta grande de uma vez aperta a memória do Wi-Fi (issue #2).
+    for i in range(0, len(body), CHUNK):
+        writer.write(body[i:i + CHUNK])
+        await writer.drain()
+
+
+async def reply_json(writer, obj, status="200 OK"):
+    await reply(writer, status, "application/json", json.dumps(obj).encode())
+
+
+class Publisher:
+    def __init__(self, state, port=80, routes=None):
+        self.state = state
+        self.port = port
+        self.routes = routes or {}
+        self.listeners = []             # conexões abertas em /events: (ip, writer), ver listeners.py
+        self.served = 0                 # pedidos respondidos desde que o Pico ligou
+
+    def _json(self):
+        return json.dumps(self.state.to_dict())
+
+    def changed(self):
+        """Avisa todos os ouvintes de /events (chamar depois de cada mudança)."""
+        msg = ("data: " + self._json() + "\n\n").encode()
+        for _, w in self.listeners:
+            try:
+                w.write(msg)
+            except Exception:
+                pass                    # a conexão caiu: o laço dela vai removê-la
+
+    async def serve(self):
+        await asyncio.start_server(self._client, "0.0.0.0", self.port)
+
+    async def _client(self, reader, writer):
+        try:
+            request = await reader.readline()
+            headers = {}
+            while True:
+                line = await reader.readline()
+                if not line or line == b"\r\n":
+                    break
+                name, _, value = line.decode().partition(":")
+                headers[name.strip().lower()] = value.strip()
+            parts = request.split()
+            req = Request(parts[0].decode() if parts else "GET",
+                          parts[1].decode() if len(parts) > 1 else "/", headers, reader)
+            path = req.path
+            route = path.split("/")[1].split(".")[0]    # "/bus.csv" -> "bus"; "/update/x" -> "update"
+            self.served += 1
+
+            if path == "/state":
+                await reply(writer, "200 OK", "application/json", self._json().encode())
+            elif path == "/events":
+                await self._events(writer)
+                return
+            elif "/" + route in self.routes:
+                await self.routes["/" + route](req, writer)
+            else:
+                await reply(writer, "404 Not Found", "text/plain", b"not found\n")
+        except Exception as e:
+            print("http:", e)
+        try:
+            writer.close()
+            await writer.wait_closed()
+        except Exception:
+            pass
+
+    async def _events(self, writer):
+        writer.write(b"HTTP/1.1 200 OK\r\nContent-Type: text/event-stream\r\n"
+                     b"Cache-Control: no-cache\r\nAccess-Control-Allow-Origin: *\r\n\r\n")
+        try:
+            ip = writer.get_extra_info("peername")[0]
+        except Exception:
+            ip = None
+        make_room(self.listeners, ip)
+        writer.write(("data: " + self._json() + "\n\n").encode())   # estado atual logo de cara
+        entry = (ip, writer)
+        self.listeners.append(entry)
+        try:
+            while entry in self.listeners:      # fora da lista = outra conexão tomou o lugar
+                await writer.drain()    # envia o que changed() escreveu; falha se a conexão caiu
+                await asyncio.sleep(1)
+                if entry in self.listeners:
+                    writer.write(b": ping\n\n")   # comentário SSE: mantém a conexão viva
+        except Exception:
+            pass
+        finally:
+            if entry in self.listeners:
+                self.listeners.remove(entry)
+            try:
+                writer.close()
+                await writer.wait_closed()
+            except Exception:
+                pass
