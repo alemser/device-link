@@ -54,7 +54,7 @@ a device switched on appears without a refresh, and one switched off is greyed a
 
 ```json
 {"api": 2, "kind": "cd_player", "model": "Yamaha CD-S300", "name": "CDS300-D85E", "bridge_version": "91a64081",
- "features": ["control", "update", "wifi_setup"],
+ "firmware": "alemser/cds300-mod", "features": ["control", "update", "wifi_setup"],
  "state": [
    {"id": "transport", "type": "enum", "values": ["playing", "paused", "stopped", "loading", "open"]},
    {"id": "media.track", "type": "int", "label": "Track"},
@@ -77,6 +77,7 @@ a device switched on appears without a refresh, and one switched off is greyed a
 | `kind` | `amplifier`, `cd_player`, `tape_deck`, ... Picks the icon and the default layout |
 | `model`, `name` | What to show; `name` as in discovery |
 | `bridge_version` | Firmware version (the `version` of `GET /update`) |
+| `firmware` | The GitHub repository whose releases carry this bridge's firmware (see [Updates](#updates-from-the-app-update)) |
 | `features` | Optional route groups present on this bridge |
 | `state` | The state fields worth showing, in display order (below) |
 | `controls` | The remote, in groups, in display order (below) |
@@ -150,17 +151,21 @@ The amplifiers keep their `api` 1 fields (`volume_db`, `input_id`, `bass_db`, ..
 
 ## Updates from the app (`update`)
 
-The bridge side exists (`ota.py`): `GET /update` gives the running version and each file's hash; password-protected
-routes upload files, apply them, and roll back by themselves if the new version doesn't confirm within 3 minutes.
+The bridge side exists (`ota.py`): `GET /update` gives the running version and each file's hash; the upload routes
+take files, apply them, and roll back by themselves if the new version doesn't confirm within 3 minutes. **No
+password** (decided 2026-11-16): the routes are on the home LAN only, like the rest of the contract, and the rollback
+protects against a bad version. `main.py` and the bridge's own Wi-Fi file still go only by USB.
 
 The app side is new:
 
-1. Each device's firmware is published as a release of its repository, with a `firmware.json` listing the files and
-   their hashes (built by the repository's `tools/enviar.py --publish`).
+1. A bridge's firmware is a GitHub release of the repository named in `/device` `firmware`, tagged with its version,
+   carrying a `firmware.json` asset (`{"version", "files": {"<name>.py": "<sha256>"}}`) and the files themselves
+   (built by the repository's `tools/enviar.py --publish`). The app reads the latest release through the GitHub API;
+   a device can therefore be updated without the app knowing it in advance.
 2. The device screen shows "Update available" when the release's version differs from the bridge's `bridge_version`.
-3. On "Update", the app downloads the files, uploads only those whose hash differs (as `enviar.py` does), applies, and
-   follows `GET /update` until the bridge confirms or rolls back, showing which.
-4. The update password is asked once per device and kept on the phone.
+3. On "Update", the app downloads the files, uploads only those whose hash differs from `GET /update` (as `enviar.py`
+   does), deletes the ones the release no longer has, applies, and follows `GET /update` until the bridge confirms or
+   rolls back, showing which.
 
 ## For the app
 
@@ -171,9 +176,12 @@ on-demand routes, no `null` as off). Two changes:
 - With several devices, the app holds at most one `/events` connection: the one of the device on screen. The list shows
   what discovery gives (name, kind, online), not live state.
 
+## Decided (2026-11-16)
+
+- Firmware releases live in each device's own repository, named by `/device` `firmware`.
+- Updates take no password.
+- The SP103 moves to `api` 2: its `/names` configuration becomes `/settings`.
+
 ## Open
 
 - The `kind` values beyond the three devices built so far.
-- Whether the SP103 moves its `/names` to `/settings` or keeps both.
-- Where releases are published and how the app finds each repository (a fixed list in the app, or a `repo` field in
-  `/device`).
