@@ -22,9 +22,9 @@ configuração fecha sozinha em CLOSE_SETUP_AFTER_S, tempo para quem configurou 
     DELETE /wifi            esquece a rede salva (só com a rede de configuração aberta)
     GET    /                a página de configuração, só com a rede de configuração aberta
 
-Descoberta: a app manda "AMPLINK?" por broadcast UDP na porta DISCOVERY_PORT e o Pico responde
-{"name", "model", "ip"}, mais "label" (o nome completo, para mostrar) e "kind" (o tipo de aparelho) quando a ponte os
-informa. Assim a app acha o Pico sem IP fixo e já sabe o que achou.
+Descoberta: a app manda "AMPLINK?" (ou "DEVICELINK?", contract v2) por broadcast UDP na porta DISCOVERY_PORT e o Pico
+responde {"name", "model", "ip"}, mais "label" (o nome completo, para mostrar), "kind" (o tipo de aparelho) e "api" (a
+versão do contrato) quando a ponte os informa. Assim a app acha o Pico sem IP fixo e já sabe o que achou.
 
 Uso (com asyncio):
     net = Wifi(model="mr780", hostname="mr780", prefix="MR780",     # cada ponte com os seus (device.py)
@@ -43,6 +43,7 @@ import udp
 
 SETUP_KEY = "amplink-setup"
 SETUP_PREFIX = "AmpLink-"
+PROBES = (b"AMPLINK?", b"DEVICELINK?")  # discovery: api 1 apps ask the first, the DeviceLink app the second
 NET_FILE = "wifi.json"
 DISCOVERY_PORT = 47800
 OPEN_SETUP_AFTER_S = 120    # sem conectar por esse tempo (e com rede salva), abre a rede de configuração
@@ -100,10 +101,12 @@ def collapse(scan, limit=MAX_NETWORKS):
 
 
 class Wifi:
-    def __init__(self, model, hostname, prefix, net_file=NET_FILE, retry_s=30, quick_tries=3, label="", kind=""):
+    def __init__(self, model, hostname, prefix, net_file=NET_FILE, retry_s=30, quick_tries=3, label="", kind="",
+                 api=0):
         self.model = model
         self.label = label              # "Magnat MR 780": só para a descoberta
         self.kind = kind                # "amplifier", "cd_player"
+        self.api = api                  # contract version, in the discovery answer (0 = not sent: api 1 bridges)
         self.hostname = hostname
         self.prefix = prefix
         self.net_file = net_file
@@ -328,6 +331,8 @@ class Wifi:
             answer["label"] = self.label
         if self.kind:
             answer["kind"] = self.kind
+        if self.api:
+            answer["api"] = self.api        # contract v2: the app knows the version before asking anything
         return json.dumps(answer)
 
     async def _discovery(self):
@@ -340,7 +345,7 @@ class Wifi:
             try:
                 while udp.ready(poll):
                     data, addr = sock.recvfrom(64)
-                    if data.strip() == b"AMPLINK?":
+                    if data.strip() in PROBES:
                         sock.sendto(self.answer().encode(), addr)
             except OSError:
                 pass                    # fila vazia (sem poll) ou o Wi-Fi caiu no meio

@@ -9,10 +9,10 @@ Este arquivo é da base comum (amp-link, firmware-base/): mude lá e copie com o
     python3 tools/enviar.py --estado           # só mostra a versão e o estado do Pico
     python3 tools/enviar.py --voltar           # volta para a versão anterior (guardada no Pico)
 
-Opções: --host e --forcar (envia mesmo sem mudança). O nome da ponte vem do NAME de firmware/device.py (por
+Opções: --host, --forcar (envia mesmo sem mudança) e --publish (release no GitHub para a app DeviceLink). O nome da ponte vem do NAME de firmware/device.py (por
 exemplo "mr780"): o host padrão é <nome>.local, ou a variável <NOME>_HOST. Se o host não responder, procura o Pico
 pela descoberta (broadcast UDP, como a app).
-A senha vem do UPDATE_PASSWORD de firmware/secrets.py (ou da variável <NOME>_PASSWORD).
+Sem senha (contract v2). Pontes com o ota.py antigo ainda pedem o UPDATE_PASSWORD de firmware/secrets.py.
 
 Nunca envia main.py nem secrets.py: esses só pelo cabo, com o mpremote.
 """
@@ -39,6 +39,8 @@ WAIT_S = TRIAL_S + 90           # reinício + Wi-Fi + teste
 
 
 def password():
+    """Only for bridges still running the old ota.py, which asked for one; the current one takes no password.
+    Sent when firmware/secrets.py (or <NAME>_PASSWORD) has it, ignored by bridges that don't need it."""
     if os.environ.get(NAME.upper() + "_PASSWORD"):
         return os.environ[NAME.upper() + "_PASSWORD"]
     values = {}
@@ -47,10 +49,7 @@ def password():
             exec(f.read(), values)
     except OSError:
         pass
-    if not values.get("UPDATE_PASSWORD"):
-        sys.exit("Falta a senha: ponha UPDATE_PASSWORD = \"...\" em firmware/secrets.py "
-                 "(e o mesmo secrets.py no Pico, pelo cabo).")
-    return values["UPDATE_PASSWORD"]
+    return values.get("UPDATE_PASSWORD") or None
 
 
 def request(host, method, path, body=None, pw=None, timeout=10):
@@ -87,7 +86,31 @@ def show(st):
         st["version"], st["state"], "  (%s)" % st["why"] if st.get("why") else ""))
     print("Versão anterior guardada: %s" % (st["previous"] or "nenhuma"))
     if not st["enabled"]:
-        print("A atualização pelo Wi-Fi está DESLIGADA: falta UPDATE_PASSWORD no secrets.py do Pico.")
+        print("This bridge runs the old ota.py, which needs UPDATE_PASSWORD in its secrets.py.")
+
+
+def publish(repo):
+    """Publishes firmware/ as a GitHub release of repo, for the DeviceLink app (docs/contract-v2.md, Updates):
+    tag = the version, assets = the program files and firmware.json {"version", "files": {name: sha256}}."""
+    import subprocess
+    import tempfile
+    files = local_files(None)
+    digests = {n: sha(d) for n, d in files.items()}
+    ver = version(digests)
+    with tempfile.TemporaryDirectory() as tmp:
+        paths = []
+        for name, data in files.items():
+            path = os.path.join(tmp, name)
+            with open(path, "wb") as f:
+                f.write(data)
+            paths.append(path)
+        manifest = os.path.join(tmp, "firmware.json")
+        with open(manifest, "w") as f:
+            json.dump({"version": ver, "files": digests}, f, indent=1, sort_keys=True)
+        subprocess.run(["gh", "release", "create", ver, "--repo", repo, "--title", "Firmware " + ver,
+                        "--notes", "Bridge firmware %s (%d files)." % (ver, len(files)), manifest] + paths,
+                       check=True)
+    print("Published %s as release %s of %s." % (", ".join(sorted(files)), ver, repo))
 
 
 def local_files(names):
@@ -208,7 +231,12 @@ def main():
     ap.add_argument("--estado", action="store_true", help="só mostra o estado")
     ap.add_argument("--voltar", action="store_true", help="volta para a versão anterior")
     ap.add_argument("--forcar", action="store_true", help="envia mesmo os arquivos sem mudança")
+    ap.add_argument("--publish", action="store_true",
+                    help="publish firmware/ as a GitHub release (device.FIRMWARE repo), for the DeviceLink app")
     args = ap.parse_args()
+    if args.publish:
+        from device import FIRMWARE as repo
+        return publish(repo)
     host = args.host
 
     try:

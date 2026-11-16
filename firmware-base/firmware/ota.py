@@ -1,23 +1,21 @@
-"""Atualização do programa pelo Wi-Fi, com senha e volta automática.
+"""Firmware update over Wi-Fi, with automatic rollback.
 
-Este arquivo é da base comum (amp-link, firmware-base/): mude lá e copie com o copiar.py, nunca aqui.
+This file belongs to the shared base (amp-link, firmware-base/): change it there and copy it with copiar.py, never here.
 
-No computador, quem usa isto é o tools/enviar.py. Os pedidos com senha levam o
-cabeçalho "X-Password: <secrets.UPDATE_PASSWORD>" (sem essa linha no secrets.py,
-a atualização fica desligada).
+Used by tools/enviar.py on the computer and by the DeviceLink app (docs/contract-v2.md). No password: the routes are on
+the home LAN only, and a bad version rolls itself back.
 
-    GET  /update            estado: versão, arquivos (sha256), arquivos recebidos
-    PUT  /update/<nome>.py  recebe um arquivo em new/ (confere a sintaxe)     [senha]
-    DELETE /update/<nome>.py  marca o arquivo para apagar no próximo apply   [senha]
-    POST /update/cancel     apaga o que foi recebido e não aplicado            [senha]
-    POST /update/apply      guarda a versão atual em old/, aplica new/, reinicia [senha]
+    GET    /update            state: version, files (sha256), staged files
+    PUT    /update/<name>.py  receives a file into new/ (checks its syntax)
+    DELETE /update/<name>.py  marks a file for deletion at the next apply
+    POST   /update/cancel     drops what was received and not applied
+    POST   /update/apply      keeps the running version in old/, applies new/, restarts
+    POST   /update/rollback   goes back to the version in old/ and restarts
 
-Apagar também passa pelo old/: se a versão nova falhar, o main.py traz o arquivo de volta.
-    POST /update/rollback   volta para a versão de old/ e reinicia             [senha]
+Deleting also goes through old/: if the new version fails, main.py brings the file back.
 
-Depois do apply, a versão nova fica "em teste" (update.json, state "trial"). O
-ponte.py chama confirm() quando ela se mostra saudável; se não chamar, o main.py
-devolve a versão anterior (ver main.py, que só se troca pelo cabo).
+After apply the new version is on trial (update.json, state "trial"). The bridge program calls confirm() once it proves
+healthy; if it doesn't, main.py restores the previous version (see main.py, which only changes over USB).
 """
 
 import os
@@ -27,7 +25,6 @@ import asyncio
 import machine
 from binascii import hexlify
 
-import secrets
 from web import reply_json
 
 MARKER = "update.json"          # os mesmos nomes do main.py
@@ -143,7 +140,7 @@ def status():
     files = _files()
     return {"version": version(files), "state": m.get("state", "ok"), "why": m.get("why"),
             "previous": version(_files(OLD)) if _ls(OLD) else None, "files": files,
-            "staged": _ls(NEW), "enabled": hasattr(secrets, "UPDATE_PASSWORD"), "can_delete": True}
+            "staged": _ls(NEW), "enabled": True, "can_delete": True}
 
 
 def _valid_name(name):
@@ -239,15 +236,7 @@ async def handle(req, writer):
     """Rota /update (ver web.Publisher)."""
     if req.method == "GET" and req.path == "/update":
         return await reply_json(writer, status())
-    password = getattr(secrets, "UPDATE_PASSWORD", None)
-    if not password or req.headers.get("x-password") != password:
-        await _discard(req)
-    if not password:
-        return await reply_json(writer, {"error": "updates are off: no UPDATE_PASSWORD in secrets.py"},
-                                "403 Forbidden")
-    if req.headers.get("x-password") != password:
-        await asyncio.sleep(1)          # atrasa quem tenta adivinhar a senha
-        return await reply_json(writer, {"error": "wrong password"}, "403 Forbidden")
+    # No password (contract v2, decided 2026-11-16): home LAN only, and a bad version rolls itself back.
     action = req.path[len("/update/"):]
     try:
         if req.method == "PUT":

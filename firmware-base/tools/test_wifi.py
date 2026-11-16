@@ -177,7 +177,11 @@ assert json.loads(net.answer()) == {"name": "DEMO-D85E", "model": "demo", "ip": 
 net.label, net.kind = "Demo Player", "cd_player"
 assert json.loads(net.answer()) == {"name": "DEMO-D85E", "model": "demo", "ip": "192.168.4.1",
                                     "label": "Demo Player", "kind": "cd_player"}
-net.label, net.kind = "", ""
+# Contract v2 bridges also say their api, and answer the DeviceLink probe as well as the old one.
+net.api = 2
+assert json.loads(net.answer())["api"] == 2
+assert wifi.PROBES == (b"AMPLINK?", b"DEVICELINK?")
+net.label, net.kind, net.api = "", "", 0
 
 # --- configurar: PUT /wifi, conecta, salva, e a rede de configuração fecha 60 s depois ---
 
