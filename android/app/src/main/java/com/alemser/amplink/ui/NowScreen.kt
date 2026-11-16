@@ -70,12 +70,20 @@ fun NowScreen(client: BridgeClient, device: Device, modifier: Modifier = Modifie
         }
         Hint(linkText(link, state))
         commands.error?.let { Hint(it, MaterialTheme.colorScheme.error) }
-        if (control && state?.power != null) {
+        // Always offered: after the bridge restarts with the amp in standby, power stays unknown (null) until the amp
+        // shows something, and the key is the only way to wake it. power_toggle works in standby (contract-v1).
+        if (control && state != null) {
             OutlinedButton(
                 onClick = { commands.run { client.key("power_toggle") } },
                 enabled = !commands.working,
                 modifier = Modifier.fillMaxWidth(),
-            ) { Text(if (state.power == "on") "Standby" else "Turn on") }
+            ) {
+                Text(when (state.power) {
+                    "on" -> "Standby"
+                    "standby" -> "Turn on"
+                    else -> "Power (on / standby)"
+                })
+            }
         }
         Volume(state, device.volumeDb, on, commands.working) { up -> step("volume", up) }
         Tile("Input", state?.inputName ?: "—", state?.input?.takeIf { it != state.inputName })
