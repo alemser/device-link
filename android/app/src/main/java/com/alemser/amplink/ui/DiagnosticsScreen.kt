@@ -37,7 +37,7 @@ import java.io.IOException
 /** The contract's limit for repeating `/bus.json`. */
 private const val REFRESH_MS = 2_000L
 
-/** Near this, the longest pause is the 10 s lwIP freeze (issue #2 of sp103-display-proxy). */
+/** Near this, the longest pause is the 10 s lwIP freeze (issue #2 of sp103-mod). */
 private const val FREEZE_MS = 9_000L
 
 @Composable

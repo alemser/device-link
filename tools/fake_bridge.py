@@ -12,7 +12,7 @@ import os
 import sys
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
-FIRMWARE = sys.argv[1] if len(sys.argv) > 1 else os.path.expanduser("~/Projects/sp103-display-proxy/firmware")
+FIRMWARE = sys.argv[1] if len(sys.argv) > 1 else os.path.expanduser("~/Projects/sp103-mod/firmware")
 PORT = int(sys.argv[2]) if len(sys.argv) > 2 else 8080
 sys.path.insert(0, FIRMWARE)
 

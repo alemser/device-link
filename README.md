@@ -18,7 +18,7 @@ The app lists every device on the Wi-Fi by itself, marks a new one, and opens ea
 device's own description for an `api` 2 device, the amplifier tabs for an `api` 1 one. It sets up a new device's Wi-Fi
 through the `AmpLink-…` network the device opens, and updates `api` 2 devices from their GitHub releases.
 
-Each device's firmware lives in its own repository: the Acoustic Solutions SP103's in `sp103-display-proxy`, the Magnat
+Each device's firmware lives in its own repository: the Acoustic Solutions SP103's in `sp103-mod`, the Magnat
 MR 780's in `mr780-mod` and the Yamaha CD-S300's in `cds300-mod`. The common part comes from `firmware-base/`.
 
 A personal project: the app is Android-only, not on the Play Store.

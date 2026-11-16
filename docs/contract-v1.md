@@ -84,7 +84,7 @@ plus a `: ping` comment every second.
 
 The fields groove-rig reads (`power`, `volume_db`, `input_id`, `bass_db`, `treble_db`, `balance`, `loudness`,
 `speakers`) follow groove-rig's `docs/state-provider.md`, their authoritative text. Their meanings and values on the
-SP103 are in `sp103-display-proxy`'s `docs/api-estado.md`. The others are extras:
+SP103 are in `sp103-mod`'s `docs/api-estado.md`. The others are extras:
 
 | Field | Meaning |
 |---|---|
@@ -175,7 +175,7 @@ switches the input to PHONO for about 1 s, until the bridge puts the previous on
 ## Wi-Fi and discovery (`wifi_setup`)
 
 To set up a bridge's Wi-Fi without a cable and find it without typing an IP. Decided and bench-tested on 2026-11-08;
-the bridge side's details are in sp103-display-proxy's `docs/wifi.md`.
+the bridge side's details are in sp103-mod's `docs/wifi.md`.
 
 **Discovery.** The client sends `AMPLINK?` by UDP broadcast to port **47800**, three times over about 2 s (the first
 packet is sometimes lost), and each bridge answers the sender:
