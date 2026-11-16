@@ -32,6 +32,9 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.repeatOnLifecycle
+import com.alemser.amplink.core.BridgeClient
+import com.alemser.amplink.core.DEVICELINK_API
+import com.alemser.amplink.core.FoundBridge
 import com.alemser.amplink.core.KnownDevices
 import com.alemser.amplink.core.ListedDevice
 import com.alemser.amplink.core.LocalNetwork
@@ -60,7 +63,7 @@ fun DevicesScreen(
             while (true) {
                 searching = true
                 val found = runCatching { discover(open = local::wifiSocket) }.getOrDefault(emptyList())
-                devices = known.update(found)
+                devices = known.update(found.map { withLabel(it, known) })
                 searching = false
                 delay(ROUND_MS)
             }
@@ -87,6 +90,18 @@ fun DevicesScreen(
             Text("Set up a new device's Wi-Fi")
         }
     }
+}
+
+/**
+ * An api 1 bridge's discovery answer has no label or kind (today's SP103): api 1 is the amplifier contract, so the kind
+ * is "amplifier", and the label is the model from its `/device`, asked once and then remembered with the device.
+ */
+private suspend fun withLabel(bridge: FoundBridge, known: KnownDevices): FoundBridge {
+    if (bridge.label.isNotEmpty()) return bridge
+    val kind = bridge.kind.ifEmpty { if (bridge.api < DEVICELINK_API) "amplifier" else "" }
+    val label = known.get(bridge.name)?.label?.takeIf { it.isNotEmpty() }
+        ?: runCatching { BridgeClient(bridge.ip).device().model }.getOrDefault("")
+    return bridge.copy(label = label, kind = kind)
 }
 
 @Composable

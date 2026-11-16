@@ -44,7 +44,7 @@ sealed interface Feed {
 /** `Names` and the `config` exactly as it came, so a save keeps what this app doesn't know. */
 data class NamesReply(val names: Names, val rawConfig: JsonObject)
 
-/** The rules in "Para o cliente" of docs/contrato.md live here and in the screens that call this. */
+/** The rules in "For the client" of docs/contract-v1.md live here and in the screens that call this. */
 class BridgeClient(val host: String) {
     private val http = OkHttpClient.Builder()
         .connectTimeout(CONNECT_TIMEOUT_S, TimeUnit.SECONDS)

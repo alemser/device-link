@@ -29,6 +29,9 @@ class KnownDevices(private val prefs: SharedPreferences) {
         return list()
     }
 
+    /** What the list last knew about [name], if anything (an api 1 bridge's label is filled in from its /device). */
+    fun get(name: String): FoundBridge? = known[name]
+
     fun list(): List<ListedDevice> = known.values
         .map { ListedDevice(it, (missed[it.name] ?: MISSED_OFFLINE) < MISSED_OFFLINE, it.name in fresh) }
         .sortedWith(compareBy({ !it.online }, { it.bridge.title }))

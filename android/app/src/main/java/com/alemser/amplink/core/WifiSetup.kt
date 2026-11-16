@@ -18,7 +18,7 @@ import java.net.SocketTimeoutException
 import java.util.concurrent.TimeUnit
 
 /**
- * Wi-Fi without a cable and without typing the IP (docs/contrato.md, "Wi-Fi e descoberta").
+ * Wi-Fi without a cable and without typing the IP (docs/contract-v1.md, "Wi-Fi and discovery").
  *
  * A bridge with no working Wi-Fi opens its own network, named [SETUP_PREFIX] + its name, with the fixed
  * [SETUP_KEY]. The app joins it and uses [WifiSetupClient] at [SETUP_HOST]. On the home network, [discover] finds

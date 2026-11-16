@@ -1,14 +1,15 @@
 #!/usr/bin/env python3
-"""Copia a base comum para o projeto de uma ponte, ou confere se as cópias estão em dia.
+"""Copies the shared base into a bridge's project, or checks that the copies are up to date.
 
-Rodar na pasta do projeto (a que tem firmware/ e tools/):
+Run from the project folder (the one with firmware/ and tools/), or pass it:
 
-    python3 ../amp-link/firmware-base/copiar.py                # copia o que mudou
-    python3 ../amp-link/firmware-base/copiar.py --conferir     # só confere; sai com erro se algo difere
-    python3 ../amp-link/firmware-base/copiar.py --sem firmware/main.py    # deixa esse arquivo como está
+    python3 ../amp-link/firmware-base/copiar.py                # copies what changed
+    python3 ../amp-link/firmware-base/copiar.py --check        # only checks; fails if anything differs
+    python3 ../amp-link/firmware-base/copiar.py --skip firmware/main.py    # leaves that file as it is
 
-Os arquivos vão iguais, byte a byte. Uma cópia diferente da base quer dizer que alguém a mudou no projeto: leve a
-mudança para a base antes de copiar, porque a cópia a apaga.
+The files go byte for byte. A copy that differs from the base means someone changed it in the project: take the
+change to the base before copying, because the copy overwrites it. The old Portuguese flags (--conferir, --sem) still
+work.
 """
 
 import argparse
@@ -20,7 +21,7 @@ FOLDERS = ("firmware", "tools")
 
 
 def base_files():
-    """Os arquivos da base, como "firmware/wifi.py"."""
+    """The base's files, as "firmware/wifi.py"."""
     out = []
     for folder in FOLDERS:
         for name in sorted(os.listdir(os.path.join(HERE, folder))):
@@ -39,25 +40,26 @@ def read(path):
 
 def main():
     ap = argparse.ArgumentParser(description=__doc__.split("\n")[0])
-    ap.add_argument("project", nargs="?", default=".", help="a pasta do projeto (padrão: a atual)")
-    ap.add_argument("--conferir", action="store_true", help="não copia: só diz o que difere")
-    ap.add_argument("--sem", action="append", default=[], metavar="ARQUIVO",
-                    help="arquivo que este projeto mantém por conta própria (pode repetir)")
+    ap.add_argument("project", nargs="?", default=".", help="the project folder (default: the current one)")
+    ap.add_argument("--check", "--conferir", dest="check", action="store_true",
+                    help="don't copy: only say what differs")
+    ap.add_argument("--skip", "--sem", dest="skip", action="append", default=[], metavar="FILE",
+                    help="a file this project keeps on its own (repeatable)")
     args = ap.parse_args()
 
     project = os.path.abspath(args.project)
     if not os.path.isdir(os.path.join(project, "firmware")):
-        sys.exit("%s não tem a pasta firmware/: rode na pasta do projeto da ponte." % project)
+        sys.exit("%s has no firmware/ folder: run it in the bridge's project folder." % project)
     if os.path.samefile(project, HERE):
-        sys.exit("Esta é a própria base. Rode na pasta do projeto da ponte.")
-    for skipped in args.sem:
+        sys.exit("This is the base itself. Run it in the bridge's project folder.")
+    for skipped in args.skip:
         if skipped not in base_files():
-            sys.exit("--sem %s: a base não tem esse arquivo." % skipped)
+            sys.exit("--skip %s: the base has no such file." % skipped)
 
     differs = 0
     for rel in base_files():
-        if rel in args.sem:
-            print("  %-28s por conta do projeto" % rel)
+        if rel in args.skip:
+            print("  %-28s kept by the project" % rel)
             continue
         want = read(os.path.join(HERE, rel))
         target = os.path.join(project, rel)
@@ -65,19 +67,19 @@ def main():
         if have == want:
             continue
         differs += 1
-        what = "falta" if have is None else "difere da base"
-        if args.conferir:
+        what = "missing" if have is None else "differs from the base"
+        if args.check:
             print("  %-28s %s" % (rel, what))
             continue
         os.makedirs(os.path.dirname(target), exist_ok=True)
         with open(target, "wb") as f:
             f.write(want)
-        print("  %-28s copiado (%s)" % (rel, "novo" if have is None else "estava diferente"))
+        print("  %-28s copied (%s)" % (rel, "new" if have is None else "was different"))
 
     if not differs:
-        print("Tudo em dia com a base.")
-    elif args.conferir:
-        sys.exit("%d arquivo(s) fora de dia com a base." % differs)
+        print("Up to date with the base.")
+    elif args.check:
+        sys.exit("%d file(s) out of date with the base." % differs)
 
 
 if __name__ == "__main__":

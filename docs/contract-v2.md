@@ -1,6 +1,6 @@
 # DeviceLink contract, `api` 2 (draft)
 
-**Draft, 2026-11-16.** Successor of `docs/contrato.md` (`api` 1, the amplifier-only contract). Written for three
+**Draft, 2026-11-16.** Successor of `docs/contract-v1.md` (`api` 1, the amplifier-only contract). Written for three
 devices: the Acoustic Solutions SP103 and the Magnat MR 780 (amplifiers) and the Yamaha CD-S300 (CD player). Nothing
 here is implemented yet; the CD-S300 bridge already serves part of it (`kind`, `keys`, the `transport`/`media`/`disc`
 state groups).

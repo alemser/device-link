@@ -5,7 +5,7 @@ import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonNamingStrategy
 
-/** The JSON of the bridge contract (docs/contrato.md). A missing or null field means "not known". */
+/** The JSON of the bridge contract (docs/contract-v1.md). A missing or null field means "not known". */
 @OptIn(ExperimentalSerializationApi::class)
 val Wire: Json = Json {
     namingStrategy = JsonNamingStrategy.SnakeCase
@@ -15,7 +15,7 @@ val Wire: Json = Json {
     encodeDefaults = true
 }
 
-/** The contract version of today's amplifier bridges (docs/contrato.md): shown with the amplifier tabs. */
+/** The contract version of today's amplifier bridges (docs/contract-v1.md): shown with the amplifier tabs. */
 const val SUPPORTED_API = 1
 
 /** The DeviceLink contract (docs/contract-v2.md): the device describes itself and the app builds its screen. */

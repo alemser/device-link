@@ -1,48 +1,50 @@
-# A base comum das pontes
+# The bridges' shared base
 
-O que toda ponte tem, seja de qual aparelho for: o Wi-Fi sem cabo, a descoberta, a atualização pelo Wi-Fi e o servidor
-HTTP. Fica aqui num lugar só. Cada projeto de ponte recebe uma **cópia igual**, feita pelo `copiar.py`, e o
-MicroPython do Pico roda a cópia.
+What every bridge has, whatever the device: cable-free Wi-Fi setup, discovery, updates over Wi-Fi and the HTTP server.
+It lives here in one place. Each bridge project gets an **identical copy**, made by `copiar.py`, and the Pico's
+MicroPython runs the copy.
 
-## O que tem
+## What's in it
 
-| Arquivo | O que faz |
+| File | What it does |
 |---|---|
-| `firmware/wifi.py` | A rede de casa, a rede de configuração `AmpLink-…` e a descoberta (contrato, "Wi-Fi e descoberta") |
-| `firmware/web.py` | O servidor HTTP: `/state`, `/events` e as rotas que a ponte registra |
-| `firmware/listeners.py` | Quem pode ficar ligado no `/events` |
-| `firmware/ota.py` | A atualização pelo Wi-Fi, com senha e volta automática |
-| `firmware/main.py` | O porteiro das atualizações. Importa o `ponte.py` do projeto. Só vai ao Pico pelo cabo |
-| `firmware/udp.py` | Ler um socket UDP sem esperar |
-| `tools/enviar.py` | Envia o programa novo para o Pico pelo Wi-Fi |
-| `tools/test_wifi.py`, `tools/test_listeners.py` | Os testes da base, no computador |
+| `firmware/wifi.py` | The home network, the `AmpLink-…` setup network and discovery (`docs/contract-v2.md`, Discovery) |
+| `firmware/web.py` | The HTTP server: `/state`, `/events` and the routes the bridge registers |
+| `firmware/listeners.py` | Who may stay on `/events` |
+| `firmware/ota.py` | Updates over Wi-Fi, with automatic rollback, no password |
+| `firmware/main.py` | The update gatekeeper. Imports the project's `ponte.py`. Goes to the Pico by USB only |
+| `firmware/udp.py` | Reading a UDP socket without waiting |
+| `tools/enviar.py` | Sends the new program to the Pico over Wi-Fi; `--publish` makes the GitHub release the DeviceLink app updates from |
+| `tools/test_wifi.py`, `tools/test_listeners.py` | The base's tests, on the computer |
 
-## O que cada projeto precisa ter
+## What each project needs
 
-- `firmware/device.py` com `NAME` (por exemplo `"mr780"`): o nome da ponte na descoberta e na rede. O
-  `tools/enviar.py` lê esse nome.
-- `firmware/ponte.py`: o programa da ponte, que o `main.py` importa.
-- `firmware/secrets.py` (fora do git), a partir do `secrets.example.py` do projeto.
+- `firmware/device.py` with `NAME` (e.g. `"mr780"`, the bridge's name in discovery and on the network) and, for
+  `--publish`, `FIRMWARE` (the GitHub repository whose releases carry the firmware). `tools/enviar.py` reads both.
+- `firmware/ponte.py`: the bridge's program, which `main.py` imports.
 
-## Usar
+## Use
 
-Na pasta do projeto da ponte:
+From the bridge's project folder:
 
 ```sh
-python3 ../amp-link/firmware-base/copiar.py              # copia o que mudou
-python3 ../amp-link/firmware-base/copiar.py --conferir   # só confere
+python3 ../amp-link/firmware-base/copiar.py           # copies what changed
+python3 ../amp-link/firmware-base/copiar.py --check   # only checks
 ```
 
-Depois, os testes do projeto e o commit das cópias no repositório dele.
+Then the project's tests, and a commit of the copies in its repository.
 
-**Mudar um arquivo da base:** mudar aqui, rodar os testes daqui (`python3 firmware-base/tools/test_wifi.py` e
-`test_listeners.py`), e copiar para cada projeto. Nunca mudar a cópia: a próxima cópia apaga a mudança, e o
-`--conferir` acusa.
+**Changing a base file:** change it here, run the tests here (`python3 firmware-base/tools/test_wifi.py` and
+`test_listeners.py`), and copy it into each project. Never change a copy: the next copy overwrites it, and `--check`
+reports it.
 
-## Quem usa
+The tools keep their Portuguese file names (`copiar.py`, `enviar.py`, the projects' `ponte.py`) because projects and
+the Picos refer to them; a bridge's `main.py` imports `ponte` and only changes over USB.
 
-| Projeto | Situação |
+## Who uses it
+
+| Project | Status |
 |---|---|
-| `mr780-mod` | Usa a base (2026-11-16) |
-| `cds300-mod` | Usa a base (2026-11-16) |
-| `sp103-display-proxy` | **Ainda não.** A base saiu dos arquivos dele, mas o `web.py` de lá tem o `/names` dentro e o `main.py` importa o `escuta.py` e escreve no LCD. O `wifi.py`, o `ota.py`, o `udp.py` e o `listeners.py` só diferem em comentários |
+| `mr780-mod` | Uses the base (2026-11-16) |
+| `cds300-mod` | Uses the base (2026-11-16), on contract `api` 2 |
+| `sp103-display-proxy` | **Not yet.** The base came out of its files, but its `web.py` carries `/names` and its `main.py` imports `escuta.py` and writes to the LCD. Its `wifi.py`, `ota.py`, `udp.py` and `listeners.py` only differ in comments and in the newer changes here |
