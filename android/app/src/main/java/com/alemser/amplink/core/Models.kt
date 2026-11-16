@@ -155,9 +155,6 @@ data class InfoConfig(
     val mode: String = "temp",
     val show: List<String> = emptyList(),
     val secs: Int = 8,
-    val clock: Boolean = true,
-    val utcOffset: Double = 0.0,
-    val euDst: Boolean = true,
     val source: String = "",
     val turntable: List<String> = emptyList(),
 )

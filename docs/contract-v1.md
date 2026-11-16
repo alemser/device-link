@@ -102,8 +102,7 @@ SP103 are in `sp103-display-proxy`'s `docs/api-estado.md`. The others are extras
 {"config": {"inputs": {"TUNER": "Rega Planar 2"}, "boot": ["", ""], "about": ["Oceano Amp", "AS SP103"],
             "vu": {"on": true, "auto": true, "layout": "deck", "relay": "192.168.178.99"},
             "info": {"on": true, "mode": "temp", "show": ["stylus", "quality"],
-                     "secs": 8, "clock": true, "utc_offset": 0, "eu_dst": true,
-                     "source": "", "turntable": ["PHONO", "TUNER", "CD"]}},
+                     "secs": 8, "source": "", "turntable": ["PHONO", "TUNER", "CD"]}},
  "inputs": ["PHONO", "TUNER", "TAPE/AUX", "CD", "DVD", "DAB"],
  "defaults": {"boot": ["ACOUSTIC", "SOLUTIONS"], "about": ["Amplifier SP103", "SW version 1.0"]},
  "proxy": {"reads": 11968, "writes": 11968, "busy_high": 0},
@@ -130,11 +129,10 @@ the field and sends the whole `config` (`api` 2's `PATCH /settings` fixes this).
 | `vu.layout` | `bars`, `deck`, `scale` or `kx393` |
 | `vu.relay` | IPv4 of the VU source. Empty by default; required with `vu.on` true |
 | `vu.auto` | Always `true`; the bridge ignores the value sent |
-| `info.on`, `clock`, `eu_dst` | Booleans |
+| `info.on` | Boolean. (`clock`, `utc_offset` and `eu_dst`, the standby clock removed on 2026-11-16, are accepted and ignored) |
 | `info.mode` | `temp` (each screen comes in for `secs`) or `fixed` (the current input's screen all the time; no VU) |
 | `info.show` | A list with `stylus` (the `turntable` inputs) and/or `quality` (Bluetooth on DAB). `track`, `pos` and `side` (screens removed on 2026-11-07) are accepted and ignored, as are `fixed`, `alert` and `scroll` |
 | `info.secs` | Integer from 3 to 60 |
-| `info.utc_offset` | Hours from −12 to 14, in quarter hours |
 | `info.source` | IPv4, or empty to use `vu.relay`'s |
 | `info.turntable` | A list of inputs, by their original names |
 

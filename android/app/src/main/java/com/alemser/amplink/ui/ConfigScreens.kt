@@ -40,7 +40,6 @@ import com.alemser.amplink.core.isIpv4
 import com.alemser.amplink.core.lcdText
 import com.alemser.amplink.core.relayInvalid
 import kotlinx.coroutines.launch
-import java.util.Locale
 
 private val VU_LAYOUTS = listOf(
     "bars" to "Thin bars",
@@ -58,9 +57,6 @@ private val INFO_NOTES = mapOf("stylus" to "On the turntable inputs", "quality" 
 
 private const val SECS_MIN = 3
 private const val SECS_MAX = 60
-private const val UTC_MIN = -12.0
-private const val UTC_MAX = 14.0
-private const val UTC_STEP = 0.25
 private const val DEFAULT_COLUMNS = 16
 
 /** The shell of both configuration screens: one `/names` when the screen opens, then only saves. */
@@ -181,18 +177,6 @@ private fun InfoSection(store: ConfigStore, info: InfoConfig, config: Config, na
                     }
                 }
             }
-        }
-        Section("Clock") {
-            SwitchRow("Clock in standby", info.clock) { on -> set { it.copy(clock = on) } }
-            Stepper(
-                "UTC offset",
-                String.format(Locale.US, "%+.2f h", info.utcOffset),
-                info.utcOffset > UTC_MIN,
-                info.utcOffset < UTC_MAX,
-                { set { it.copy(utcOffset = it.utcOffset - UTC_STEP) } },
-                { set { it.copy(utcOffset = it.utcOffset + UTC_STEP) } },
-            )
-            SwitchRow("Summer time", info.euDst, "European rule (+1 h)") { on -> set { it.copy(euDst = on) } }
         }
         Section("Source") {
             IpField(
