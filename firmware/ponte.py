@@ -28,7 +28,8 @@ class State:
 
 
 state = State()
-net = Wifi(model="mr780", hostname="mr780", prefix="MR780")
+net = Wifi(model=device.NAME, hostname=device.NAME, prefix=device.NAME.upper(),
+           label=device.MODEL, kind=device.KIND)
 pub = None
 wifi_ok = False
 

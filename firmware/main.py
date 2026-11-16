@@ -1,8 +1,9 @@
 """Roda sozinho toda vez que o Pico liga (o MicroPython executa o main.py ao ligar).
 
-Copiado do sp103-display-proxy (2026-11-09). O programa é a ponte (ponte.py). Para parar e
-voltar ao computador, basta usar o mpremote: ele interrompe o programa (Ctrl-C) antes de
-cada comando.
+Este arquivo é da base comum (amp-link, firmware-base/): mude lá e copie com o copiar.py, nunca aqui.
+
+O programa é a ponte (ponte.py, de cada projeto). Para parar e voltar ao computador, basta usar o
+mpremote: ele interrompe o programa (Ctrl-C) antes de cada comando.
 
 Atualização pelo Wi-Fi (ota.py, tools/enviar.py): este arquivo é o "porteiro" que
 devolve a versão anterior se a nova falhar. Por isso ele NÃO usa nenhum outro

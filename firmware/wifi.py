@@ -1,12 +1,12 @@
 """Wi-Fi do Pico: a rede de casa, a rede de configuração e a descoberta pela app.
 
-Copiado do sp103-display-proxy (2026-11-09): uma correção aqui provavelmente vale lá, e vice-versa.
+Este arquivo é da base comum (amp-link, firmware-base/): mude lá e copie com o copiar.py, nunca aqui.
 
 A rede de casa fica no wifi.json (gravado pela configuração, nunca pelo OTA). Sem ele, vale a do secrets.py
 (WIFI_SSID e WIFI_PASSWORD), para os Picos instalados antes desta versão.
 
 Sem rede salva, ou sem conseguir conectar por OPEN_SETUP_AFTER_S, o Pico abre a rede de configuração
-"AmpLink-MR780-XXXX" (WPA2, senha SETUP_KEY, a mesma em todos os Picos; a app conhece) e continua tentando a rede
+"AmpLink-<PREFIXO>-XXXX" (WPA2, senha SETUP_KEY, a mesma em todos os Picos; a app conhece) e continua tentando a rede
 salva. Toda rede de configuração começa com SETUP_PREFIX: a app pede ao Android "uma rede que começa com AmpLink-" e
 serve para qualquer amp.
 Quem entra nela (a app, ou o navegador em http://192.168.4.1/) usa as rotas abaixo. Depois de conectar, a rede de
@@ -23,10 +23,12 @@ configuração fecha sozinha em CLOSE_SETUP_AFTER_S, tempo para quem configurou 
     GET    /                a página de configuração, só com a rede de configuração aberta
 
 Descoberta: a app manda "AMPLINK?" por broadcast UDP na porta DISCOVERY_PORT e o Pico responde
-{"name", "model", "ip"}. Assim a app acha o Pico sem IP fixo.
+{"name", "model", "ip"}, mais "label" (o nome completo, para mostrar) e "kind" (o tipo de aparelho) quando a ponte os
+informa. Assim a app acha o Pico sem IP fixo e já sabe o que achou.
 
 Uso (com asyncio):
-    net = Wifi(model="mr780", hostname="mr780", prefix="MR780")
+    net = Wifi(model="mr780", hostname="mr780", prefix="MR780",     # cada ponte com os seus (device.py)
+               label="Magnat MR 780", kind="amplifier")
     asyncio.create_task(net.task(aviso))      # aviso(ok, info) uma vez, como antes; nunca levanta erro
     routes={"/wifi": net.handle, "/": net.page, ...}
 """
@@ -98,8 +100,10 @@ def collapse(scan, limit=MAX_NETWORKS):
 
 
 class Wifi:
-    def __init__(self, model, hostname, prefix, net_file=NET_FILE, retry_s=30, quick_tries=3):
+    def __init__(self, model, hostname, prefix, net_file=NET_FILE, retry_s=30, quick_tries=3, label="", kind=""):
         self.model = model
+        self.label = label              # "Magnat MR 780": só para a descoberta
+        self.kind = kind                # "amplifier", "cd_player"
         self.hostname = hostname
         self.prefix = prefix
         self.net_file = net_file
@@ -319,7 +323,12 @@ class Wifi:
             ip = self.sta.ifconfig()[0]
         else:
             ip = self.ap.ifconfig()[0] if self.setup_open() else ""
-        return json.dumps({"name": self.name, "model": self.model, "ip": ip})
+        answer = {"name": self.name, "model": self.model, "ip": ip}
+        if self.label:
+            answer["label"] = self.label
+        if self.kind:
+            answer["kind"] = self.kind
+        return json.dumps(answer)
 
     async def _discovery(self):
         sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)

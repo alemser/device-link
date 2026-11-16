@@ -1,5 +1,7 @@
 """Ler um socket UDP sem esperar, e sem erro quando a fila está vazia (vu.py, info.py).
 
+Este arquivo é da base comum (amp-link, firmware-base/): mude lá e copie com o copiar.py, nunca aqui.
+
 O laço do proxy.py pergunta pelos pacotes umas 1000 vezes por segundo. Com o socket sem
 espera, um recv() com a fila vazia levanta OSError: cada erro é um objeto novo na memória,
 e o lixo faz o coletor rodar mais vezes (cada coleta para o laço por alguns ms). Com o

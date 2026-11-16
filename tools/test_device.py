@@ -15,6 +15,7 @@ import device   # noqa: E402
 
 d = json.loads(json.dumps(device.describe("abcd1234")))
 assert d["api"] == 1
+assert d["kind"] == "amplifier"
 assert d["model"] == "Magnat MR 780"
 assert d["bridge_version"] == "abcd1234"
 assert len(d["inputs"]) == 15

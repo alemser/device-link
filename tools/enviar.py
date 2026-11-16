@@ -1,15 +1,18 @@
 #!/usr/bin/env python3
 """Envia o programa novo para o Pico pelo Wi-Fi (firmware/ota.py) e acompanha até ele confirmar.
 
+Este arquivo é da base comum (amp-link, firmware-base/): mude lá e copie com o copiar.py, nunca aqui.
+
     python3 tools/enviar.py                    # envia o que mudou em firmware/, apaga do Pico
                                                # os .py que não existem mais e aplica
     python3 tools/enviar.py ponte.py web.py    # só esses arquivos (se mudaram)
     python3 tools/enviar.py --estado           # só mostra a versão e o estado do Pico
     python3 tools/enviar.py --voltar           # volta para a versão anterior (guardada no Pico)
 
-Opções: --host (padrão mr780.local, ou a variável MR780_HOST) e --forcar (envia mesmo sem mudança). Se o host não
-responder, procura o Pico pela descoberta (broadcast UDP, como a app).
-A senha vem do UPDATE_PASSWORD de firmware/secrets.py (ou da variável MR780_PASSWORD).
+Opções: --host e --forcar (envia mesmo sem mudança). O nome da ponte vem do NAME de firmware/device.py (por
+exemplo "mr780"): o host padrão é <nome>.local, ou a variável <NOME>_HOST. Se o host não responder, procura o Pico
+pela descoberta (broadcast UDP, como a app).
+A senha vem do UPDATE_PASSWORD de firmware/secrets.py (ou da variável <NOME>_PASSWORD).
 
 Nunca envia main.py nem secrets.py: esses só pelo cabo, com o mpremote.
 """
@@ -28,13 +31,16 @@ import urllib.request
 HERE = os.path.dirname(os.path.abspath(__file__))
 FIRMWARE = os.path.join(HERE, "..", "firmware")
 LOCKED = ("main.py", "secrets.py")
+
+sys.path.insert(0, FIRMWARE)
+from device import NAME   # noqa: E402  (o nome desta ponte na descoberta e na rede)
 TRIAL_S = 180                   # o mesmo do main.py
 WAIT_S = TRIAL_S + 90           # reinício + Wi-Fi + teste
 
 
 def password():
-    if os.environ.get("MR780_PASSWORD"):
-        return os.environ["MR780_PASSWORD"]
+    if os.environ.get(NAME.upper() + "_PASSWORD"):
+        return os.environ[NAME.upper() + "_PASSWORD"]
     values = {}
     try:
         with open(os.path.join(FIRMWARE, "secrets.py")) as f:
@@ -173,7 +179,7 @@ def wait(host, expected, expected_files, started):
     return False
 
 
-def discover(model="mr780", tries=3, listen_s=0.7):
+def discover(model=NAME, tries=3, listen_s=0.7):
     """O IP do Pico pela descoberta do wifi.py (broadcast UDP "AMPLINK?", porta 47800), ou None."""
     import socket
     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -198,7 +204,7 @@ def discover(model="mr780", tries=3, listen_s=0.7):
 def main():
     ap = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     ap.add_argument("files", nargs="*", help="arquivos de firmware/ (padrão: todos os .py)")
-    ap.add_argument("--host", default=os.environ.get("MR780_HOST", "mr780.local"))
+    ap.add_argument("--host", default=os.environ.get(NAME.upper() + "_HOST", NAME + ".local"))
     ap.add_argument("--estado", action="store_true", help="só mostra o estado")
     ap.add_argument("--voltar", action="store_true", help="volta para a versão anterior")
     ap.add_argument("--forcar", action="store_true", help="envia mesmo os arquivos sem mudança")

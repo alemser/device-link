@@ -51,9 +51,12 @@ O manual oficial fica só na cópia local, em `docs/manual/` (tem direitos autor
 
 - `firmware/`: o programa do Pico (MicroPython). `main.py` (o porteiro das atualizações) e `secrets.py` (a senha das
   atualizações, fora do git) só vão pelo cabo; o resto vai pelo Wi-Fi com `python3 tools/enviar.py`. `wifi.py`,
-  `web.py`, `ota.py`, `udp.py` e `listeners.py` foram copiados do `sp103-display-proxy`: uma correção num vale para o
-  outro.
-- `tools/`: testes no computador (`python3 tools/test_wifi.py`, `python3 tools/test_device.py`) e o `enviar.py`.
+  `web.py`, `ota.py`, `udp.py`, `listeners.py` e o próprio `main.py` são **cópias da base comum** (repositório
+  `amp-link`, pasta `firmware-base/`): mudar lá e copiar com `python3 ../amp-link/firmware-base/copiar.py`, nunca
+  aqui.
+- `tools/`: testes no computador (`python3 tools/test_wifi.py`, `python3 tools/test_listeners.py`,
+  `python3 tools/test_device.py`) e o `enviar.py`. O `enviar.py`, o `test_wifi.py` e o `test_listeners.py` também
+  vêm da base.
 
 ## Instalar no Pico (pelo cabo, uma vez)
 

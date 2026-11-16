@@ -10,7 +10,9 @@ describe() roda igual no MicroPython (Pico) e no Python do computador (tools/tes
 """
 
 API = 1                         # só muda quando algo deixa de ser compatível
-MODEL = "Magnat MR 780"
+NAME = "mr780"                  # o nome na descoberta e na rede (mr780.local, AmpLink-MR780-XXXX); o enviar.py lê
+KIND = "amplifier"
+MODEL = "Magnat MR 780"         # o nome completo: vai no /device e, como "label", na descoberta
 COLUMNS, ROWS = 16, 2           # o VFD: 2 linhas de 16 caracteres (docs/pesquisa-display.md)
 FEATURES = ("update", "wifi_setup")
 
@@ -22,7 +24,7 @@ INPUTS = (("usb_audio", "USB"), ("bluetooth", "BT"), ("phono", "PHONO"), ("cd", 
 
 
 def describe(version):
-    return {"api": API, "model": MODEL, "bridge_version": version,
+    return {"api": API, "kind": KIND, "model": MODEL, "bridge_version": version,
             "inputs": [{"id": i, "name": name} for i, name in INPUTS],
             "display": {"columns": COLUMNS, "rows": ROWS},
             "features": list(FEATURES)}

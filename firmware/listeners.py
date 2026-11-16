@@ -1,5 +1,7 @@
 """Quem pode ficar ligado no /events: uma conexão por IP, e poucas no total.
 
+Este arquivo é da base comum (amp-link, firmware-base/): mude lá e copie com o copiar.py, nunca aqui.
+
 Uma conexão morta (celular que perdeu o Wi-Fi) só some depois de minutos, e cada uma prende
 memória do lwIP e recebe escritas. Com 4 mortas ao mesmo tempo o servidor parou de vez
 (issue #2). Um cliente que reconecta vem do mesmo IP: a conexão nova toma o lugar da antiga.

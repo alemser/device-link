@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 """Testa no computador o Wi-Fi do Pico (firmware/wifi.py), com um chip de Wi-Fi de mentira.
 
+Este arquivo é da base comum (amp-link, firmware-base/): mude lá e copie com o copiar.py, nunca aqui.
+
     python3 tools/test_wifi.py
 """
 
@@ -98,9 +100,9 @@ def fresh(name, saved=None, routers=None):
         with open(path, "w") as f:
             json.dump(saved, f)
     FakeWLAN.routers = routers or {}
-    net = wifi.Wifi(model="mr780", hostname="mr780", prefix="MR780", net_file=path)
+    net = wifi.Wifi(model="demo", hostname="demo", prefix="DEMO", net_file=path)
     net.sta, net.ap = FakeWLAN("sta"), FakeWLAN("ap")
-    net.name, net.setup_ssid = "MR780-D85E", "AmpLink-MR780-D85E"
+    net.name, net.setup_ssid = "DEMO-D85E", "AmpLink-DEMO-D85E"
     return net
 
 
@@ -164,13 +166,18 @@ assert fresh("nada").saved() is None
 
 net = fresh("primeira-vez")
 net._supervise()
-assert net.setup_open() and net.ap.cfg == {"ssid": "AmpLink-MR780-D85E", "key": "amplink-setup"}
+assert net.setup_open() and net.ap.cfg == {"ssid": "AmpLink-DEMO-D85E", "key": "amplink-setup"}
 assert request(net, "GET", "/")[0] == 200
-assert "MR780-D85E" in request(net, "GET", "/")[1]
+assert "DEMO-D85E" in request(net, "GET", "/")[1]
 status, body = request(net, "GET", "/wifi")
-assert status == 200 and body["setup"] == {"open": True, "ssid": "AmpLink-MR780-D85E"} and body["ssid"] == ""
+assert status == 200 and body["setup"] == {"open": True, "ssid": "AmpLink-DEMO-D85E"} and body["ssid"] == ""
 assert request(net, "GET", "/wifi/networks")[1][0]["ssid"] == "Casa"
-assert json.loads(net.answer()) == {"name": "MR780-D85E", "model": "mr780", "ip": "192.168.4.1"}
+assert json.loads(net.answer()) == {"name": "DEMO-D85E", "model": "demo", "ip": "192.168.4.1"}
+# O nome completo e o tipo só entram quando a ponte os informa: sem eles, a resposta é a de sempre.
+net.label, net.kind = "Demo Player", "cd_player"
+assert json.loads(net.answer()) == {"name": "DEMO-D85E", "model": "demo", "ip": "192.168.4.1",
+                                    "label": "Demo Player", "kind": "cd_player"}
+net.label, net.kind = "", ""
 
 # --- configurar: PUT /wifi, conecta, salva, e a rede de configuração fecha 60 s depois ---
 

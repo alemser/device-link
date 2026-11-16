@@ -1,5 +1,7 @@
 """Atualização do programa pelo Wi-Fi, com senha e volta automática.
 
+Este arquivo é da base comum (amp-link, firmware-base/): mude lá e copie com o copiar.py, nunca aqui.
+
 No computador, quem usa isto é o tools/enviar.py. Os pedidos com senha levam o
 cabeçalho "X-Password: <secrets.UPDATE_PASSWORD>" (sem essa linha no secrets.py,
 a atualização fica desligada).

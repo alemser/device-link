@@ -1,6 +1,6 @@
-"""Servidor HTTP do Pico: publica o estado do amp na rede (o Wi-Fi fica no wifi.py).
+"""Servidor HTTP do Pico: publica o estado do aparelho na rede (o Wi-Fi fica no wifi.py).
 
-Copiado do sp103-display-proxy (2026-11-09), sem o /names, que é do SP103. Uma correção aqui provavelmente vale lá.
+Este arquivo é da base comum (amp-link, firmware-base/): mude lá e copie com o copiar.py, nunca aqui.
 
     GET /state    o estado em JSON
     GET /events   Server-Sent Events: um "data: {json}" a cada mudança
