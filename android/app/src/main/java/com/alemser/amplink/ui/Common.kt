@@ -31,7 +31,36 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import com.alemser.amplink.core.SaveState
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.launch
+import java.io.IOException
+
+/** One command at a time: a bridge may take seconds (an amp's menus), and a second press meanwhile is dropped. */
+class Commands(private val scope: CoroutineScope) {
+    var working by mutableStateOf(false)
+        private set
+    var error by mutableStateOf<String?>(null)
+        private set
+
+    fun run(command: suspend () -> Unit) {
+        if (working) return
+        working = true
+        error = null
+        scope.launch {
+            try {
+                command()
+            } catch (e: IOException) {
+                error = e.message ?: "The device didn't answer"
+            } finally {
+                working = false
+            }
+        }
+    }
+}
 
 /** The amp's blue display, the one strong colour in the app. */
 val LcdBlue = Color(0xFF2C4FD6)

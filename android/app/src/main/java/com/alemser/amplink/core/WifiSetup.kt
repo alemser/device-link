@@ -28,7 +28,8 @@ const val SETUP_PREFIX = "AmpLink-"
 const val SETUP_KEY = "amplink-setup"
 const val SETUP_HOST = "192.168.4.1"
 const val DISCOVERY_PORT = 47800
-private val PROBE = "AMPLINK?".toByteArray()
+/** DeviceLink bridges answer both; today's SP103 only the first (docs/contract-v2.md, Discovery). */
+private val PROBES = listOf("DEVICELINK?".toByteArray(), "AMPLINK?".toByteArray())
 
 @Serializable
 data class WifiNetwork(val ssid: String, val rssi: Int = 0, val secure: Boolean = true)
@@ -48,9 +49,21 @@ data class WifiStatus(
     val finished get() = state == "connected" || state == "failed"
 }
 
-/** A bridge's answer to the discovery broadcast. */
+/**
+ * A bridge's answer to the discovery broadcast. [name] is unique and stable (the chip's id), [label] the name to
+ * show, [kind] the type of device. A bridge that doesn't say its [api] speaks api 1.
+ */
 @Serializable
-data class FoundBridge(val name: String, val model: String = "", val ip: String)
+data class FoundBridge(
+    val name: String,
+    val model: String = "",
+    val ip: String,
+    val label: String = "",
+    val kind: String = "",
+    val api: Int = SUPPORTED_API,
+) {
+    val title get() = label.ifEmpty { name }
+}
 
 /** The `/wifi` routes. [http] is bound to the bridge's setup network while the phone is on it. */
 class WifiSetupClient(private val host: String, http: OkHttpClient = OkHttpClient()) {
@@ -120,7 +133,7 @@ suspend fun discover(
         socket.soTimeout = listenMs
         val buffer = ByteArray(512)
         repeat(tries) {
-            socket.send(DatagramPacket(PROBE, PROBE.size, target, port))
+            PROBES.forEach { socket.send(DatagramPacket(it, it.size, target, port)) }
             while (true) {
                 val packet = DatagramPacket(buffer, buffer.size)
                 try {
@@ -128,7 +141,8 @@ suspend fun discover(
                 } catch (_: SocketTimeoutException) {
                     break
                 }
-                parseAnswer(String(packet.data, 0, packet.length))?.let { found[it.ip] = it }
+                // Keyed by name: a bridge answering both probes is one device.
+                parseAnswer(String(packet.data, 0, packet.length))?.let { found[it.name] = it }
             }
         }
     }

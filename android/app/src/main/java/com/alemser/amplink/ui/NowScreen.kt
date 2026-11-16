@@ -40,32 +40,6 @@ import com.alemser.amplink.core.Link
 import com.alemser.amplink.core.Scale
 import com.alemser.amplink.core.balanceText
 import com.alemser.amplink.core.decibels
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.launch
-import java.io.IOException
-
-/** One change at a time: the bridge works through the amp's menus, which takes up to a few seconds. */
-private class Commands(private val scope: CoroutineScope) {
-    var working by mutableStateOf(false)
-        private set
-    var error by mutableStateOf<String?>(null)
-        private set
-
-    fun run(command: suspend () -> Unit) {
-        if (working) return
-        working = true
-        error = null
-        scope.launch {
-            try {
-                command()
-            } catch (e: IOException) {
-                error = e.message ?: "The bridge didn't answer"
-            } finally {
-                working = false
-            }
-        }
-    }
-}
 
 /**
  * The only screen that keeps `/events` open. `collectAsStateWithLifecycle` closes it when the app

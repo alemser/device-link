@@ -5,6 +5,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.mapNotNull
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.serialization.SerializationException
 import kotlinx.serialization.json.JsonObject
@@ -33,6 +34,13 @@ sealed interface Link {
     data class Lost(val why: String) : Link
 }
 
+/** An api 2 device's live state, as JSON: the description's state fields point into it (docs/contract-v2.md). */
+sealed interface Feed {
+    data object Connecting : Feed
+    data class Live(val state: JsonObject) : Feed
+    data class Lost(val why: String) : Feed
+}
+
 /** `Names` and the `config` exactly as it came, so a save keeps what this app doesn't know. */
 data class NamesReply(val names: Names, val rawConfig: JsonObject)
 
@@ -50,6 +58,64 @@ class BridgeClient(val host: String) {
         .build()
 
     suspend fun device(): Device = decode(send(request("/device")))
+
+    /** api 2: the device's description, read once when its screen opens. */
+    suspend fun description(): Description = decode(send(request("/device")))
+
+    /** api 2: one key of the device's remote, by name. */
+    suspend fun press(key: String) {
+        post("/control?target=key&name=${java.net.URLEncoder.encode(key, "UTF-8")}")
+    }
+
+    /** api 2: the values a person may change. */
+    suspend fun settings(): JsonObject = Wire.parseToJsonElement(send(request("/settings"))).jsonObject
+
+    /** api 2: changes only the given settings; answers all of them. */
+    suspend fun patchSettings(changes: JsonObject): JsonObject {
+        val body = changes.toString().toRequestBody(JSON)
+        return Wire.parseToJsonElement(send(request("/settings").newBuilder().patch(body).build())).jsonObject
+    }
+
+    /** The running firmware (`GET /update`). */
+    suspend fun updateStatus(): UpdateStatus = decode(send(request("/update")))
+
+    /** Stages one firmware file; the bridge answers its sha256. */
+    suspend fun stage(name: String, data: ByteArray): String {
+        val body = data.toRequestBody(OCTETS)
+        val reply = send(request("/update/$name").newBuilder().put(body).build())
+        return Wire.parseToJsonElement(reply).jsonObject["sha256"]?.jsonPrimitive?.content
+            ?: throw BridgeError("The bridge didn't confirm $name")
+    }
+
+    /** Marks a firmware file for deletion at the next apply. */
+    suspend fun stageDelete(name: String) {
+        send(request("/update/$name").newBuilder().delete().build())
+    }
+
+    /** `cancel`, `apply` or `rollback`. The bridge restarts after apply and rollback. */
+    suspend fun updateAction(action: String) {
+        post("/update/$action")
+    }
+
+    /** api 2: the device's state, live, as JSON. Same rules as [live]: collect it from the device's open screen only. */
+    fun feed(): Flow<Feed> = flow {
+        var wait = RETRY_MIN_MS
+        while (true) {
+            try {
+                rawEvents().collect { line ->
+                    parseFeed(line)?.let {
+                        wait = RETRY_MIN_MS
+                        emit(Feed.Live(it))
+                    }
+                }
+                emit(Feed.Lost("The device closed the connection"))
+            } catch (e: IOException) {
+                emit(Feed.Lost(e.message ?: "Connection lost"))
+            }
+            delay(wait)
+            wait = min(wait * 2, RETRY_MAX_MS)
+        }
+    }
 
     suspend fun names(): NamesReply = namesReply(send(request("/names")))
 
@@ -105,7 +171,10 @@ class BridgeClient(val host: String) {
         }
     }
 
-    private fun events(): Flow<AmpState> = callbackFlow {
+    private fun events(): Flow<AmpState> = rawEvents().mapNotNull(::parseEvent)
+
+    /** The lines of `/events`, as they come. */
+    private fun rawEvents(): Flow<String> = callbackFlow {
         val call = streaming.newCall(request("/events"))
         call.enqueue(object : Callback {
             override fun onFailure(call: Call, e: IOException) {
@@ -119,7 +188,7 @@ class BridgeClient(val host: String) {
                         val source = it.body?.source() ?: throw BridgeError("Empty answer")
                         while (true) {
                             val line = source.readUtf8Line() ?: break
-                            parseEvent(line)?.let(::trySend)
+                            trySend(line)
                         }
                     }
                     close()
@@ -147,6 +216,7 @@ class BridgeClient(val host: String) {
 
     private companion object {
         val JSON = "application/json".toMediaType()
+        val OCTETS = "application/octet-stream".toMediaType()
         const val CONNECT_TIMEOUT_S = 5L
 
         /** Chosen: past the bridge's 10 s freeze (lwIP), so a slow answer isn't reported as a failure. */
@@ -192,6 +262,18 @@ internal fun parseEvent(line: String): AmpState? {
     if (!line.startsWith("data:")) return null
     return try {
         Wire.decodeFromString<AmpState>(line.removePrefix("data:").trim())
+    } catch (_: SerializationException) {
+        null
+    } catch (_: IllegalArgumentException) {
+        null
+    }
+}
+
+/** One line of the stream as JSON (api 2), or null for comments and bad events. */
+internal fun parseFeed(line: String): JsonObject? {
+    if (!line.startsWith("data:")) return null
+    return try {
+        Wire.parseToJsonElement(line.removePrefix("data:").trim()) as? JsonObject
     } catch (_: SerializationException) {
         null
     } catch (_: IllegalArgumentException) {
