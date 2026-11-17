@@ -157,7 +157,7 @@ Decode and document in `docs/protocol.md`, with the captures in `captures/`.
 Reuse from `sp103-mod` whatever does not depend on the display:
 
 - Wi-Fi and updates over Wi-Fi with automatic rollback (`ota.py`, `tools/enviar.py`).
-- The state and the DeviceLink app's contract (`/state`, `/device`, `/names`), with new fields: DAB/BT/USB source,
+- The state and the DeviceLink app's contract (`/state`, `/device`, `/settings`), with new fields: DAB/BT/USB source,
   station, DAB/RDS text.
 - The tests on the Mac, using the real captures.
 
