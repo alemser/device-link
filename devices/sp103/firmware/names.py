@@ -1,0 +1,162 @@
+"""Custom display texts: input names and boot screens.
+
+They live in the Pico's names.json file and are edited on the SP103's own page (config_page.py, through
+PATCH /settings, settings.py), outside the DeviceLink contract:
+
+    {"inputs": {"TUNER": "Rega Planar 2", ...},
+     "boot":   ["Welcome", "Alessandro"],     # instead of "ACOUSTIC" / "SOLUTIONS"
+     "about":  ["", ""],                      # instead of "Amplifier SP103" / "SW version 1.0"
+     "vu":     {"on": False, "layout": "bars",                      # VU meter (vu.py), always with
+                "relay": "192.168.1.50"}}                            # the automatic scale
+                                                                     # layout: bars, deck, scale, kx393
+     "info":   {"on": False, "mode": "temp",                            # info screens
+                "show": ["stylus", "quality"],                          # (screens.py, info.py)
+                "secs": 8, "source": "",                                # quality: Bluetooth on DAB; source "" = the VU's
+                "turntable": ["PHONO", "TUNER"]}}                       # the stylus only on these inputs
+
+Empty (or missing) text = the amp's original text. The boot screen lines are
+centered, like the original ones.
+
+"relay" is the IP of the board running sp103-vu-relay: MicroPython does not resolve .local names.
+It starts empty; with the VU on, it is required.
+The screens' "source" is the IP of whoever speaks the docs/api-screens.md contract; empty = the same as the VU.
+"""
+
+import json
+
+from amp_state import INPUTS, STREAMING_INPUT
+
+FILE = "names.json"
+MAX_LEN = 16                    # one LCD line
+SCREENS = ("boot", "about")
+VU_DEFAULT = {"on": False, "layout": "bars", "relay": ""}
+VU_LAYOUTS = ("bars", "deck", "scale", "kx393")   # the same as vu.LAYOUTS
+INFO_DEFAULT = {"on": False, "mode": "temp", "show": ["stylus", "quality"], "secs": 8, "source": "",
+                "turntable": ["PHONO", "TUNER"]}
+INFO_KINDS = ("stylus", "quality")      # the same as screens.KINDS
+INFO_GONE = ("track", "pos", "side")    # screens that were removed (2026-11-07): ignored in an old names.json
+INFO_SECS = (3, 60)
+# The standby clock was removed (2026-11-16): an old names.json or client may still send these; ignored.
+INFO_CLOCK_GONE = ("clock", "utc_offset", "eu_dst")
+
+
+def load():
+    try:
+        with open(FILE) as f:
+            return validate(json.load(f))
+    except (OSError, ValueError):
+        return validate({})     # no file (or a broken file): original texts
+
+
+def save(cfg):
+    with open(FILE, "w") as f:
+        json.dump(cfg, f)
+
+
+def _text(value, what):
+    """Checks a text for the LCD and returns it with the ends stripped."""
+    if not isinstance(value, str):
+        raise ValueError("%s must be text" % what)
+    value = value.strip()
+    if len(value) > MAX_LEN:
+        raise ValueError("'%s' has %d characters; the display fits %d" % (value, len(value), MAX_LEN))
+    for c in value:
+        # The LCD has no accents, and in its character set "\" becomes "¥" and "~" becomes an arrow.
+        if not (" " <= c <= "}") or c == "\\":
+            raise ValueError("'%s': the display has no '%s' character (no accents)" % (value, c))
+    return value
+
+
+def validate(cfg):
+    """Checks the configuration. Returns a complete, clean copy, or raises ValueError."""
+    if not isinstance(cfg, dict):
+        raise ValueError("the configuration must be a JSON object")
+    if cfg and not any(k in cfg for k in ("inputs", "vu", "info") + SCREENS):
+        cfg = {"inputs": cfg}   # old format: just the inputs table
+    inputs = cfg.get("inputs") or {}
+    if not isinstance(inputs, dict):
+        raise ValueError("'inputs' must be a JSON object")
+    clean = {"inputs": {}}
+    for key, value in inputs.items():
+        if key not in INPUTS:
+            raise ValueError("unknown input: %s (use %s)" % (key, ", ".join(INPUTS)))
+        value = _text(value, "the name for " + key)
+        if value and value != key:
+            clean["inputs"][key] = value
+    for screen in SCREENS:
+        lines = cfg.get(screen) or ["", ""]
+        if not isinstance(lines, list) or len(lines) != 2:
+            raise ValueError("'%s' must be a list with 2 lines" % screen)
+        clean[screen] = [_text(v, screen + " line") for v in lines]
+    clean["vu"] = _vu(cfg.get("vu") or {})
+    clean["info"] = _info(cfg.get("info") or {})
+    return clean
+
+
+def _vu(vu):
+    if not isinstance(vu, dict):
+        raise ValueError("'vu' must be a JSON object")
+    out = dict(VU_DEFAULT)
+    out.update(vu)              # "auto", "floor" and "top" from an old names.json: ignored
+    if not isinstance(out["on"], bool):
+        raise ValueError("vu 'on' must be true or false")
+    if out["layout"] not in VU_LAYOUTS:
+        raise ValueError("the VU layout must be one of: " + ", ".join(VU_LAYOUTS))
+    if not _is_ip(out["relay"]) and (out["on"] or out["relay"] != ""):
+        raise ValueError("the VU source must be an IP address, like 192.168.1.50")
+    # The scale is always the automatic one (vu.py); the manual one is kept only for the tests.
+    return {"on": out["on"], "auto": True, "layout": out["layout"], "relay": out["relay"]}
+
+
+def _is_ip(text):
+    parts = text.split(".") if isinstance(text, str) else []
+    return len(parts) == 4 and all(p.isdigit() and int(p) < 256 for p in parts)
+
+
+def _info(info):
+    if not isinstance(info, dict):
+        raise ValueError("'info' must be a JSON object")
+    out = dict(INFO_DEFAULT)
+    out.update(info)            # "fixed", "alert", "scroll" and the clock's keys from an old names.json: ignored
+    if not isinstance(out["on"], bool):
+        raise ValueError("info 'on' must be true or false")
+    if out["mode"] not in ("temp", "fixed"):
+        raise ValueError("the info mode must be temp or fixed")
+    show = out["show"]
+    if not isinstance(show, list) or any(k not in INFO_KINDS + INFO_GONE for k in show):
+        raise ValueError("info 'show' must be a list with some of: " + ", ".join(INFO_KINDS))
+    secs = out["secs"]
+    if isinstance(secs, bool) or not isinstance(secs, int) or not INFO_SECS[0] <= secs <= INFO_SECS[1]:
+        raise ValueError("the seconds per screen must be a whole number from %d to %d" % INFO_SECS)
+    turntable = out["turntable"]
+    if not isinstance(turntable, list) or any(k not in INPUTS for k in turntable):
+        raise ValueError("info 'turntable' must be a list with some of: " + ", ".join(INPUTS))
+    source = out["source"].strip() if isinstance(out["source"], str) else None
+    if source is None or (source and not _is_ip(source)):
+        raise ValueError("the info source must be an IP address, or empty to use the VU source")
+    return {"on": out["on"], "mode": out["mode"], "show": [k for k in INFO_KINDS if k in show], "secs": secs,
+            "source": source, "turntable": [k for k in INPUTS if k in turntable]}
+
+
+def _center(text):
+    left = (MAX_LEN - len(text)) // 2
+    return (" " * left + text + " " * MAX_LEN)[:MAX_LEN]
+
+
+def rewrite(line1, line2, cfg, stream=None):
+    """Swaps in the custom texts on a complete screen. Other screens pass through unchanged.
+    stream: the name of the streaming service playing ("AirPlay"; screens.stream_label), which
+    takes the place of the streaming input's name on that input."""
+    name = line2.rstrip()
+    if line1.startswith("Volume ") and name == STREAMING_INPUT and stream:
+        return line1, (stream + " " * MAX_LEN)[:MAX_LEN]
+    if line1.startswith("Volume ") and name in cfg["inputs"]:
+        return line1, (cfg["inputs"][name] + " " * MAX_LEN)[:MAX_LEN]
+    if line1.strip() == "ACOUSTIC" and line2.strip() == "SOLUTIONS":
+        screen = "boot"
+    elif line1.strip() == "Amplifier SP103" and line2.strip().startswith("SW version "):
+        screen = "about"
+    else:
+        return line1, line2
+    new1, new2 = cfg[screen]
+    return (_center(new1) if new1 else line1), (_center(new2) if new2 else line2)

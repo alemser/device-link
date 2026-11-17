@@ -1,0 +1,18 @@
+# macOS
+.DS_Store
+
+# Python
+__pycache__/
+*.pyc
+
+# Fotos da petervis.com: têm direitos autorais, ficam só na cópia local
+docs/img/petervis/
+
+# Ambiente Python local (mpremote)
+.venv/
+
+# Nome e senha do Wi-Fi: só no computador e no Pico, nunca no GitHub
+firmware/secrets.py
+
+# Binários da ponte do VU
+relay/bin/
