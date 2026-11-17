@@ -4,7 +4,7 @@ Runs the same on MicroPython (Pico) and on the computer's Python (tests).
 
 Use:
     st = AmpState()
-    if st.update(linha1, linha2, agora_ms):
+    if st.update(line1, line2, now_ms):
         print(st.to_dict())      # something changed
 
 The lines are the 16 positions of each LCD line, with the original codes

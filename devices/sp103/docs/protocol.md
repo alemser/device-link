@@ -67,7 +67,7 @@ Same pattern as Phono: both lines are redrawn, and line 2 holds the input name p
 | DVD | `DVD` |
 | DAB | `DAB` |
 
-## At power-on: `03-liga.lac` (2026-10-23)
+## At power-on: `03-power-on.lac` (2026-10-23)
 
 Captured with a **pattern trigger** E=1, RS=0, RW=0 (channels 1–3, pattern `100`), at 1 MHz, with a jumper between the
 Pico's GP0 and GP1. The edge trigger does not work: during reset the controller leaves E, RS and RW at 1
@@ -90,7 +90,7 @@ Sequence:
 
 The capture (190 ms) ends on the welcome screen. The change to the normal screen happens later.
 
-### Following screens: `03-liga-telas.lac` (burst, 10 segments of 19 ms at 1 MHz)
+### Following screens: `03-power-on-screens.lac` (burst, 10 segments of 19 ms at 1 MHz)
 
 Captured by arming the edge trigger (E) as soon as "ACOUSTIC SOLUTIONS" appeared, then turning the volume to fill the
 remaining segments. The D1 wire had no contact, but the text can be recovered from context (bit 1 was always read as 0).
@@ -151,9 +151,9 @@ Second recording of the same press (only RW failed), with a different bass value
 - Line 2 is written **from the centre outwards**: columns 7, 8 ("<", ">"), 9…15 and then 0…6.
 - Each box (character 0x00) seems to be worth 2 dB, consistent with the PT2314 bass steps.
 
-## Function, all menus: `13-function-todos.lac` (burst, 2026-10-23)
+## Function, all menus: `13-function-all.lac` (burst, 2026-10-23)
 
-Decoded with `--sem-rw` (RW dropped out now and then). It takes 6 Function clicks to get back to the normal screen:
+Decoded with `--no-rw` (RW dropped out now and then). It takes 6 Function clicks to get back to the normal screen:
 
 ```
 1 ┌────────────────┐  2 ┌────────────────┐  3 ┌────────────────┐
@@ -193,7 +193,7 @@ Still to see the other side: which side the bar is on, and whether the number ch
   spaces to all 32 positions (DDRAM 0x00–0x0F and 0x40–0x4F, with no "Clear display") and stops. That is why it seemed
   to write nothing. Coming out of standby, it draws the normal screen directly (`Volume … / DAB`), with no "Clear
   display" and no "ACOUSTIC SOLUTIONS". When it gets mains power, the screen is blank for about 70 ms, but after a
-  "Clear display" (`03-liga.lac`): this is how the Pico tells the two blanks apart (`amp_state.py`,
+  "Clear display" (`03-power-on.lac`): this is how the Pico tells the two blanks apart (`amp_state.py`,
   `power: "standby"`).
 
 ## Balance to the other side: `15-balance-b.lac` (burst, 2026-10-23)

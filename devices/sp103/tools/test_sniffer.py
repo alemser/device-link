@@ -24,7 +24,7 @@ from test_amp_state import QUIET_US, screens   # noqa: E402
 
 # Captures with loose wires (see docs/protocol.md): RW failed, so
 # reads turn into writes and the screen comes out different. Not usable for comparison.
-SKIP = {"13-function-1.lac", "13-function-todos.lac", "03-liga-telas.lac"}
+SKIP = {"13-function-1.lac", "13-function-all.lac", "03-power-on-screens.lac"}
 
 
 def words_from_lac(path):

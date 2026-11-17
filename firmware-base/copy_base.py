@@ -3,14 +3,13 @@
 
 From the repository's root:
 
-    python3 firmware-base/copiar.py --all            # every device under devices/
-    python3 firmware-base/copiar.py --all --check    # only checks; fails if anything differs (run it before a commit)
-    python3 firmware-base/copiar.py devices/sp103    # one device
+    python3 firmware-base/copy_base.py --all            # every device under devices/
+    python3 firmware-base/copy_base.py --all --check    # only checks; fails if anything differs (run it before a commit)
+    python3 firmware-base/copy_base.py devices/sp103    # one device
 
 The files go byte for byte, so each devices/<name>/firmware/ stays exactly what goes on its Pico. A copy that differs
 from the base means someone changed it in the device: take the change to the base before copying, because the copy
-overwrites it. A device that keeps a base file of its own is listed in KEEP (the SP103's main.py). The old Portuguese
-flags (--conferir, --sem) still work.
+overwrites it. A device that keeps a base file of its own is listed in KEEP (the SP103's main.py).
 """
 
 import argparse
@@ -76,9 +75,9 @@ def main():
     ap = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     ap.add_argument("project", nargs="?", help="one device's folder (default: the current one)")
     ap.add_argument("--all", action="store_true", help="every device under devices/")
-    ap.add_argument("--check", "--conferir", dest="check", action="store_true",
+    ap.add_argument("--check", dest="check", action="store_true",
                     help="don't copy: only say what differs")
-    ap.add_argument("--skip", "--sem", dest="skip", action="append", default=[], metavar="FILE",
+    ap.add_argument("--skip", dest="skip", action="append", default=[], metavar="FILE",
                     help="a base file to leave as it is (repeatable)")
     args = ap.parse_args()
 

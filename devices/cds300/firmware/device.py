@@ -12,10 +12,10 @@ import json
 import ir_codes
 
 API = 2
-NAME = "cds300"                 # the discovery and network name (cds300.local, AmpLink-CDS300-XXXX); enviar.py reads it
+NAME = "cds300"                 # the discovery and network name (cds300.local, AmpLink-CDS300-XXXX); send.py reads it
 KIND = "cd_player"
 MODEL = "Yamaha CD-S300"
-FIRMWARE = "alemser/device-link/cds300"   # its releases: alemser/device-link, tagged cds300-<version> (enviar.py --publish)
+FIRMWARE = "alemser/device-link/cds300"   # its releases: alemser/device-link, tagged cds300-<version> (send.py --publish)
 FEATURES = ("control", "update", "wifi_setup")
 
 STATE = (

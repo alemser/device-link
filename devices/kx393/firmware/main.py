@@ -1,11 +1,11 @@
 """Runs by itself every time the Pico starts (MicroPython runs main.py at boot).
 
-This file belongs to the shared base (firmware-base/): change it there and copy it with copiar.py --all, never here.
+This file belongs to the shared base (firmware-base/): change it there and copy it with copy_base.py --all, never here.
 
 The program is the bridge (each project's ponte.py). To stop it and get back to the computer, use mpremote: it
 interrupts the program (Ctrl-C) before each command.
 
-Updates over Wi-Fi (ota.py, tools/enviar.py, the DeviceLink app): this file is the "gatekeeper" that restores the
+Updates over Wi-Fi (ota.py, tools/send.py, the DeviceLink app): this file is the "gatekeeper" that restores the
 previous version if the new one fails. So it uses NO other file of the project and can only be replaced over USB
 (ota.py refuses it).
 
@@ -13,7 +13,7 @@ previous version if the new one fails. So it uses NO other file of the project a
     1st boot of the new version: boots becomes 1 and a timer gives the program TRIAL_S seconds to call
        ota.confirm() (state becomes "ok"). If it doesn't, the Pico restarts.
     Next boot still on "trial" (hung, crashed or the timer ran out): go back.
-    "rollback" (asked for by enviar.py or the app): go back too.
+    "rollback" (asked for by send.py or the app): go back too.
 Going back = copying back the old/ folder (the whole previous version, kept by ota.py).
 """
 

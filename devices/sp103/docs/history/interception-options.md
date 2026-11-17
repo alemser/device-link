@@ -24,9 +24,9 @@ There is no window in which the Pico can write on its own without fighting the c
 
 | Photo | What it shows |
 |---|---|
-| ![controller](img/minha-placa/controlador-t9311-sem-soquete.jpg) | The T9311 is **soldered straight to the board, with no socket** |
-| ![side](img/minha-placa/lcd-pinos-lateral.jpg) | The display is held by a 16-pin header, soldered to both boards, with a **plastic spacer** between them. The pin ends stick out above the display board |
-| ![solder](img/minha-placa/lcd-lado-solda-trilhas.jpg) | On the solder side, **one trace leaves each pin**, separate right after the solder joint. Further on they merge into a thin bundle to the controller |
+| ![controller](img/my-board/controller-t9311-no-socket.jpg) | The T9311 is **soldered straight to the board, with no socket** |
+| ![side](img/my-board/lcd-pins-side.jpg) | The display is held by a 16-pin header, soldered to both boards, with a **plastic spacer** between them. The pin ends stick out above the display board |
+| ![solder](img/my-board/lcd-solder-side-traces.jpg) | On the solder side, **one trace leaves each pin**, separate right after the solder joint. Further on they merge into a thin bundle to the controller |
 
 ## Options
 

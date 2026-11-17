@@ -81,7 +81,7 @@ old = names.validate({"vu": {"on": True, "auto": False, "floor": -45, "top": -20
 check(old == {"on": True, "auto": True, "layout": "bars", "relay": "192.168.178.105"},
       "old names.json with the manual scale: accepted, and the scale becomes automatic")
 check(names.validate({"vu": {"on": False}})["inputs"] == {}, "just 'vu' doesn't turn into the old format")
-for bad, what in (({"on": "yes"}, "non-boolean on"), ({"relay": "placa.local"}, "name instead of IP"),
+for bad, what in (({"on": "yes"}, "non-boolean on"), ({"relay": "board.local"}, "name instead of IP"),
                   ({"relay": "192.168.1.300"}, "invalid IP"), ({"on": True}, "VU on without a source")):
     try:
         names.validate({"vu": bad})

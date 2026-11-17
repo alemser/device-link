@@ -45,7 +45,7 @@ def wifi_result(ok, info):
 
 async def confirm_update():
     """A new version on trial (ota.py): confirm it once it proves healthy. Without that, main.py goes back to the
-    previous version. Healthy = Wi-Fi connected and the server answered someone (tools/enviar.py asks every 2 s), for
+    previous version. Healthy = Wi-Fi connected and the server answered someone (tools/send.py asks every 2 s), for
     20 s in a row."""
     if not ota.in_trial():
         return

@@ -11,10 +11,10 @@ describe() runs the same in MicroPython (Pico) and in the computer's Python (too
 import json
 
 API = 2                         # changes only when something stops being compatible
-NAME = "mr780"                  # the name in discovery and on the network (mr780.local, AmpLink-MR780-XXXX); enviar.py reads it
+NAME = "mr780"                  # the name in discovery and on the network (mr780.local, AmpLink-MR780-XXXX); send.py reads it
 KIND = "amplifier"
 MODEL = "Magnat MR 780"         # the full name: in /device and, as "label", in discovery
-FIRMWARE = "alemser/device-link/mr780"   # its releases: alemser/device-link, tagged mr780-<version> (enviar.py --publish)
+FIRMWARE = "alemser/device-link/mr780"   # its releases: alemser/device-link, tagged mr780-<version> (send.py --publish)
 FEATURES = ("update", "wifi_setup")
 
 # The inputs in the order of the SOURCE knob and the remote, with groove-rig's ids

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Checks firmware/vfd.py against the real capture (captures/02-tocando.lac) and a few made-up frames.
+"""Checks firmware/vfd.py against the real capture (captures/02-playing.lac) and a few made-up frames.
 
     python3 tools/test_vfd.py
 """
@@ -14,7 +14,7 @@ sys.path.insert(0, os.path.join(HERE, "..", "firmware"))
 import fl_decode    # noqa: E402
 import vfd          # noqa: E402
 
-CAPTURE = os.path.join(HERE, "..", "captures", "02-tocando.lac")
+CAPTURE = os.path.join(HERE, "..", "captures", "02-playing.lac")
 failures = []
 
 

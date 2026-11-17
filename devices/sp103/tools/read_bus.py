@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """Reads the CSV downloaded from http://sp103.local/bus.csv and rebuilds the amp's screens, with timestamps.
 
-    python3 tools/ler_bus.py ~/Downloads/sp103-bus-2026-10-24-2115.csv
-    python3 tools/ler_bus.py file.csv --words           # also every word, one per line
+    python3 tools/read_bus.py ~/Downloads/sp103-bus-2026-10-24-2115.csv
+    python3 tools/read_bus.py file.csv --words           # also every word, one per line
 
 Uses the Pico's own hd44780.Bus (firmware/hd44780.py), so it shows what the Pico saw.
 The start of the file usually lands in the middle of a screen (the log keeps only the last
@@ -48,10 +48,10 @@ def screens(rows):
 def main():
     ap = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     ap.add_argument("csv")
-    ap.add_argument("--words", "--palavras", dest="palavras", action="store_true", help="also show every word")
+    ap.add_argument("--words", dest="words", action="store_true", help="also show every word")
     args = ap.parse_args()
 
-    if args.palavras:
+    if args.words:
         with open(args.csv, newline="") as f:
             for row in csv.DictReader(f):
                 print("%-23s %10s  %s" % (row["time"], row["ms"], row["meaning"]))

@@ -5,14 +5,14 @@
 __pycache__/
 *.pyc
 
-# Ambiente Python local (mpremote)
+# Local Python environment (mpremote)
 .venv/
 
-# Manual de serviço da Yamaha: tem direitos autorais, fica só na cópia local
+# Yamaha's service manual: copyrighted, kept in the local copy only
 docs/manual/
 
-# Senha das atualizações: só no computador e no Pico, nunca no GitHub
+# Secrets (optional Wi-Fi fallback): only on the computer and the Pico, never on GitHub
 firmware/secrets.py
 
-# Fotos originais em resolução cheia: as do repositório são cópias reduzidas (2400 px)
-docs/images-originais/
+# Full-resolution photos: the ones in the repository are reduced copies (2400 px)
+docs/images-original/

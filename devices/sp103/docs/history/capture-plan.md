@@ -159,9 +159,9 @@ Do them in order. **Capture 1 decides the frequency of the others.**
 
 | # | File | Frequency | Action on the amplifier | What it answers |
 |---|---|---|---|---|
-| 1 | `01-pulso-e.lac` | 25 MHz | Turn the volume one "click" | the E pulse width, to choose the frequency of the next ones |
+| 1 | `01-e-pulse.lac` | 25 MHz | Turn the volume one "click" | the E pulse width, to choose the frequency of the next ones |
 | 2 | `02-parado.lac` | F | **Do not touch anything** for 10 s (Abort if it does not fire) | does the controller redraw the screen by itself? |
-| 3 | `03-liga.lac` | F | With the capture waiting, **plug the amp into the mains**. Before that, unplug it; the Pico stays on USB | power-on sequence |
+| 3 | `03-power-on.lac` | F | With the capture waiting, **plug the amp into the mains**. Before that, unplug it; the Pico stays on USB | power-on sequence |
 | 4 | `04-phono.lac` | F | Press **Phono** | input text |
 | 5 | `05-tuner.lac` | F | Press **Tuner** | |
 | 6 | `06-tape.lac` | F | Press **Tape/Aux** | |
@@ -197,7 +197,7 @@ controller finished writing. Repeat the same action at a lower frequency (for ex
 In the terminal, in the project folder:
 
 ```
-python3 tools/hd44780_decode.py captures/01-pulso-e.lac
+python3 tools/hd44780_decode.py captures/01-e-pulse.lac
 ```
 
 To save the result of all captures at once:

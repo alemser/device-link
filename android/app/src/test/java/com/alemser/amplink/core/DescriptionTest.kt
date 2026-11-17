@@ -63,7 +63,7 @@ class DescriptionTest {
 
     @Test
     fun hashesLikeTheBridge() {
-        // sha256 of "print(1)\n", as ota.py's _sha and enviar.py's sha compute it.
+        // sha256 of "print(1)\n", as ota.py's _sha and send.py's sha compute it.
         assertEquals("cc42155088fca5730758db72b2a5bca33112a941dfaa2d43098ec422ce4ea213", sha256("print(1)\n".toByteArray()))
     }
 }

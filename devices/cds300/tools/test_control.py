@@ -13,7 +13,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, os.path.join(HERE, "..", "firmware"))
 
 import control   # noqa: E402
-import web       # noqa: E402  (o web.py da base roda no computador: só usa json e asyncio)
+import web       # noqa: E402  (the base's web.py runs on the computer: it only uses json and asyncio)
 
 
 class FakeRemote:

@@ -180,11 +180,11 @@ against a bad version. `main.py` and `secrets.py` go only by USB.
    repository (`devices/<device>/`), so `firmware` is `alemser/device-link/<device>` and its releases are tagged
    `<device>-<version>` (`sp103-c59be28d`), never marked "latest" (that one is the app's own `app-<n>`). Each carries a
    `firmware.json` asset (`{"version", "files": {"<name>.py": "<sha256>"}}`) and the files themselves, built by the
-   device's `tools/enviar.py --publish`. The app takes the newest release with the device's prefix through the GitHub
+   device's `tools/send.py --publish`. The app takes the newest release with the device's prefix through the GitHub
    API, so a device can be updated without the app knowing it in advance. A bare `owner/repo` (bridges from before
    2026-11-17, when each device had its own repository) means that repository's latest release.
 2. The device screen shows "Version ... is available" when the release's version differs from `bridge_version`.
-3. On "Update", the app downloads the files, uploads only those whose hash differs from `GET /update` (as `enviar.py`
+3. On "Update", the app downloads the files, uploads only those whose hash differs from `GET /update` (as `send.py`
    does), deletes the ones the release no longer has, applies, and follows `GET /update` until the bridge confirms or
    rolls back, showing which.
 

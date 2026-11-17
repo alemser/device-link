@@ -37,7 +37,7 @@ is enough for that: whoever joins it can only change the Pico's network.
 |---|---|
 | `GET /wifi` | `{"state", "detail", "ip", "ssid", "setup": {"open", "ssid"}}`. `state` and `detail` are the last attempt: `idle`, `connecting`, `connected`, or `failed` with the reason (`wrong password`, `network not found`, `connection failed`, `timeout`). `ip` is the current address on the home network; `ssid`, the saved network |
 | `GET /wifi/networks` | The networks the Pico sees: `[{"ssid", "rssi", "secure"}]`, one per name, strongest to weakest, up to 20. Takes ~1 s |
-| `PUT /wifi` | `{"ssid": "Casa", "psk": "..."}` (no `psk`, or empty = open network; otherwise 8 to 63 characters). Answers `202` right away; the result shows in `GET /wifi`. **Only with the setup network open**, otherwise `403` |
+| `PUT /wifi` | `{"ssid": "Home", "psk": "..."}` (no `psk`, or empty = open network; otherwise 8 to 63 characters). Answers `202` right away; the result shows in `GET /wifi`. **Only with the setup network open**, otherwise `403` |
 | `POST /wifi/setup` | Opens the setup network for 10 minutes |
 | `DELETE /wifi` | Forgets the saved network. Only with the setup network open |
 | `GET /` | The setup page (pick the network and type the password), only with the setup network open. Otherwise, the Pico still has no web page |

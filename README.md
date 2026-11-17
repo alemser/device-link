@@ -31,12 +31,12 @@ along, the SP103 came as its latest version only.
 ```sh
 cd devices/sp103
 python3 tools/test_device.py                     # its tests (each tools/test_*.py)
-python3 tools/enviar.py                          # send what changed to its Pico over Wi-Fi
-python3 tools/enviar.py --publish                # release sp103-<version> here, for the app's "Update"
-cd ../.. && python3 firmware-base/copiar.py --all --check   # base copies up to date in every device?
+python3 tools/send.py                          # send what changed to its Pico over Wi-Fi
+python3 tools/send.py --publish                # release sp103-<version> here, for the app's "Update"
+cd ../.. && python3 firmware-base/copy_base.py --all --check   # base copies up to date in every device?
 ```
 
-A base file is changed in `firmware-base/` and copied with `python3 firmware-base/copiar.py --all`, never edited in a
+A base file is changed in `firmware-base/` and copied with `python3 firmware-base/copy_base.py --all`, never edited in a
 device.
 
 A personal project: the app is Android-only, not on the Play Store.

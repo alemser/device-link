@@ -45,7 +45,7 @@ def display_signals(payload_frames, half=4, gap=40):
                 bit = byte >> j & 1
                 cs += [0] * (2 * half)
                 clk += [0] * half + [1] * half
-                data += [data[-1]] * (half // 2) + [bit] * (2 * half - half // 2)   # troca no meio da parte baixa
+                data += [data[-1]] * (half // 2) + [bit] * (2 * half - half // 2)   # changes in the middle of the low half
         cs += [0] * half + [1] * gap
         clk += [1] * (half + gap)
         data += [data[-1]] * (half + gap)
@@ -81,7 +81,7 @@ def main():
         path = os.path.join(tmp, "fake.lac")
         write_lac(path, {"FL_/CS": cs, "FL_CLK": clk, "FL_DATA": data, "FL_/RST": rst, "REM": rem})
         freq, sig = fl_decode.load_lac(path)
-        check(freq == FREQ and set(sig) == {"CS", "CLK", "DATA", "RST", "REM"}, f"sinais pelo nome: {sorted(sig)}")
+        check(freq == FREQ and set(sig) == {"CS", "CLK", "DATA", "RST", "REM"}, f"signals by name: {sorted(sig)}")
 
         frs = fl_decode.frames(sig["CS"], sig["CLK"], sig["DATA"])
         check([len(f["bits"]) for f in frs] == [8, 32, 8], f"bits por quadro: {[len(f['bits']) for f in frs]}")
@@ -95,7 +95,7 @@ def main():
         check(wrong != sent, "on the wrong edge the bytes must not come out the same")
 
         high, low, _ = fl_decode.clock_stats(sig["CLK"], sig["CS"], freq)
-        check(high == 2.0 and low == 2.0, f"relógio de 2 µs alto e 2 µs baixo: {high}, {low}")
+        check(high == 2.0 and low == 2.0, f"clock 2 µs high and 2 µs low: {high}, {low}")
         check(len(fl_decode.groups(frs, freq)) == 1, "three frames 20 µs apart are one group")
 
         rp = fl_decode.pulses_low(sig["RST"], freq)

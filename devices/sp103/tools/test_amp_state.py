@@ -6,7 +6,7 @@ With captures: replays each .lac, hands each complete screen to the reader and s
 
     python3 tools/test_amp_state.py
     python3 tools/test_amp_state.py captures/04-phono-b.lac captures/15-balance.lac
-    python3 tools/test_amp_state.py --no-rw captures/13-function-todos.lac
+    python3 tools/test_amp_state.py --no-rw captures/13-function-all.lac
 """
 
 import argparse
@@ -108,11 +108,11 @@ def screens(lcd):
             for base in (0x00, 0x40)]
 
 
-def replay(path, sem_rw):
+def replay(path, no_rw):
     freq, pre, burst, by_number, by_name = hd.load_lac(path)
     sig = hd.pick_signals(by_number, by_name)
     events, _, _, _ = hd.decode(sig, freq, pre)
-    if sem_rw:
+    if no_rw:
         events = [(t, rs, 1 if (rs == 0 and full < 0x80) else 0, full, nib)
                   for t, rs, rw, full, nib in events]
 
@@ -150,14 +150,14 @@ def replay(path, sem_rw):
 
 def main():
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    ap.add_argument("capturas", metavar="captures", nargs="*")
-    ap.add_argument("--no-rw", "--sem-rw", dest="sem_rw", action="store_true",
+    ap.add_argument("captures", nargs="*")
+    ap.add_argument("--no-rw", dest="no_rw", action="store_true",
                     help="the RW wire failed in the capture (see hd44780_decode.py)")
     args = ap.parse_args()
-    if not args.capturas:
+    if not args.captures:
         sys.exit(0 if self_test() else 1)
-    for path in args.capturas:
-        replay(path, args.sem_rw)
+    for path in args.captures:
+        replay(path, args.no_rw)
 
 
 if __name__ == "__main__":

@@ -76,7 +76,7 @@ def start_display():
 
 async def confirm_update():
     """A new version on trial (ota.py): confirm it once it proves healthy, or main.py rolls back to the previous one.
-    Healthy = Wi-Fi connected and the server answered someone (tools/enviar.py asks every 2 s), for 20 s in a row."""
+    Healthy = Wi-Fi connected and the server answered someone (tools/send.py asks every 2 s), for 20 s in a row."""
     if not ota.in_trial():
         return
     start = time.ticks_ms()

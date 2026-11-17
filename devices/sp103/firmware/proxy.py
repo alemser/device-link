@@ -304,7 +304,7 @@ async def clock_task():
 async def confirm_update():
     """New version on trial (ota.py): confirm it once it proves healthy. Without this,
     main.py rolls back to the previous version. Healthy = the listener runs, Wi-Fi has
-    connected and the server has answered someone (tools/enviar.py polls every 2 s), for
+    connected and the server has answered someone (tools/send.py polls every 2 s), for
     20 s in a row."""
     if not ota.in_trial():
         return

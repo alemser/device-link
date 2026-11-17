@@ -341,24 +341,24 @@ def run(events, widths, us, show_all, burst=0):
 
 def main():
     ap = argparse.ArgumentParser(description="Decodes the HD44780 bus from a LogicAnalyzer capture.")
-    ap.add_argument("arquivo", metavar="file", help=".lac capture (recommended) or .csv")
+    ap.add_argument("file", help=".lac capture (recommended) or .csv")
     ap.add_argument("--freq", type=int, help="capture frequency in Hz (required for .csv)")
-    ap.add_argument("--all", "--todos", dest="todos", action="store_true", help="also show 0x00 commands")
-    ap.add_argument("--no-rw", "--sem-rw", dest="sem_rw", action="store_true",
+    ap.add_argument("--all", dest="all", action="store_true", help="also show 0x00 commands")
+    ap.add_argument("--no-rw", dest="no_rw", action="store_true",
                     help="use when the RW wire failed: treats RS=0 with a value < 0x80 as a read "
                          "(holds outside initialization, where there are only 'Set DDRAM' and characters)")
     args = ap.parse_args()
 
-    if args.arquivo.lower().endswith(".lac"):
-        freq, pre, burst, by_number, by_name = load_lac(args.arquivo)
+    if args.file.lower().endswith(".lac"):
+        freq, pre, burst, by_number, by_name = load_lac(args.file)
     else:
         if not args.freq:
             sys.exit("For .csv give the frequency, for example: --freq 10000000")
-        by_number, by_name = load_csv(args.arquivo)
+        by_number, by_name = load_csv(args.file)
         freq, pre, burst = args.freq, 0, 0
 
     sig = pick_signals(by_number, by_name)
-    print(f"File: {args.arquivo}   frequency: {freq / 1e6:g} MHz   "
+    print(f"File: {args.file}   frequency: {freq / 1e6:g} MHz   "
           f"samples: {len(sig['E'])}   signals: {', '.join(s for s in SIGNALS if s in sig)}\n")
 
     # A wire that never changes while E pulses is probably loose
@@ -370,10 +370,10 @@ def main():
         print("  That can be normal for one or two, but several still ones point to a loose or misplaced wire.\n")
     events, widths, us, idle = decode(sig, freq, pre)
     report_idle(idle)
-    if args.sem_rw:
+    if args.no_rw:
         events = [(t, rs, 1 if (rs == 0 and full < 0x80) else 0, full, nib)
                   for t, rs, rw, full, nib in events]
-    run(events, widths, us, args.todos, burst)
+    run(events, widths, us, args.all, burst)
 
 
 if __name__ == "__main__":

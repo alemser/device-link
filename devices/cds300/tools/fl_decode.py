@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """Reads a LogicAnalyzer capture (gusmanb, .lac file) taken on the CD-S300's flat cable and shows what went by.
 
-    python3 tools/fl_decode.py captures/02-tocando.lac
-    python3 tools/fl_decode.py captures/02-tocando.lac --bits          # each frame's raw bits
-    python3 tools/fl_decode.py captures/02-tocando.lac --edge falling  # data read on the falling clock edge
+    python3 tools/fl_decode.py captures/02-playing.lac
+    python3 tools/fl_decode.py captures/02-playing.lac --bits          # each frame's raw bits
+    python3 tools/fl_decode.py captures/02-playing.lac --edge falling  # data read on the falling clock edge
 
 Written on 2026-11-16, before any capture, so it assumes nothing about the glass's protocol: it cuts the traffic into
 frames and measures it (docs/protocol.md has what it showed):
@@ -39,7 +39,7 @@ GROUP_GAP_US = 1000             # a silence longer than this between frames spli
 
 
 # ---------------------------------------------------------------------------
-# Leitura
+# Reading
 # ---------------------------------------------------------------------------
 
 def load_lac(path):
@@ -145,7 +145,7 @@ def pulses_low(samples, freq):
 
 
 # ---------------------------------------------------------------------------
-# Controle remoto (NEC, linha em repouso alta)
+# Remote control (NEC, line idle high)
 # ---------------------------------------------------------------------------
 
 def nec(rem, freq):
@@ -187,7 +187,7 @@ def nec(rem, freq):
 
 
 # ---------------------------------------------------------------------------
-# Relatório
+# Report
 # ---------------------------------------------------------------------------
 
 def hexs(bs):

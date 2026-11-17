@@ -2,14 +2,14 @@
 
 With the Pico installed inside the amp, the USB cable is hard to use (and with the VSYS wire connected, it is even dangerous: see
 `installation.md`, "USB rule"). So the new program goes over Wi-Fi, and the Pico **goes back on its own to the previous
-version** if the new one does not work. It can be sent from the computer (`tools/enviar.py`) or from the DeviceLink app,
+version** if the new one does not work. It can be sent from the computer (`tools/send.py`) or from the DeviceLink app,
 which installs the latest GitHub release of this repository.
 
-**No password since 2026-11-17** (version 973fed99): `ota.py`, `enviar.py` and the other shared files now come from the
-bridges' shared base (device-link `firmware-base/`, copied with `copiar.py --skip firmware/main.py`), as decided for
+**No password since 2026-11-17** (version 973fed99): `ota.py`, `send.py` and the other shared files now come from the
+bridges' shared base (device-link `firmware-base/`, copied with `copy_base.py --skip firmware/main.py`), as decided for
 contract v2. Before that, every request carried an `X-Password` header; the history below mentions it.
 
-Programs: `firmware/ota.py` (on the Pico, receives), `firmware/main.py` (on the Pico, decides whether to roll back) and `tools/enviar.py` (on the
+Programs: `firmware/ota.py` (on the Pico, receives), `firmware/main.py` (on the Pico, decides whether to roll back) and `tools/send.py` (on the
 computer, sends).
 
 ## Preparing (once only, over the cable)
@@ -27,7 +27,7 @@ Done on 2026-10-24: the amp's Pico is already set up like this.
 ## Sending a new version
 
 ```sh
-python3 tools/enviar.py
+python3 tools/send.py
 ```
 
 It does everything on its own:
@@ -37,8 +37,8 @@ It does everything on its own:
 3. Marks for deletion the `.py` files that are on the Pico but no longer exist in `firmware/` (only when it sends the whole folder).
 4. The Pico saves **the whole current version** in the `old/` folder, swaps and deletes the files.
 5. The Pico restarts and the new version is **on trial**. It is confirmed when, for 20 s in a row, the program runs, the
-   Wi-Fi is connected and someone (`enviar.py` itself) can talk to the Pico.
-6. `enviar.py` shows "Done: version ... confirmed", in about 30 s.
+   Wi-Fi is connected and someone (`send.py` itself) can talk to the Pico.
+6. `send.py` shows "Done: version ... confirmed", in about 30 s.
 
 If the new version **fails**, the Pico goes back to the previous one on its own:
 
@@ -48,7 +48,7 @@ If the new version **fails**, the Pico goes back to the previous one on its own:
 | Hangs, does not connect to Wi-Fi or does not respond | 3 min (the `main.py` timer runs out and it restarts) |
 | Power cut during the trial | on the next boot (to be safe, it counts as a failure) |
 
-`enviar.py` warns: "The new version FAILED and the Pico went back to the previous one". To see the error, connect the Pico by cable and
+`send.py` warns: "The new version FAILED and the Pico went back to the previous one". To see the error, connect the Pico by cable and
 run the new version with `mpremote` (with the amp unplugged from the wall and the red wire disconnected):
 
 ```sh
@@ -62,14 +62,12 @@ computer and does not go back to Wi-Fi: unplug and replug the USB.
 ## Other commands
 
 ```sh
-python3 tools/enviar.py --status           # current version, state and saved version
-python3 tools/enviar.py --rollback         # go back to the saved version (the one before the last update)
-python3 tools/enviar.py proxy.py           # send only this file (if it changed; deletes nothing)
-python3 tools/enviar.py --host 192.168.178.108    # if sp103.local does not work
-python3 tools/enviar.py --publish          # make the GitHub release the app updates from (needs gh)
+python3 tools/send.py --status           # current version, state and saved version
+python3 tools/send.py --rollback         # go back to the saved version (the one before the last update)
+python3 tools/send.py proxy.py           # send only this file (if it changed; deletes nothing)
+python3 tools/send.py --host 192.168.178.108    # if sp103.local does not work
+python3 tools/send.py --publish          # make the GitHub release the app updates from (needs gh)
 ```
-
-The old Portuguese flags (`--estado`, `--voltar`, `--forcar`) still work.
 
 The "version" is an 8-letter code that changes whenever any file changes.
 
@@ -98,4 +96,4 @@ On the bench (2026-10-24):
 
 On the amp (2026-10-29): the first proxy version errored on start and rolled back on its own; the fix was confirmed.
 Deletion was used to remove the files of the unclipped writing from the Pico. The old `ota.py` could not delete, so it took
-two sends: `enviar.py` warns when that happens.
+two sends: `send.py` warns when that happens.

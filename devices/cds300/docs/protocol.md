@@ -21,10 +21,10 @@ Name the channels `CS`, `CLK`, `DATA`, `RST` and `REM` in the analyzer program: 
 before the numbers. Everything is 3.3 V. The Mac **on battery** (the device has no earth). Read a capture with:
 
 ```sh
-python3 tools/fl_decode.py captures/02-tocando.lac
+python3 tools/fl_decode.py captures/02-playing.lac
 ```
 
-One capture was enough (`02-tocando`, 1 MHz, 200 ms). The others planned (power-on, DISPLAY key, modes, tray) were
+One capture was enough (`02-playing`, 1 MHz, 200 ms). The others planned (power-on, DISPLAY key, modes, tray) were
 replaced by logging the changes from the bridge itself (below). Later, only if the matching idea is taken up: a CD
 with CD-Text and a USB stick with MP3 (disc text), and listening on `232C_TX` of the `CB902` port (nothing else there).
 
@@ -32,16 +32,16 @@ with CD-Text and a USB stick with MP3 (disc text), and listening on `232C_TX` of
 
 | Question | Answer | Shown by |
 |---|---|---|
-| Clock speed, edge where data is valid, bit order | 62 kHz (6 µs high, 10 µs low); data read on the rising edge; **LSB first** | `02-tocando` |
-| Frame size, and whether `/CS` rises between bytes | One frame per command, with its data (8 to 104 bits); `/CS` rises only at the end of the frame | `02-tocando` |
-| Does the microcontroller send **characters or dots**? | **Characters, in ASCII.** The icons are two custom characters it draws (below) | `02-tocando` |
-| How the icons (grids 13 and 14) are lit | Positions 13 and 14 show custom characters 0 and 1; their dots are the icons | `02-tocando` |
-| How often the display is rewritten | A ~38 ms cycle, in three groups 12.7 ms apart | `02-tocando` |
+| Clock speed, edge where data is valid, bit order | 62 kHz (6 µs high, 10 µs low); data read on the rising edge; **LSB first** | `02-playing` |
+| Frame size, and whether `/CS` rises between bytes | One frame per command, with its data (8 to 104 bits); `/CS` rises only at the end of the frame | `02-playing` |
+| Does the microcontroller send **characters or dots**? | **Characters, in ASCII.** The icons are two custom characters it draws (below) | `02-playing` |
+| How the icons (grids 13 and 14) are lit | Positions 13 and 14 show custom characters 0 and 1; their dots are the icons | `02-playing` |
+| How often the display is rewritten | A ~38 ms cycle, in three groups 12.7 ms apart | `02-playing` |
 | What `DIMMER` sends | Not mapped yet | |
 | The remote: NEC, address 79/86, real timings | NEC 79/86 confirmed in use: the bridge's `play` started the disc. Timings not measured | Device, 2026-11-16 |
 | Does the RS-232 port say anything by itself? | Not checked | |
 
-## The protocol (capture `02-tocando`, 2026-11-16)
+## The protocol (capture `02-playing`, 2026-11-16)
 
 Captured at 1 MHz for 200 ms, with the disc playing track 1 at 0:07. Bytes below are LSB first, as the glass reads
 them. The cycle repeats every ~38 ms:

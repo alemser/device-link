@@ -1,6 +1,6 @@
 """Who may stay on /events: one connection per IP, and few in total.
 
-This file belongs to the shared base (firmware-base/): change it there and copy it with copiar.py --all, never here.
+This file belongs to the shared base (firmware-base/): change it there and copy it with copy_base.py --all, never here.
 
 A dead connection (a phone that lost Wi-Fi) only goes away after minutes, and each one holds lwIP memory and receives
 writes. With 4 dead at once the server stopped for good (SP103 issue #2). A client that reconnects comes from the same

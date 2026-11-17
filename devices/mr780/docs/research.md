@@ -7,12 +7,12 @@ open amp answered it:** it is a **dot-matrix VFD, 2 lines × 16 characters**, wi
 
 Photos in `docs/img/`.
 
-### The display (`placa-display-frente-vfd.jpg`)
+### The display (`display-board-front-vfd.jpg`)
 
 - A VFD (vacuum fluorescent display) glass tube with **2 lines of 16 characters**. Each character is a dot matrix
   (5×7 or similar), not segments. No fixed icons appear.
 - The glass is soldered straight to the display board, by a row of pins along its bottom edge.
-- **There is no chip on the display board**, neither on the front nor on the back (`placa-display-tras-1.jpg`): only
+- **There is no chip on the display board**, neither on the front nor on the back (`display-board-back-1.jpg`): only
   transistors, diodes, capacitors and a regulator (Q1). That is the VFD's power supply (filament and the grids' high
   voltage).
 - A 2×16 dot-matrix VFD with no external chip would need more than 100 wires to drive. Since the glass has far fewer
@@ -31,7 +31,7 @@ Photos in `docs/img/`.
 - A pair of yellow wires leaves the transformer and goes to the display board: it should be the power for the filament
   or for the VFD's supply (low-voltage AC). Do not touch.
 
-### The main board (`placa-principal-1.jpg`, `placa-principal-2.jpg`)
+### The main board (`main-board-1.jpg`, `main-board-2.jpg`)
 
 - Board `MR780_Main_PCB`, P/N `0021-0100-2000`, dated 2021-12-21.
 - **Main microcontroller (U17)**: a square 64-pin chip (LQFP-64) near the flat cable, with a 25 MHz crystal beside

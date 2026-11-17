@@ -59,26 +59,26 @@ class WifiSetupTest {
 
     @Test
     fun joinSendsTheNetworkAsJson() = runBlocking {
-        server.enqueue(json("""{"state": "connecting", "detail": "Casa", "ip": ""}""", 202))
-        client.join("Casa", "12345678")
+        server.enqueue(json("""{"state": "connecting", "detail": "Home", "ip": ""}""", 202))
+        client.join("Home", "12345678")
         val request = server.takeRequest()
         assertEquals("PUT", request.method)
         assertEquals("/wifi", request.path)
         val body = Wire.parseToJsonElement(request.body.readUtf8()).jsonObject
-        assertEquals("Casa", body["ssid"]?.jsonPrimitive?.content)
+        assertEquals("Home", body["ssid"]?.jsonPrimitive?.content)
         assertEquals("12345678", body["psk"]?.jsonPrimitive?.content)
     }
 
     @Test
     fun theBridgesErrorIsShownAsItIs() = runBlocking {
         server.enqueue(json("""{"error": "open the setup network first: POST /wifi/setup"}""", 403))
-        val error = runCatching { client.join("Casa", "12345678") }.exceptionOrNull()
+        val error = runCatching { client.join("Home", "12345678") }.exceptionOrNull()
         assertEquals("open the setup network first: POST /wifi/setup", error?.message)
     }
 
     @Test
     fun awaitOutcomeWaitsThroughConnectingAndLostAnswers() = runTest {
-        server.enqueue(json("""{"state": "connecting", "detail": "Casa"}"""))
+        server.enqueue(json("""{"state": "connecting", "detail": "Home"}"""))
         server.enqueue(MockResponse().setResponseCode(500))      // the radio changing channel
         server.enqueue(json("""{"state": "failed", "detail": "wrong password", "ip": "10.0.0.5"}"""))
         val outcome = client.awaitOutcome(everyMs = 1)

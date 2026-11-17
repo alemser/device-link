@@ -15,10 +15,10 @@ import json
 import ir_codes
 
 API = 2
-NAME = "kx393"                  # the discovery and network name (kx393.local, AmpLink-KX393-XXXX); enviar.py reads it
+NAME = "kx393"                  # the discovery and network name (kx393.local, AmpLink-KX393-XXXX); send.py reads it
 KIND = "tape_deck"
 MODEL = "Yamaha KX-393"
-FIRMWARE = "alemser/device-link/kx393"   # its releases: alemser/device-link, tagged kx393-<version> (enviar.py --publish)
+FIRMWARE = "alemser/device-link/kx393"   # its releases: alemser/device-link, tagged kx393-<version> (send.py --publish)
 FEATURES = ("control", "update", "wifi_setup")
 PANEL_KEYS = ("power_toggle",)  # pressed on the KEY1 line, not sent as IR (panel.py)
 

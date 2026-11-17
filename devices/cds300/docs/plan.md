@@ -104,7 +104,7 @@ network reads **−47 dBm** and no noise or skipping was noticed while playing.
 
 ## Step 3: logic analyzer
 
-**Done 2026-11-16**: one capture (`captures/02-tocando.lac`) answered the questions: 62 kHz clock, LSB first, the
+**Done 2026-11-16**: one capture (`captures/02-playing.lac`) answered the questions: 62 kHz clock, LSB first, the
 text in ASCII, the icons as two custom characters, a ~38 ms cycle (`docs/protocol.md`). The icon map was then made
 with the Pico inside the device, logging each change while the keys were pressed, which beats 200 ms captures.
 
@@ -119,7 +119,7 @@ with the Pico inside the device, logging each change while the keys were pressed
    the real capture and on the device. `/state` carries `transport`, `media`, `disc` and the display's text.
 
 The Wi-Fi, server and update files live in one place, the **shared base** (`device-link`, `firmware-base/`), copied into
-each project by `copiar.py`. The SP103's lessons still hold: no web page on the Pico, no large answers (a `/display`
+each project by `copy_base.py`. The SP103's lessons still hold: no web page on the Pico, no large answers (a `/display`
 view over 1 KB stopped answering, 2026-11-16), one `/events` connection per client.
 
 ## The common protocol

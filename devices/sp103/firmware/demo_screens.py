@@ -1,6 +1,6 @@
 """Bench, stage 1: shows every SP103 screen on the spare display, one every 2 s.
 
-Run from the computer:  .venv/bin/mpremote run firmware/demo_telas.py
+Run from the computer:  .venv/bin/mpremote run firmware/demo_screens.py
 (first copy the modules: .venv/bin/mpremote cp firmware/lcd1602.py firmware/sp103_screens.py :)
 """
 

@@ -146,7 +146,7 @@ same number (11 jumpers).
   1. Clear the log: `curl -X POST http://sp103.local/bus/clear`.
   2. Do what you want to study on the amp and note the time.
   3. Download the log: `curl http://sp103.local/bus.csv -o bus.csv`.
-  4. See the assembled screens: `python3 tools/ler_bus.py bus.csv` (with `--palavras`, each word too).
+  4. See the assembled screens: `python3 tools/read_bus.py bus.csv` (with `--words`, each word too).
 - **`http://sp103.local/ir`**: the IR line should sit at 1 when idle, and `knob_edges` should increase when turning
   the volume.
 - **After the Pico restarts on its own** (an update, for example), the display stays empty until the controller sends

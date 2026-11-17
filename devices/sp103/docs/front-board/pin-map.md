@@ -1,8 +1,8 @@
 # T9311DP leg map
 
-Multimeter measurements. Photos: [`placa-frontal-baixo-mapa.jpg`](placa-frontal-baixo-mapa.jpg) (underside, annotated),
-[`placa-frontal-mapa.jpg`](placa-frontal-mapa.jpg) (top side, annotated), [`foto-chip-encoder-J2.jpg`](foto-chip-encoder-J2.jpg)
-and [`foto-receptor-IR.jpg`](foto-receptor-IR.jpg).
+Multimeter measurements. Photos: [`front-board-underside-map.jpg`](front-board-underside-map.jpg) (underside, annotated),
+[`front-board-top-map.jpg`](front-board-top-map.jpg) (top side, annotated), [`chip-encoder-J2.jpg`](chip-encoder-J2.jpg)
+and [`ir-receiver.jpg`](ir-receiver.jpg).
 
 **Old label on the underside photo:** it says "A, common, B" on the encoder, but the common is the bottom pin (E3), as
 the encoder table below shows.

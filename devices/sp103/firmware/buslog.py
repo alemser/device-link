@@ -7,7 +7,7 @@
 
 CSV columns: time (wall time, if the Pico has set its clock from the internet), ms (the
 Pico's internal clock, in ms), rs, rw, byte (hex), meaning (see hd44780.describe). The CSV
-opens in Numbers/Excel and in tools/ler_bus.py, which rebuilds the screens.
+opens in Numbers/Excel and in tools/read_bus.py, which rebuilds the screens.
 
 Each word's time is when Python READ it, and Python picks up words in batches (every
 ~1 ms, or longer when Wi-Fi is busy): words in the same batch share the same time, but

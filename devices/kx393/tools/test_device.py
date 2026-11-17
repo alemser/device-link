@@ -28,5 +28,5 @@ assert "settings" not in d, "the contract: device, state and remote only"
 assert device.check() == ([], []), device.check()
 # Small enough to serve from a Pico in one go (contract: under 1.5 KB).
 assert len(raw) < 1500, len(raw)
-assert device.NAME == "kx393"       # tools/enviar.py and discovery use this name
+assert device.NAME == "kx393"       # tools/send.py and discovery use this name
 print("all good (%d bytes)" % len(raw))

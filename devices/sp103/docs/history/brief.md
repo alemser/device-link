@@ -160,7 +160,7 @@ app).
 - Still to confirm which channel the bar indicates (bar on the right = right channel attenuated, or the sound moved to
   the right?).
 - **Stage 1 done (2026-10-23):** `firmware/lcd1602.py` (4-bit driver, write-only), `firmware/sp103_screens.py`
-  (state → screen, with the amp's CGRAM) and `firmware/demo_telas.py`. All screens and the 8 glyphs show correctly on
+  (state → screen, with the amp's CGRAM) and `firmware/demo_screens.py`. All screens and the 8 glyphs show correctly on
   the blue 1602, with the Pico's 3.3 V signals (no level shifter). VO went straight to GND.
   Poor contact on wires just pushed into the holes scrambles 4-bit mode; the program resets the display before each
   screen to recover by itself. Permanent fix: solder a pin header.
@@ -174,14 +174,14 @@ app).
   `main.py` now runs the sniffer. No series resistors, and the Pico powered from LCD pin 2 (5 V present even in
   standby) into VSYS.
 - **Wi-Fi update and /bus page (2026-10-24):** `firmware/ota.py` + `main.py` (automatic rollback to the previous
-  version) and `tools/enviar.py`, see `docs/wifi-update.md`. `firmware/buslog.py`: bus statistics and download of
-  the latest words (8192 today) with timestamps (`tools/ler_bus.py` rebuilds the screens). Tested on the bench with a
+  version) and `tools/send.py`, see `docs/wifi-update.md`. `firmware/buslog.py`: bus statistics and download of
+  the latest words (8192 today) with timestamps (`tools/read_bus.py` rebuilds the screens). Tested on the bench with a
   fake amp (`tools/teste_bus_pico.py`), including the automatic rollbacks.
 - **Writing without cutting (2026-10-24 to 10-28), retired:** the Pico, in parallel with the display, only pulled wires
   to 0 and managed to show short names (REGA, TAPE), only from the second redraw on. Summary and lessons in
   `docs/interception-options.md`; the code is in the git history (up to `6be4eb2`).
 - **Install inside the amp (2026-10-24):** the Pico sits inside, powered from LCD pin 2 (red wire to VSYS, pin 39);
-  updates over Wi-Fi only (`tools/enviar.py`).
+  updates over Wi-Fi only (`tools/send.py`).
 - **Stage 6 done: the Pico as proxy (2026-10-29):** display desoldered at pins 4–14 (option 3b). The Pico reads the
   controller, answers "free" to the busy flag (`firmware/busy.py`) and draws the screens with the custom names
   (`firmware/proxy.py`). Any text up to 16 characters, from the first screen. Tested on the amp and with the captures

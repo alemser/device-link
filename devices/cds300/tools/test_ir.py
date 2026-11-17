@@ -17,7 +17,7 @@ sys.path.insert(0, os.path.join(HERE, "..", "firmware"))
 import ir_codes   # noqa: E402
 
 MODEL = os.path.expanduser("~/Projects/groove-rig/internal/catalog/models/yamaha_cd_s300.yaml")
-TICK_US = 269 / 8.192           # unidade de tempo do Broadlink
+TICK_US = 269 / 8.192           # Broadlink's time unit
 LONG_US = 1000                  # above this, the space is a 1 bit
 
 # The service manual's table, page 56 (docs/research.md), copied separately to catch typos.
@@ -54,14 +54,14 @@ def captured(body):
 
 assert ir_codes.COMMANDS == MANUAL
 assert set(ir_codes.KEYS) == set(ir_codes.COMMANDS) and len(ir_codes.KEYS) == len(ir_codes.COMMANDS) == 30
-assert len(set(ir_codes.COMMANDS.values())) == 30       # nenhum código repetido
+assert len(set(ir_codes.COMMANDS.values())) == 30       # no repeated code
 
 for key, command in ir_codes.COMMANDS.items():
     words = ir_codes.frame(key)
-    # Pares de linha em 0 e solta: o PIO termina sempre esperando a próxima linha em 0.
+    # Pairs of line low and released: the PIO always ends waiting for the next line low.
     assert len(words) == 2 + 64 + 2, key
     assert words[0] == 9000 and words[1] == 4500, key
-    assert all(w == 560 for w in words[2:-1:2]), key    # todo pulso de linha em 0 tem o mesmo tamanho
+    assert all(w == 560 for w in words[2:-1:2]), key    # every line-low pulse has the same width
     assert words[-1] >= 40000, key                      # the silence between two keys
     assert decode(words) == [0x79, 0x86, command, command ^ 0xFF], key
 

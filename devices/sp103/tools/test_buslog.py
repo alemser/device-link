@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
-"""Tests the bus log (firmware/buslog.py) and tools/ler_bus.py on the computer.
+"""Tests the bus log (firmware/buslog.py) and tools/read_bus.py on the computer.
 
 Feeds the words from the .lac captures through BusLog, as escuta.py does on the Pico (in 1 ms
-batches), builds the CSV, reads it back with ler_bus.py and checks that the screens come out the
+batches), builds the CSV, reads it back with read_bus.py and checks that the screens come out the
 same as the sniffer's (tools/test_sniffer.py). Also checks the buffer wraparound and the timestamps.
 
     python3 tools/test_buslog.py
@@ -17,7 +17,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
 sys.path.insert(0, os.path.join(HERE, "..", "firmware"))
 
-import ler_bus   # noqa: E402
+import read_bus   # noqa: E402
 from buslog import BusLog   # noqa: E402
 from hd44780 import Bus   # noqa: E402
 from test_sniffer import SKIP, screens_from_words, words_from_lac   # noqa: E402
@@ -53,7 +53,7 @@ def from_csv(text):
     with tempfile.NamedTemporaryFile("w", suffix=".csv", delete=False) as f:
         f.write(text)
     try:
-        return ler_bus.screens(ler_bus.words(f.name))
+        return read_bus.screens(read_bus.words(f.name))
     finally:
         os.unlink(f.name)
 

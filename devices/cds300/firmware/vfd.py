@@ -1,6 +1,6 @@
 """Parser for the CD-S300 front-panel VFD bus, as seen by the Pico's sniffer (display.py).
 
-The protocol comes from the logic-analyzer capture captures/02-tocando.lac (docs/protocol.md):
+The protocol comes from the logic-analyzer capture captures/02-playing.lac (docs/protocol.md):
 
 - One frame per command: /CS low, a command byte, then its data bytes, LSB first, data valid on the rising clock.
 - The command's high nibble is the command, the low nibble an address (Princeton PT6302-style controller):

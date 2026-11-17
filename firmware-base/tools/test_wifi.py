@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Tests the Pico's Wi-Fi (firmware/wifi.py) on the computer, with a fake Wi-Fi chip.
 
-This file belongs to the shared base (firmware-base/): change it there and copy it with copiar.py --all, never here.
+This file belongs to the shared base (firmware-base/): change it there and copy it with copy_base.py --all, never here.
 
     python3 tools/test_wifi.py
 """
@@ -70,8 +70,8 @@ class FakeWLAN:
         return ("192.168.4.1",) if self.kind == "ap" else ("192.168.1.77",)
 
     def scan(self):
-        return [(b"Casa", b"x", 6, -50, 3, 1), (b"Casa", b"y", 11, -40, 3, 2), (b"", b"z", 1, -30, 3, 1),
-                (b"Vizinho", b"w", 1, -70, 0, 1)]
+        return [(b"Home", b"x", 6, -50, 3, 1), (b"Home", b"y", 11, -40, 3, 2), (b"", b"z", 1, -30, 3, 1),
+                (b"Neighbour", b"w", 1, -70, 0, 1)]
 
 
 fake_network = types.SimpleNamespace(STA_IF="sta", AP_IF="ap", hostname=lambda h: None,
@@ -137,9 +137,9 @@ def request(net, method, path, body=None):
 
 # --- validate ---
 
-assert wifi.validate({"ssid": "Casa", "psk": "12345678"}) == ("Casa", "12345678")
+assert wifi.validate({"ssid": "Home", "psk": "12345678"}) == ("Home", "12345678")
 assert wifi.validate({"ssid": "Aberta"}) == ("Aberta", "")
-for bad in ({"ssid": ""}, {"psk": "12345678"}, {"ssid": "Casa", "psk": "1234567"}, {"ssid": "x" * 33}, [1]):
+for bad in ({"ssid": ""}, {"psk": "12345678"}, {"ssid": "Home", "psk": "1234567"}, {"ssid": "x" * 33}, [1]):
     try:
         wifi.validate(bad)
         raise AssertionError("accepted %r" % (bad,))
@@ -148,30 +148,30 @@ for bad in ({"ssid": ""}, {"psk": "12345678"}, {"ssid": "Casa", "psk": "1234567"
 
 # --- collapse: one per name, the strongest, no hidden ones; the 6th field (a count) doesn't matter ---
 
-assert wifi.collapse(FakeWLAN("sta").scan()) == [{"ssid": "Casa", "rssi": -40, "secure": True},
-                                                 {"ssid": "Vizinho", "rssi": -70, "secure": False}]
+assert wifi.collapse(FakeWLAN("sta").scan()) == [{"ssid": "Home", "rssi": -40, "secure": True},
+                                                 {"ssid": "Neighbour", "rssi": -70, "secure": False}]
 assert len(wifi.collapse([(b"n%d" % i, b"", 1, -i, 0, 1) for i in range(30)])) == 20
 
 # --- the saved network: wifi.json first, then older Picos' secrets.py ---
 
-net = fresh("vazio")
-sys.modules["secrets"] = types.SimpleNamespace(WIFI_SSID="Antiga", WIFI_PASSWORD="senha-antiga")
-assert net.saved() == {"ssid": "Antiga", "psk": "senha-antiga"}
-net = fresh("salvo", saved={"ssid": "Casa", "psk": "12345678"})
-assert net.saved() == {"ssid": "Casa", "psk": "12345678"}
+net = fresh("empty")
+sys.modules["secrets"] = types.SimpleNamespace(WIFI_SSID="Old", WIFI_PASSWORD="old-password")
+assert net.saved() == {"ssid": "Old", "psk": "old-password"}
+net = fresh("saved", saved={"ssid": "Home", "psk": "12345678"})
+assert net.saved() == {"ssid": "Home", "psk": "12345678"}
 sys.modules["secrets"] = types.SimpleNamespace(WIFI_SSID="")
-assert fresh("nada").saved() is None
+assert fresh("nothing").saved() is None
 
 # --- no saved network: the setup network opens at once ---
 
-net = fresh("primeira-vez")
+net = fresh("first-time")
 net._supervise()
 assert net.setup_open() and net.ap.cfg == {"ssid": "AmpLink-DEMO-D85E", "key": "amplink-setup"}
 assert request(net, "GET", "/")[0] == 200
 assert "DEMO-D85E" in request(net, "GET", "/")[1]
 status, body = request(net, "GET", "/wifi")
 assert status == 200 and body["setup"] == {"open": True, "ssid": "AmpLink-DEMO-D85E"} and body["ssid"] == ""
-assert request(net, "GET", "/wifi/networks")[1][0]["ssid"] == "Casa"
+assert request(net, "GET", "/wifi/networks")[1][0]["ssid"] == "Home"
 assert json.loads(net.answer()) == {"name": "DEMO-D85E", "model": "demo", "ip": "192.168.4.1", "api": 2}
 # The full name and the kind only appear when the bridge provides them.
 net.label, net.kind = "Demo Player", "cd_player"
@@ -182,15 +182,15 @@ net.label, net.kind = "", ""
 
 # --- setting up: PUT /wifi connects, saves, and the setup network closes 60 s later ---
 
-FakeWLAN.routers = {"Casa": "12345678"}
-assert request(net, "PUT", "/wifi", {"ssid": "Casa", "psk": "123"})[0] == 400
-status, body = request(net, "PUT", "/wifi", {"ssid": "Casa", "psk": "12345678"})
-assert status == 202 and net.pending == ("Casa", "12345678")
+FakeWLAN.routers = {"Home": "12345678"}
+assert request(net, "PUT", "/wifi", {"ssid": "Home", "psk": "123"})[0] == 400
+status, body = request(net, "PUT", "/wifi", {"ssid": "Home", "psk": "12345678"})
+assert status == 202 and net.pending == ("Home", "12345678")
 ssid, psk = net.pending
 net.pending = None
 run(net._configure(ssid, psk))
-assert net.status == {"state": "connected", "detail": "Casa", "ip": "192.168.1.77"}
-assert net.saved() == {"ssid": "Casa", "psk": "12345678"}
+assert net.status == {"state": "connected", "detail": "Home", "ip": "192.168.1.77"}
+assert net.saved() == {"ssid": "Home", "psk": "12345678"}
 assert json.loads(net.answer())["ip"] == "192.168.1.77"
 net._supervise()
 assert net.setup_open()                     # still: whoever set it up needs to read the IP
@@ -215,16 +215,16 @@ assert not net.setup_open()
 # --- the new network fails: the reason stays in the status and the Pico goes back to the previous one ---
 
 net.open_setup(wifi.SETUP_WINDOW_S)
-run(net._configure("Casa", "senha-errada"))
+run(net._configure("Home", "wrong-password"))
 assert net.status == {"state": "failed", "detail": "wrong password", "ip": ""}
-assert net.sta.isconnected() and net.sta.ssid == "Casa"
-assert net.saved() == {"ssid": "Casa", "psk": "12345678"}
-run(net._configure("Sumiu", ""))
+assert net.sta.isconnected() and net.sta.ssid == "Home"
+assert net.saved() == {"ssid": "Home", "psk": "12345678"}
+run(net._configure("Gone", ""))
 assert net.status["detail"] == "network not found" and net.sta.isconnected()
 
 # --- the saved network goes away (router off): setup opens after 2 min; closes when it comes back ---
 
-net = fresh("roteador", saved={"ssid": "Casa", "psk": "12345678"}, routers={})
+net = fresh("router", saved={"ssid": "Home", "psk": "12345678"}, routers={})
 net._supervise()
 assert not net.setup_open()
 clock.now += wifi.OPEN_SETUP_AFTER_S - 1
@@ -233,8 +233,8 @@ assert not net.setup_open()
 clock.now += 1
 net._supervise()
 assert net.setup_open()
-FakeWLAN.routers = {"Casa": "12345678"}
-run(net._connect("Casa", "12345678"))
+FakeWLAN.routers = {"Home": "12345678"}
+run(net._connect("Home", "12345678"))
 net._supervise()
 assert net.setup_open()
 clock.now += wifi.CLOSE_SETUP_AFTER_S

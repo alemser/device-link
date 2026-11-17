@@ -4,7 +4,7 @@ A simulated amp draws the SP103 screens on the spare display, as the controller
 would. Each screen goes through the reader (amp_state), exactly as it will
 with the sniffer, and the state is published at http://sp103.local/ (or by IP).
 
-Run from the computer:  .venv/bin/mpremote run firmware/bancada_wifi.py
+Run from the computer:  .venv/bin/mpremote run firmware/bench_wifi.py
 Or standalone, when the Pico powers up: main.py imports this file (see main.py).
 """
 

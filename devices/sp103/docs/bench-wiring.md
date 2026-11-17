@@ -53,4 +53,4 @@ initialised). Then back off a little, until the squares are faint.
 
 It worked first time with the Pico's 3.3 V signals, without a level shifter.
 With nothing on VO the screen is blue and empty: VO needs to go to GND (or to the trimpot).
-Test program: `firmware/demo_telas.py` (see the instructions in the file itself).
+Test program: `firmware/demo_screens.py` (see the instructions in the file itself).

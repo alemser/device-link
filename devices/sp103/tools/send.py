@@ -1,18 +1,18 @@
 #!/usr/bin/env python3
 """Sends the new program to the Pico over Wi-Fi (firmware/ota.py) and follows it until it confirms.
 
-This file belongs to the shared base (firmware-base/): change it there and copy it with copiar.py --all, never here.
+This file belongs to the shared base (firmware-base/): change it there and copy it with copy_base.py --all, never here.
 
-    python3 tools/enviar.py                    # sends what changed in firmware/, deletes from the Pico the .py
+    python3 tools/send.py                    # sends what changed in firmware/, deletes from the Pico the .py
                                                # files that no longer exist, and applies
-    python3 tools/enviar.py ponte.py web.py    # only these files (if they changed)
-    python3 tools/enviar.py --status           # only shows the Pico's version and state
-    python3 tools/enviar.py --rollback         # goes back to the previous version (kept on the Pico)
-    python3 tools/enviar.py --publish          # publishes firmware/ as a GitHub release, for the DeviceLink app
+    python3 tools/send.py ponte.py web.py    # only these files (if they changed)
+    python3 tools/send.py --status           # only shows the Pico's version and state
+    python3 tools/send.py --rollback         # goes back to the previous version (kept on the Pico)
+    python3 tools/send.py --publish          # publishes firmware/ as a GitHub release, for the DeviceLink app
 
 Options: --host and --force (send even unchanged files). The bridge's name comes from NAME in firmware/device.py (e.g.
 "mr780"): the default host is <name>.local, or the <NAME>_HOST variable. If the host doesn't answer, the Pico is found
-by discovery (UDP broadcast, as the app does). The old Portuguese flags (--estado, --voltar, --forcar) still work.
+by discovery (UDP broadcast, as the app does).
 
 No password (contract v2).
 
@@ -196,7 +196,7 @@ def wait(host, expected, expected_files, started):
             print("  %3d s  %s" % (time.time() - started, msg))
             last = msg
     print("\nThe Pico didn't confirm within %d s. It goes back to the previous version by itself;" % WAIT_S)
-    print("check with: python3 tools/enviar.py --status")
+    print("check with: python3 tools/send.py --status")
     return False
 
 
@@ -226,10 +226,10 @@ def main():
     ap = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     ap.add_argument("files", nargs="*", help="files from firmware/ (default: every .py)")
     ap.add_argument("--host", default=os.environ.get(NAME.upper() + "_HOST", NAME + ".local"))
-    ap.add_argument("--status", "--estado", dest="status", action="store_true", help="only show the state")
-    ap.add_argument("--rollback", "--voltar", dest="rollback", action="store_true",
+    ap.add_argument("--status", dest="status", action="store_true", help="only show the state")
+    ap.add_argument("--rollback", dest="rollback", action="store_true",
                     help="go back to the previous version")
-    ap.add_argument("--force", "--forcar", dest="force", action="store_true", help="send even unchanged files")
+    ap.add_argument("--force", dest="force", action="store_true", help="send even unchanged files")
     ap.add_argument("--publish", action="store_true",
                     help="publish firmware/ as a GitHub release (where device.FIRMWARE says), for the DeviceLink app")
     args = ap.parse_args()

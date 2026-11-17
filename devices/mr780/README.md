@@ -57,9 +57,9 @@ The official manual stays in the local copy only, in `docs/manual/` (copyrighted
   - This project's: `ponte.py` (the program) and `device.py` (`/device`).
   - **Copies of the shared base** (`firmware-base/` at the repository's root): `wifi.py`, `web.py`, `ota.py`,
     `udp.py`, `listeners.py` and `main.py`. Change them there and copy with
-    `python3 firmware-base/copiar.py --all` from the repository's root, never here.
+    `python3 firmware-base/copy_base.py --all` from the repository's root, never here.
   - `main.py` (the update gatekeeper) only goes to the Pico by USB; everything else goes over Wi-Fi.
-- `tools/`: the tests on the computer and `enviar.py` (update over Wi-Fi). `enviar.py`, `test_wifi.py` and
+- `tools/`: the tests on the computer and `send.py` (update over Wi-Fi). `send.py`, `test_wifi.py` and
   `test_listeners.py` come from the base; `test_device.py` is this project's.
 - `captures/`: logic-analyzer captures.
 - `docs/img/`: photos of the boards.
@@ -68,7 +68,7 @@ The official manual stays in the local copy only, in `docs/manual/` (copyrighted
 
 ```sh
 for t in wifi listeners device; do python3 tools/test_$t.py; done
-python3 ../../firmware-base/copiar.py --check    # are the base copies up to date?
+python3 ../../firmware-base/copy_base.py --check    # are the base copies up to date?
 ```
 
 ## Install on the Pico (by USB, once)
@@ -78,4 +78,4 @@ mpremote fs cp firmware/*.py : + reset
 ```
 
 With no saved network, the Pico opens the `AmpLink-MR780-XXXX` network (key `amplink-setup`): in the DeviceLink app,
-"Set up a new device's Wi-Fi". From then on, updates go over Wi-Fi: `python3 tools/enviar.py`.
+"Set up a new device's Wi-Fi". From then on, updates go over Wi-Fi: `python3 tools/send.py`.

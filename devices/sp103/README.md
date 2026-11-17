@@ -48,7 +48,7 @@ Function button ◄──(GP0 reads, GP1 pulls to 0 only)── Pico 2 W
 | See the bus | `curl http://sp103.local/status` (the counters) and `curl http://sp103.local/bus` |
 | Download the log | `curl http://sp103.local/bus.csv` |
 | Set up or change the Wi-Fi network | no cable: join the Pico's `AmpLink-SP103-XXXX` network (password `amplink-setup`) and open `http://192.168.4.1/` (`docs/wifi.md`) |
-| Update the Pico's program | `python3 tools/enviar.py`, or from the app once a release is published (`python3 tools/enviar.py --publish`) |
+| Update the Pico's program | `python3 tools/send.py`, or from the app once a release is published (`python3 tools/send.py --publish`) |
 | Test on the computer | `python3 tools/test_proxy.py` (and the other `tools/test_*.py`); the bridge: `cd relay && make test` |
 
 ## Documents
@@ -72,8 +72,8 @@ Function button ◄──(GP0 reads, GP1 pulls to 0 only)── Pico 2 W
 - `firmware/`: the Pico's program (MicroPython). `main.py` and `secrets.py` only go over the cable; the Wi-Fi network lives in
   `wifi.json`, written through the Pico's setup network.
   - **Copies of the shared base** (`firmware-base/` at the repository's root): `wifi.py`, `web.py`, `ota.py`, `udp.py`
-    and `listeners.py`, plus `tools/enviar.py`, `tools/test_wifi.py` and `tools/test_listeners.py`. Change them there and
-    copy with `python3 firmware-base/copiar.py --all` from the repository's root (it keeps this `main.py`), never here. `main.py` stays this
+    and `listeners.py`, plus `tools/send.py`, `tools/test_wifi.py` and `tools/test_listeners.py`. Change them there and
+    copy with `python3 firmware-base/copy_base.py --all` from the repository's root (it keeps this `main.py`), never here. `main.py` stays this
     project's own (it imports `escuta.py` and shows errors on the LCD).
   - `device.py` (`/device`, contract `api` 2) describes the amp to the app: the device, its state and its remote.
     `config_page.py` (the page at `/`) and `settings.py` (`/settings`) are the SP103's own display configuration,
