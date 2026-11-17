@@ -4,6 +4,7 @@ import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonNamingStrategy
+import kotlinx.serialization.json.JsonPrimitive
 
 /** The JSON of the DeviceLink contract (docs/contract-v2.md). A missing or null field means "not known". */
 @OptIn(ExperimentalSerializationApi::class)
@@ -43,6 +44,8 @@ data class StateField(
     val label: String? = null,
     val values: List<String> = emptyList(),
     val unit: String? = null,
+    /** For `lines`: the display's width in characters. */
+    val columns: Int? = null,
 )
 
 /** One row or pad of the remote. A group holds keys, steps, switches or a select. */
@@ -83,6 +86,11 @@ data class SettingField(
     val values: List<String> = emptyList(),
     /** Words to show for [values], in the same order (enum); the values themselves when absent. */
     val labels: List<String> = emptyList(),
+    val hint: String? = null,
+    /** Shown only while these settings have these values. */
+    val `when`: Map<String, JsonPrimitive> = emptyMap(),
+    /** What the device shows while the text is empty (its own text). */
+    val placeholder: String? = null,
 )
 
 /** `GET /update`: the running firmware and each file's sha256. */

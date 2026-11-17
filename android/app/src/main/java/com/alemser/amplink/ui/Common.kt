@@ -30,6 +30,7 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
@@ -90,7 +91,7 @@ fun AmpLinkTheme(content: @Composable () -> Unit) {
     MaterialTheme(colorScheme = if (isSystemInDarkTheme()) Dark else Light, content = content)
 }
 
-/** The amp's display, with the text sized so that every column fits the width. */
+/** The device's display, with the text sized so that every column fits the width (up to [MAX_SP]). */
 @Composable
 fun Lcd(lines: List<String>, columns: Int, modifier: Modifier = Modifier, dim: Boolean = false) {
     BoxWithConstraints(
@@ -100,7 +101,8 @@ fun Lcd(lines: List<String>, columns: Int, modifier: Modifier = Modifier, dim: B
             .background(if (dim) LcdBlue.copy(alpha = 0.45f) else LcdBlue)
             .padding(horizontal = 14.dp, vertical = 12.dp),
     ) {
-        val size = with(LocalDensity.current) { (maxWidth / columns / MONOSPACE_ADVANCE).toSp() }
+        val fit = with(LocalDensity.current) { (maxWidth / columns / MONOSPACE_ADVANCE).toSp() }
+        val size = if (fit.value > MAX_SP) MAX_SP.sp else fit
         Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
             lines.forEach {
                 Text(
@@ -118,6 +120,9 @@ fun Lcd(lines: List<String>, columns: Int, modifier: Modifier = Modifier, dim: B
 
 /** Android's monospace face is 0.6 em wide; the rest is a margin so the last column never wraps. */
 private const val MONOSPACE_ADVANCE = 0.62f
+
+/** Never larger than this, even for a narrow display on a wide phone. */
+private const val MAX_SP = 26f
 
 @Composable
 fun Section(title: String, content: @Composable ColumnScope.() -> Unit) {

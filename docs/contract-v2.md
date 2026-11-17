@@ -17,7 +17,7 @@ change unless the device brings a new kind of control.
 2. **Self-describing.** `GET /device` says what the device is, what its state holds, which controls it takes and which
    settings can be changed. The app renders from that, not from a per-model screen.
 3. **Light enough for a Pico.** Every answer is small and built once: the description is serialised on the first
-   request and served as stored bytes (the CD-S300's is about 1 KB, the SP103's, with its settings, about 4.5 KB), the
+   request and served as stored bytes (the CD-S300's is about 1 KB, the SP103's, with its settings, about 5.5 KB), the
    state is under 0.5 KB, and nothing is computed per request that could be cached.
 
 ## Routes
@@ -104,7 +104,7 @@ knows by id.
 | `duration` | | Seconds as `m:ss` |
 | `bool` | | On / off |
 | `text` | | The text |
-| `lines` | | Monospaced lines, as on the device's own display |
+| `lines` | `columns` | Monospaced lines, as on the device's own display, `columns` characters wide (16 if absent) |
 
 A field that a control already shows (the volume next to its − and +) is not repeated in the status.
 
@@ -148,7 +148,16 @@ What a person may change, for example the SP103's input names and boot text, or 
 | `int` | `min`, `max`, `step` |
 | `ip` | IPv4, or empty |
 
-`group` puts settings under one heading, in order. `GET /settings` answers `{"<id>": value, ...}`. `PATCH /settings`
+Any setting may also carry:
+
+| Field | Meaning |
+|---|---|
+| `group` | The heading it goes under, in order |
+| `hint` | A short text shown under it |
+| `when` | `{"<id>": value, ...}`: shown only while those settings have those values (the SP103's VU layout only with the VU on) |
+| `placeholder` | For `text`: what the device shows while the text is empty (its own text, such as `ACOUSTIC`) |
+
+ `GET /settings` answers `{"<id>": value, ...}`. `PATCH /settings`
 takes only the ids that change and answers the full object, or `400 {"error": "...", "id": "<id>"}` naming the id that
 was refused (without `id` when the refusal is about several together); nothing left out is reset. The app waits 1 s
 after the last edit before sending: each write goes to flash.

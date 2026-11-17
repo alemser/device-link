@@ -173,7 +173,11 @@ private fun StatusSection(fields: List<StateField>, state: JsonObject?, feed: Fe
     Section("Now") {
         fields.filter { it.type == "lines" }.forEach { field ->
             val lines = (at(state, field.id) as? kotlinx.serialization.json.JsonArray)?.map { it.jsonPrimitive.content }
-            if (!lines.isNullOrEmpty()) Lcd(lines, lines.maxOf { it.length }.coerceAtLeast(1), dim = state == null)
+            // The device says its width; blank lines (an amp in standby) must not make one huge column.
+            if (!lines.isNullOrEmpty()) {
+                val columns = field.columns ?: maxOf(lines.maxOf { it.length }, DEFAULT_COLUMNS)
+                Lcd(lines, columns, dim = state == null)
+            }
         }
         fields.filter { it.type != "lines" }.forEach { field ->
             val value = show(field, at(state, field.id)) ?: return@forEach
@@ -194,6 +198,8 @@ private fun StatusSection(fields: List<StateField>, state: JsonObject?, feed: Fe
     }
 }
 
+private const val DEFAULT_COLUMNS = 16
+
 /** The value at a dotted path ("media.track"), or null. */
 private fun at(state: JsonObject?, path: String): JsonElement? {
     var node: JsonElement? = state
@@ -201,12 +207,16 @@ private fun at(state: JsonObject?, path: String): JsonElement? {
     return node.takeIf { it != JsonNull }
 }
 
+/** Seconds as "2:07", or "40 h 47 min" from an hour up. */
+private fun duration(s: Long): String =
+    if (s < 3600) "%d:%02d".format(s / 60, s % 60) else "%d h %02d min".format(s / 3600, s % 3600 / 60)
+
 /** A state value as text, by its field's type; null when unknown (not shown, never as zero or off). */
 private fun show(field: StateField, value: JsonElement?): String? {
     val p = value as? JsonPrimitive ?: return null
     return when (field.type) {
         "enum" -> p.contentOrNull?.let(::stateWord)
-        "duration" -> p.longOrNull?.let { "%d:%02d".format(it / 60, it % 60) }
+        "duration" -> p.longOrNull?.let(::duration)
         "bool" -> p.booleanOrNull?.let { if (it) "On" else "Off" }
         "int", "number" -> p.contentOrNull?.let { if (field.unit != null) "$it ${field.unit}" else it }
         else -> p.contentOrNull
@@ -311,10 +321,13 @@ private fun SettingsSection(client: BridgeClient, fields: List<SettingField>) {
             error = e.message
         }
     }
-    fields.groupBy { it.group ?: "Settings" }.forEach { (title, group) ->
+    fun valueOf(id: String) = pending[id] ?: values?.get(id)
+    // A setting with "when" shows only while those settings have those values (the VU layout only with the VU on).
+    val shown = fields.filter { f -> f.`when`.all { (id, v) -> valueOf(id) == v } }
+    shown.groupBy { it.group ?: "Settings" }.forEach { (title, group) ->
         Section(title) {
             group.forEach { field ->
-                val current = pending[field.id] ?: values?.get(field.id)
+                val current = valueOf(field.id)
                 val text = (current as? JsonPrimitive)?.contentOrNull.orEmpty()
                 when (field.type) {
                     "bool" -> SwitchRow(field.label ?: field.id, (current as? JsonPrimitive)?.booleanOrNull ?: false) {
@@ -352,10 +365,13 @@ private fun SettingsSection(client: BridgeClient, fields: List<SettingField>) {
                             pending = pending + (field.id to JsonPrimitive(clipped))
                         },
                         label = { Text(field.label ?: field.id) },
+                        placeholder = field.placeholder?.let { { Text(it) } },
+                        supportingText = field.max?.let { max -> { Text("${text.length}/${max.toInt()}") } },
                         singleLine = true,
                         modifier = Modifier.fillMaxWidth(),
                     )
                 }
+                field.hint?.let { Hint(it) }
             }
         }
     }
@@ -377,6 +393,7 @@ private fun FirmwareSection(client: BridgeClient, repo: String, running: String?
 
     Section("Firmware") {
         Text("Version ${running ?: "?"}")
+        Hint("At ${client.host}")
         val release = latest?.first
         when {
             release == null -> Hint("No release found for $repo")
