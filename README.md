@@ -18,8 +18,9 @@ unplugged, the GND lines, all the buttons, VOLUME, SOURCE and the remote's signa
 The firmware started on 2026-11-09, without the amp: the **bridge base** (`firmware/ponte.py`), which sets up Wi-Fi
 without a cable through the `AmpLink-MR780-XXXX` network, is found by the DeviceLink app with no IP typed in, and
 updates itself over Wi-Fi. It already runs on the shared base from the `amp-link` repository (see "Folders"); updates
-over Wi-Fi take no password (a contract v2 decision; `firmware/secrets.example.py` explains). The bridge itself is
-still on contract `api` 1 (`firmware/device.py`), and `/state` still comes back all `null`: reading the display and
+over Wi-Fi take no password (a contract v2 decision; `firmware/secrets.example.py` explains). The bridge is on the
+DeviceLink contract `api` 2 since 2026-11-17 (`firmware/device.py`), with no state, controls or settings yet, and
+`/state` still comes back all `null`: reading the display and
 controlling the amp depend on the captures (the plan's open steps 2 to 4). Even so, the Pico can already go inside the
 amp and get the rest over Wi-Fi.
 

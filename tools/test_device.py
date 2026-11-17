@@ -13,16 +13,16 @@ sys.path.insert(0, os.path.join(HERE, "..", "firmware"))
 
 import device   # noqa: E402
 
-d = json.loads(json.dumps(device.describe("abcd1234")))
-assert d["api"] == 1
+d = json.loads(json.dumps(device.describe("abcd1234", "MR780-D85E")))
+assert d["api"] == 2
 assert d["kind"] == "amplifier"
-assert d["model"] == "Magnat MR 780"
+assert d["model"] == "Magnat MR 780" and d["name"] == "MR780-D85E"
 assert d["bridge_version"] == "abcd1234"
-assert len(d["inputs"]) == 15
-# groove-rig's input cycle order (profiles/magnat_mr780.yaml): don't change it without changing it there.
-assert [i["id"] for i in d["inputs"]] == ["usb_audio", "bluetooth", "phono", "cd", "dvd", "aux1", "aux2", "tape",
-                                          "line_in", "fm", "dab", "opt1", "opt2", "coax1", "coax2"]
-assert d["display"] == {"columns": 16, "rows": 2}
+assert d["firmware"] == "alemser/mr780-mod"
 assert d["features"] == ["update", "wifi_setup"]
-assert "volume_db" not in d and "tone_db" not in d     # not known yet: the app hides what is missing
+assert d["state"] == [] and d["controls"] == [] and d["settings"] == [], "nothing is known yet: nothing to show"
+assert len(device.INPUTS) == 15
+# groove-rig's input cycle order (profiles/magnat_mr780.yaml): don't change it without changing it there.
+assert [i for i, _ in device.INPUTS] == ["usb_audio", "bluetooth", "phono", "cd", "dvd", "aux1", "aux2", "tape",
+                                         "line_in", "fm", "dab", "opt1", "opt2", "coax1", "coax2"]
 print("all good")

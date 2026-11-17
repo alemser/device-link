@@ -30,7 +30,8 @@ class State:
 
 state = State()
 net = Wifi(model=device.NAME, hostname=device.NAME, prefix=device.NAME.upper(),
-           label=device.MODEL, kind=device.KIND)
+           label=device.MODEL, kind=device.KIND, api=device.API)
+device.net = net
 pub = None
 wifi_ok = False
 
