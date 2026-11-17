@@ -1,14 +1,14 @@
-# DeviceLink contract, `api` 2 (draft)
+# DeviceLink contract, `api` 2
 
-**Draft, 2026-11-16.** Successor of `docs/contract-v1.md` (`api` 1, the amplifier-only contract). Written for three
-devices: the Acoustic Solutions SP103 and the Magnat MR 780 (amplifiers) and the Yamaha CD-S300 (CD player). In use
-since 2026-11-16 by the CD-S300 (keys, no settings) and since 2026-11-17 by the SP103 (steps, switches, a select and 25
-settings); the MR 780 bridge describes itself in `api` 2 too (no state or controls yet, not installed).
+**2026-11-17.** The one contract between the bridges and the DeviceLink app. It replaced `api` 1 (the amplifier-only
+contract, removed on 2026-11-17; it is in the git history). Spoken by the Yamaha CD-S300 (keys, no settings, since
+2026-11-16), the Acoustic Solutions SP103 (steps, switches, a select and 25 settings, since 2026-11-17) and the Magnat
+MR 780 bridge (no state or controls yet, not installed).
 
-A **device** is a piece of equipment with a Pico inside (the **bridge**). The **app** (DeviceLink, today's Amp Link) finds
-every device on the home Wi-Fi, shows them in one list, and builds each device's screen from what the device says about
-itself: its state, its remote, and the settings a person may change. Adding a device type means writing its bridge; the
-app needs no change unless the device brings a new kind of control.
+A **device** is a piece of equipment with a Pico inside (the **bridge**). The **app** (DeviceLink) finds every device on
+the home Wi-Fi, shows them in one list, and builds each device's screen from what the device says about itself: its
+state, its remote, and the settings a person may change. Adding a device type means writing its bridge; the app needs no
+change unless the device brings a new kind of control.
 
 ## Goals
 
@@ -19,34 +19,42 @@ app needs no change unless the device brings a new kind of control.
 3. **Light enough for a Pico.** Every answer is small and built once: the description is serialised on the first
    request and served as stored bytes (the CD-S300's is about 1 KB, the SP103's, with its settings, about 4.5 KB), the
    state is under 0.5 KB, and nothing is computed per request that could be cached.
-4. **Compatible.** `api` 1 bridges keep working: the app shows them with today's amplifier screens until they move to
-   `api` 2.
 
 ## Routes
 
 | Route | Group | Notes |
 |---|---|---|
-| UDP `AMPLINK?` / `DEVICELINK?` on port 47800 | core | Discovery; a bridge answers both |
+| UDP `DEVICELINK?` on port 47800 | core | [Discovery](#discovery) |
 | `GET /device` | core | The description. Changes only when the bridge restarts or when a setting it shows changes (the SP103's input names in its input chips); the app reads it on opening the device |
 | `GET /state`, `GET /events` | core | The state, once or as Server-Sent Events |
 | `POST /control` | `control` | Keys, steps, switches |
 | `GET /settings`, `PATCH /settings` | `settings` | The values a person may change |
 | `GET /update` and the upload routes | `update` | Firmware over Wi-Fi (`firmware-base/firmware/ota.py`) |
-| `GET /wifi` and the setup routes | `wifi_setup` | Unchanged from `api` 1 |
+| `GET /wifi` and the setup routes | `wifi_setup` | [Wi-Fi setup](#wi-fi-setup-wifi_setup) |
 
-Transport rules are those of `api` 1 (HTTP/1.1, LAN only, `Connection: close` except `/events`, JSON, errors as
-`{"error": "..."}` in English ready to show).
+A bridge may have routes of its own for diagnosis with curl (the SP103's `/status`, `/bus`, `/ir`); the app doesn't use
+them.
+
+## Transport
+
+- HTTP/1.1 without TLS, on the local network only, no authentication. Don't count on `.local` names: the app finds a
+  bridge by discovery and keeps its IP.
+- The bridge has only an API. The only page is the Wi-Fi setup page, and only with the setup network open.
+- Every answer closes the connection (`Connection: close`), except `/events`.
+- JSON answers, with `Cache-Control: no-store` and `Access-Control-Allow-Origin: *`.
+- Errors: `400` (or `403`, `404`) with `{"error": "text"}`, in English, ready to show as they are.
 
 ## Discovery
 
-The app broadcasts `DEVICELINK?` (a bridge also answers the older `AMPLINK?`) to port 47800 and each bridge replies:
+The app broadcasts `DEVICELINK?` to port 47800, three times over about 2 s (the first packet is sometimes lost), and
+each bridge answers the sender:
 
 ```json
 {"name": "CDS300-D85E", "ip": "192.168.178.116", "kind": "cd_player", "label": "Yamaha CD-S300", "model": "cds300", "api": 2}
 ```
 
 `name` is unique and stable (the chip's id): the app keys devices by it, so a device that changes IP is the same device.
-`kind` picks the icon in the list. A reply without `api` is an `api` 1 bridge.
+`kind` picks the icon in the list, `label` is the name to show. The answer fits a packet easily (under 200 bytes).
 
 While the device list is on screen (and only then, app in the foreground), the app repeats the broadcast every 5 s, so
 a device switched on appears without a refresh, and one switched off is greyed after 3 missed rounds.
@@ -98,6 +106,8 @@ knows by id.
 | `text` | | The text |
 | `lines` | | Monospaced lines, as on the device's own display |
 
+A field that a control already shows (the volume next to its − and +) is not repeated in the status.
+
 ### Controls
 
 Each group is a row or a pad on the remote screen. A group holds one kind of control:
@@ -105,14 +115,19 @@ Each group is a row or a pad on the remote screen. A group holds one kind of con
 | Group content | Sent as | Example |
 |---|---|---|
 | `"keys": [...]` | `POST /control?target=key&name=<key>` | `play`, `power_toggle`, `select_cd` |
-| `"steps": [{"target", "state"}]` | `POST /control?target=<t>&dir=up` / `down` | volume, bass, treble, balance |
-| `"switches": [{"target", "state"}]` | `POST /control?target=<t>&on=1` / `0` | loudness, speakers |
+| `"steps": [{"target", "state", "label"}]` | `POST /control?target=<t>&dir=up` / `down` | volume, bass, treble, balance |
+| `"switches": [{"target", "state", "label"}]` | `POST /control?target=<t>&on=1` / `0` | loudness, speakers |
 | `"select": {"state", "options": [{"id", "name", "key"}]}` | the option's `key` | the amplifier's inputs |
 
-`state` ties a step, switch or select to the state field that shows its current value. Keys are named with the
-groove-rig vocabulary (`docs/catalog` there): the app has a label and an icon for each common one, and shows any other
-key by its name with `_` as spaces, so a new device needs no app change. A key may also be `{"key": "...", "label": "..."}`
-when the name is not enough.
+`state` ties a step, switch or select to the state field that shows its current value (a select marks the option whose
+`id` equals it). Keys are named with the groove-rig vocabulary (`docs/catalog` there): the app has a label and an icon
+for each common one, and shows any other key by its name with `_` as spaces, so a new device needs no app change. A key
+may also be `{"key": "...", "label": "..."}` when the name is not enough.
+
+`/control` answers when the device has done it, or `400` with `{"error": "..."}`. It may take a few seconds (the SP103's
+balance, loudness and speakers go through the amp's menu): one request at a time. Keys also work with the device in
+standby; a key such as `power_toggle` switches both ways, so the app labels it by the known `power` and offers it even
+when `power` is unknown.
 
 Group names the app knows and lays out on purpose: `power`, `transport`, `volume`, `input`, `tone`, `modes`, `numbers`,
 `source`. Any other group is shown as a plain row of buttons, in order.
@@ -133,56 +148,88 @@ What a person may change, for example the SP103's input names and boot text, or 
 | `int` | `min`, `max`, `step` |
 | `ip` | IPv4, or empty |
 
-`GET /settings` answers `{"<id>": value, ...}`. `PATCH /settings` takes only the ids that change and answers the full
-object, or `400 {"error": "...", "id": "<id>"}` naming the id that was refused (without `id` when the refusal is about
-several together). Unlike `api` 1's `PUT /names`, nothing left out is reset. The app waits
-1 s after the last edit before sending (each write goes to flash).
+`group` puts settings under one heading, in order. `GET /settings` answers `{"<id>": value, ...}`. `PATCH /settings`
+takes only the ids that change and answers the full object, or `400 {"error": "...", "id": "<id>"}` naming the id that
+was refused (without `id` when the refusal is about several together); nothing left out is reset. The app waits 1 s
+after the last edit before sending: each write goes to flash.
 
 ## `GET /state` and `GET /events`
 
-As in `api` 1: the same JSON from both; `/events` sends one `data:` line on connect and one per change, and `: ping`
-every second. `null` or missing means unknown. Fields are grouped by meaning, and the description's `state` list points
-into them:
+The same JSON from both. `/events` sends one `data:` line on connect, then at most one every 0.25 s while the state
+changes (always the latest), and a `: ping` comment every second. `null` or missing means unknown. Fields are grouped by
+meaning, and the description's `state` list points into them:
 
 ```json
 {"power": "on", "transport": "playing", "media": {"track": 3, "elapsed_s": 127},
  "disc": {"tracks": 12, "total_s": 3697}, "lcd": ["  3    2:07 "], "version": 41}
 ```
 
-The amplifiers keep their `api` 1 fields (`volume_db`, `input_id`, `bass_db`, ...), which groove-rig also reads.
+The amplifiers' fields are flat (`volume_db`, `input_id`, `bass_db`, ...) because groove-rig reads them too; the SP103's
+are in its `docs/api-state.md`. A bridge keeps one `/events` connection per IP and few in total (3 on the SP103): a new
+connection from the same IP drops the old one, and with the cap reached the oldest goes.
 
 ## Updates from the app (`update`)
 
-The bridge side exists (`ota.py`): `GET /update` gives the running version and each file's hash; the upload routes
-take files, apply them, and roll back by themselves if the new version doesn't confirm within 3 minutes. **No
-password** (decided 2026-11-16): the routes are on the home LAN only, like the rest of the contract, and the rollback
-protects against a bad version. `main.py` and the bridge's own Wi-Fi file still go only by USB.
-
-The app side is new:
+The bridge side is `ota.py`: `GET /update` gives the running version and each file's hash; the upload routes take
+files, apply them, and roll back by themselves if the new version doesn't confirm within 3 minutes. **No password**
+(decided 2026-11-16): the routes are on the home LAN only, like the rest of the contract, and the rollback protects
+against a bad version. `main.py` and `secrets.py` go only by USB.
 
 1. A bridge's firmware is a GitHub release of the repository named in `/device` `firmware`, tagged with its version,
    carrying a `firmware.json` asset (`{"version", "files": {"<name>.py": "<sha256>"}}`) and the files themselves
    (built by the repository's `tools/enviar.py --publish`). The app reads the latest release through the GitHub API;
    a device can therefore be updated without the app knowing it in advance.
-2. The device screen shows "Update available" when the release's version differs from the bridge's `bridge_version`.
+2. The device screen shows "Version ... is available" when the release's version differs from `bridge_version`.
 3. On "Update", the app downloads the files, uploads only those whose hash differs from `GET /update` (as `enviar.py`
    does), deletes the ones the release no longer has, applies, and follows `GET /update` until the bridge confirms or
    rolls back, showing which.
 
+## Wi-Fi setup (`wifi_setup`)
+
+To set up a bridge's Wi-Fi without a cable. The bridge side's details are in sp103-mod's `docs/wifi.md`.
+
+**The setup network.** With no saved network, or unable to connect for 2 minutes, the bridge opens its own network
+`AmpLink-<name>` (e.g. `AmpLink-SP103-D85E`), WPA2, fixed key **`amplink-setup`**, and keeps trying the home network.
+On it, the bridge is `192.168.4.1`. Every setup network starts with `AmpLink-`: on Android, the app asks for a network
+with that prefix (`WifiNetworkSpecifier`) and the system shows the matching ones, without location permission.
+
+| Route | What |
+|---|---|
+| `GET /wifi` | `{"state", "detail", "ip", "ssid", "setup": {"open", "ssid"}}`. `state` and `detail`: the last attempt (`idle`, `connecting`, `connected`, or `failed` with the reason, to show as is). `ip`: the address on the home network now. `ssid`: the saved network |
+| `GET /wifi/networks` | The networks the bridge sees, `[{"ssid", "rssi", "secure"}]`, strongest first, up to 20. Takes ~1 s |
+| `PUT /wifi` | `{"ssid", "psk"}` (empty `psk` = open network; otherwise 8 to 63 characters). `202` at once; the outcome comes in `GET /wifi`. Only with the setup network open, otherwise `403` |
+| `POST /wifi/setup` | Opens the setup network for 10 minutes, without leaving the home network. For switching networks while connected |
+| `DELETE /wifi` | Forgets the saved network. Only with the setup network open |
+
+**The app's flow:**
+
+1. Join the `AmpLink-…` network and read `GET /wifi/networks`.
+2. `PUT /wifi` with the chosen network, and read `GET /wifi` every second until `connected` or `failed`. Some answers
+   get lost along the way: the bridge's radio moves to the home network's channel, and the setup network moves with
+   it. The bridge gives up a network after 15 s and then goes back to the previous one; wait up to about 40 s.
+3. With `connected`, keep the `ip`, leave the setup network (it closes by itself 60 s later) and check `GET /device` at
+   that IP. If it doesn't answer, find the bridge by discovery, by `name`.
+4. With `failed`, show the `detail` and let the person choose again: the bridge went back to the previous network, and
+   the setup network stays open.
+
 ## For the app
 
-`api` 1's client rules stand (one `/events` connection per device and only on its open screen, closed in the background,
-on-demand routes, no `null` as off). Two changes:
+1. **At most one `/events` connection, and only on the open device's screen.** The list shows what discovery gives
+   (name, kind, online), not live state.
+2. **Close `/events` when the app goes to the background.** A dead connection, such as a sleeping phone's, holds the
+   bridge's network memory and can freeze it for 10 s.
+3. **With nothing for 5 s, consider the state unknown** and reconnect with a growing wait, from 1 s to 30 s.
+4. **The other routes are on demand:** one request when opening the screen or the section, no repeating.
+5. **Wait at least 1 s after the last edit before `PATCH /settings`.**
+6. **Don't treat `null` as off.** After a bridge restarts with its device in standby, `power` stays `null`.
+7. **Discovery repeats every 5 s, but only while the device list is visible.**
 
-- Discovery repeats every 5 s, but only while the device list is visible.
-- With several devices, the app holds at most one `/events` connection: the one of the device on screen. The list shows
-  what discovery gives (name, kind, online), not live state.
-
-## Decided (2026-11-16)
+## Decided (2026-11-16 and 17)
 
 - Firmware releases live in each device's own repository, named by `/device` `firmware`.
 - Updates take no password.
-- The SP103 moves to `api` 2: its `/names` configuration becomes `/settings`.
+- The SP103 moved to `api` 2: its `/names` configuration became `/settings` (2026-11-17).
+- `api` 1 was removed from the bridges and the app on 2026-11-17 (the `AMPLINK?` probe, `/names`, the amplifier tabs).
 
 ## Open
 

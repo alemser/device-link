@@ -14,6 +14,8 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.ArrowBack
+import androidx.compose.material.icons.outlined.Wifi
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -26,6 +28,7 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -46,7 +49,9 @@ import com.alemser.amplink.core.Release
 import com.alemser.amplink.core.SettingField
 import com.alemser.amplink.core.StateField
 import com.alemser.amplink.core.UpdateStep
+import com.alemser.amplink.core.WifiSetupClient
 import com.alemser.amplink.core.isIpv4
+import com.alemser.amplink.core.lcdText
 import com.alemser.amplink.core.Updater
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -68,10 +73,11 @@ import java.io.IOException
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun DeviceScreen(client: BridgeClient, title: String, onBack: () -> Unit) {
+fun DeviceScreen(client: BridgeClient, title: String, onBack: () -> Unit, onSetup: () -> Unit) {
     BackHandler(onBack = onBack)
     var description by remember(client) { mutableStateOf<Description?>(null) }
     var error by remember(client) { mutableStateOf<String?>(null) }
+    var wifiDialog by remember(client) { mutableStateOf(false) }
     LaunchedEffect(client) {
         try {
             description = client.description()
@@ -85,6 +91,11 @@ fun DeviceScreen(client: BridgeClient, title: String, onBack: () -> Unit) {
                 title = { Text(description?.model ?: title, maxLines = 1) },
                 navigationIcon = {
                     IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Outlined.ArrowBack, contentDescription = "Devices") }
+                },
+                actions = {
+                    if (description?.has("wifi_setup") == true) {
+                        IconButton(onClick = { wifiDialog = true }) { Icon(Icons.Outlined.Wifi, contentDescription = "Wi-Fi") }
+                    }
                 },
             )
         },
@@ -101,6 +112,36 @@ fun DeviceScreen(client: BridgeClient, title: String, onBack: () -> Unit) {
             else -> Column(page, horizontalAlignment = Alignment.CenterHorizontally) { CircularProgressIndicator() }
         }
     }
+    if (wifiDialog) WifiDialog(client.host, onClose = { wifiDialog = false }, onSetup = onSetup)
+}
+
+/** Moving a device to another Wi-Fi: it opens its setup network for 10 minutes, without leaving this one. */
+@Composable
+private fun WifiDialog(host: String, onClose: () -> Unit, onSetup: () -> Unit) {
+    val scope = rememberCoroutineScope()
+    var error by remember { mutableStateOf<String?>(null) }
+    AlertDialog(
+        onDismissRequest = onClose,
+        title = { Text("Wi-Fi") },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                Hint("At $host")
+                TextButton(onClick = {
+                    scope.launch {
+                        try {
+                            WifiSetupClient(host).openSetup()
+                            onClose()
+                            onSetup()
+                        } catch (e: IOException) {
+                            error = e.message ?: "The device didn't answer"
+                        }
+                    }
+                }) { Text("Change this device's Wi-Fi") }
+                error?.let { Hint(it, MaterialTheme.colorScheme.error) }
+            }
+        },
+        confirmButton = { TextButton(onClick = onClose) { Text("Close") } },
+    )
 }
 
 @Composable
@@ -300,16 +341,17 @@ private fun SettingsSection(client: BridgeClient, fields: List<SettingField>) {
                             onUp = { if (n != null) pending = pending + (field.id to JsonPrimitive(n + step)) },
                         )
                     }
+                    "ip" -> IpField(field.label ?: field.id, text, text.isNotEmpty() && !isIpv4(text), "192.168.1.50") {
+                        pending = pending + (field.id to JsonPrimitive(it))
+                    }
                     else -> OutlinedTextField(
                         value = text,
                         onValueChange = { typed ->
-                            val allowed = if (field.charset == "lcd") typed.filter { it in ' '..'}' && it != '\\' } else typed
-                            val clipped = field.max?.let { allowed.take(it.toInt()) } ?: allowed
+                            val limit = field.max?.toInt() ?: Int.MAX_VALUE
+                            val clipped = if (field.charset == "lcd") lcdText(typed, limit) else typed.take(limit)
                             pending = pending + (field.id to JsonPrimitive(clipped))
                         },
                         label = { Text(field.label ?: field.id) },
-                        isError = field.type == "ip" && text.isNotEmpty() && !isIpv4(text),
-                        supportingText = if (field.type == "ip") ({ Text("An IP address, like 192.168.1.50") }) else null,
                         singleLine = true,
                         modifier = Modifier.fillMaxWidth(),
                     )

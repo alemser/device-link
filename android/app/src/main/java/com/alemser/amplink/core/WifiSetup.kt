@@ -18,7 +18,7 @@ import java.net.SocketTimeoutException
 import java.util.concurrent.TimeUnit
 
 /**
- * Wi-Fi without a cable and without typing the IP (docs/contract-v1.md, "Wi-Fi and discovery").
+ * Wi-Fi without a cable and without typing the IP (docs/contract-v2.md, "Discovery" and "Wi-Fi setup").
  *
  * A bridge with no working Wi-Fi opens its own network, named [SETUP_PREFIX] + its name, with the fixed
  * [SETUP_KEY]. The app joins it and uses [WifiSetupClient] at [SETUP_HOST]. On the home network, [discover] finds
@@ -28,8 +28,8 @@ const val SETUP_PREFIX = "AmpLink-"
 const val SETUP_KEY = "amplink-setup"
 const val SETUP_HOST = "192.168.4.1"
 const val DISCOVERY_PORT = 47800
-/** DeviceLink bridges answer both; today's SP103 only the first (docs/contract-v2.md, Discovery). */
-private val PROBES = listOf("DEVICELINK?".toByteArray(), "AMPLINK?".toByteArray())
+/** What the app broadcasts to find the devices (docs/contract-v2.md, Discovery). */
+private val PROBE = "DEVICELINK?".toByteArray()
 
 @Serializable
 data class WifiNetwork(val ssid: String, val rssi: Int = 0, val secure: Boolean = true)
@@ -51,7 +51,7 @@ data class WifiStatus(
 
 /**
  * A bridge's answer to the discovery broadcast. [name] is unique and stable (the chip's id), [label] the name to
- * show, [kind] the type of device. A bridge that doesn't say its [api] speaks api 1.
+ * show, [kind] the type of device, [api] the contract version.
  */
 @Serializable
 data class FoundBridge(
@@ -60,7 +60,7 @@ data class FoundBridge(
     val ip: String,
     val label: String = "",
     val kind: String = "",
-    val api: Int = SUPPORTED_API,
+    val api: Int = DEVICELINK_API,
 ) {
     val title get() = label.ifEmpty { name }
 }
@@ -133,7 +133,7 @@ suspend fun discover(
         socket.soTimeout = listenMs
         val buffer = ByteArray(512)
         repeat(tries) {
-            PROBES.forEach { socket.send(DatagramPacket(it, it.size, target, port)) }
+            socket.send(DatagramPacket(PROBE, PROBE.size, target, port))
             while (true) {
                 val packet = DatagramPacket(buffer, buffer.size)
                 try {

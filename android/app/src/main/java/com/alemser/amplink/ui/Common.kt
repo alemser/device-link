@@ -12,7 +12,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.material3.Checkbox
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
@@ -34,7 +33,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
-import com.alemser.amplink.core.SaveState
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import java.io.IOException
@@ -161,22 +159,6 @@ fun SwitchRow(label: String, checked: Boolean, hint: String? = null, onChange: (
     }
 }
 
-@Composable
-fun CheckRow(label: String, checked: Boolean, hint: String? = null, onChange: (Boolean) -> Unit) {
-    Row(
-        Modifier
-            .fillMaxWidth()
-            .clickable { onChange(!checked) },
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Checkbox(checked = checked, onCheckedChange = onChange)
-        Column(Modifier.weight(1f)) {
-            Text(label)
-            hint?.let { Hint(it) }
-        }
-    }
-}
-
 /** A number in a fixed range, changed with − and + so it can never be invalid. */
 @Composable
 fun Stepper(label: String, value: String, canDown: Boolean, canUp: Boolean, onDown: () -> Unit, onUp: () -> Unit) {
@@ -200,20 +182,4 @@ fun IpField(label: String, value: String, isError: Boolean, placeholder: String?
         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
         modifier = Modifier.fillMaxWidth(),
     )
-}
-
-/** Where the last edit stands, since nothing has a Save button. */
-@Composable
-fun SaveLine(state: SaveState, onRetry: () -> Unit) {
-    val (text, color) = when (state) {
-        SaveState.Idle -> return
-        SaveState.Waiting, SaveState.Saving -> "Saving…" to MaterialTheme.colorScheme.onSurfaceVariant
-        SaveState.Saved -> "Saved" to MaterialTheme.colorScheme.onSurfaceVariant
-        is SaveState.Invalid -> "Not saved: ${state.why}" to MaterialTheme.colorScheme.error
-        is SaveState.Failed -> "Not saved: ${state.why}" to MaterialTheme.colorScheme.error
-    }
-    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-        Text(text, Modifier.weight(1f), color = color, style = MaterialTheme.typography.bodySmall)
-        if (state is SaveState.Failed) TextButton(onClick = onRetry) { Text("Retry") }
-    }
 }

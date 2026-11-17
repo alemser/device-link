@@ -29,7 +29,7 @@ class KnownDevices(private val prefs: SharedPreferences) {
         return list()
     }
 
-    /** What the list last knew about [name], if anything (an api 1 bridge's label is filled in from its /device). */
+    /** What the list last knew about [name], if anything. */
     fun get(name: String): FoundBridge? = known[name]
 
     fun list(): List<ListedDevice> = known.values

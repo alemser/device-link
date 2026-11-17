@@ -96,13 +96,9 @@ class WifiSetupTest {
 
     @Test
     fun parsesDiscoveryAnswers() {
-        assertEquals(
-            FoundBridge("SP103-D85E", "sp103", "10.185.11.138"),
-            parseAnswer("""{"name": "SP103-D85E", "model": "sp103", "ip": "10.185.11.138"}"""),
-        )
         assertNull(parseAnswer("""{"name": "x", "ip": ""}"""))
-        assertNull(parseAnswer("AMPLINK?"))
-        // A DeviceLink bridge says what it is and its api.
+        assertNull(parseAnswer("DEVICELINK?"))
+        // A bridge says what it is and its api.
         assertEquals(
             FoundBridge("CDS300-D85E", "cds300", "192.168.178.116", "Yamaha CD-S300", "cd_player", 2),
             parseAnswer(
@@ -113,8 +109,8 @@ class WifiSetupTest {
     }
 
     /**
-     * A fake bridge on localhost answers each probe, as the Pico does; each round sends both probes, three rounds.
-     * It answers all six, and is listed once.
+     * A fake bridge on localhost answers each probe, as the Pico does; three rounds, one probe each. It answers all
+     * three, and is listed once.
      */
     @Test
     fun discoverCollectsEachBridgeOnce() = runBlocking {
@@ -124,11 +120,11 @@ class WifiSetupTest {
             val buffer = ByteArray(64)
             runCatching {
                 bridge.soTimeout = 3_000
-                repeat(6) {
+                repeat(3) {
                     val packet = DatagramPacket(buffer, buffer.size)
                     bridge.receive(packet)
                     probes += String(packet.data, 0, packet.length)
-                    val answer = """{"name": "SP103-D85E", "model": "sp103", "ip": "127.0.0.1"}""".toByteArray()
+                    val answer = """{"name": "SP103-D85E", "model": "sp103", "ip": "127.0.0.1", "api": 2}""".toByteArray()
                     bridge.send(DatagramPacket(answer, answer.size, packet.socketAddress))
                 }
             }
@@ -136,7 +132,7 @@ class WifiSetupTest {
         val found = discover(listenMs = 200, target = InetAddress.getLoopbackAddress(), port = bridge.localPort)
         answering.join()
         bridge.close()
-        assertEquals(List(3) { listOf("DEVICELINK?", "AMPLINK?") }.flatten(), probes)
+        assertEquals(List(3) { "DEVICELINK?" }, probes)
         assertEquals(listOf(FoundBridge("SP103-D85E", "sp103", "127.0.0.1")), found)
     }
 }

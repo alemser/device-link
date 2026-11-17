@@ -251,7 +251,7 @@ private suspend fun findOnHome(ip: String, name: String, local: LocalNetwork, wa
     val bridge = BridgeClient(ip)
     var waited = 0L
     while (waited < waitMs) {
-        if (runCatching { bridge.device() }.isSuccess) return ip
+        if (runCatching { bridge.description() }.isSuccess) return ip
         val found = runCatching { discover(open = local::wifiSocket) }.getOrDefault(emptyList())
         found.firstOrNull { it.name == name || it.ip == ip }?.let { return it.ip }
         delay(2_000)
