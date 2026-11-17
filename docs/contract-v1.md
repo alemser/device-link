@@ -84,7 +84,7 @@ plus a `: ping` comment every second.
 
 The fields groove-rig reads (`power`, `volume_db`, `input_id`, `bass_db`, `treble_db`, `balance`, `loudness`,
 `speakers`) follow groove-rig's `docs/state-provider.md`, their authoritative text. Their meanings and values on the
-SP103 are in `sp103-mod`'s `docs/api-estado.md`. The others are extras:
+SP103 are in `sp103-mod`'s `docs/api-state.md`. The others are extras:
 
 | Field | Meaning |
 |---|---|
