@@ -52,12 +52,23 @@ on, off in standby) through a level shifter, or a 5 V signal that only lives whi
 
 ### On the front board, at the flat's joints (`CB8`)
 
+Chosen on 2026-11-17: the front board's solder side faces the inside of the deck, so `CB8`'s joints can be reached
+from above with the case off and the front panel on. The main board's solder side (`CB7`, whose silkscreen names
+every line, `docs/research.md`) would need the bottom cover off.
+
+`CB8` has no names printed. Its two staggered rows should follow `CB7`'s: 14 joints for the odd lines (`G`, `KEY2`,
+`G`, `F`, `F`, `P10` … `P2`) and 13 for the even ones (`KEY1`, `REM`, `+5V`, `G9` … `P1`). The wires go on the first
+three joints of each row at the line 1 end. The beeper finds that end before anything is soldered (step 2).
+
 | Wire | `CB8` line | Pico pin | What for |
 |---|---|---|---|
 | Ground | `G` (line 1 or 5) | 3 (GND) | Common ground |
 | `REM` | line 4 | 9 (GP6) | Send the remote's keys: pull low only, against the sensor's output, as on the SP103 |
 | `KEY1` | line 2 | 10 (GP7) | Press STANDBY/ON: pull low only, against 10 kΩ |
 | `+5V` | line 6 | 39 (VSYS) | Power the Pico, also in standby (see "Power on and off") |
+
+Line 7 (`F`, the filament, about −16 V) is the joint after line 5 on the odd row, diagonally next to `+5V`. Check 6
+against 7 with the beeper after soldering.
 
 `KEY1` and `KEY2` could also be read (through a divider into an ADC pin) to see which panel key was pressed: that
 tells FF from REW and catches COUNTER RESET from the panel. Optional.
@@ -152,7 +163,8 @@ With an illustrated guide page (as for the CD-S300, `devices/cds300/docs/measure
 
 - The remote's address: 7F (the manual) or 7A (the captured codes).
 - The mode table: the KX-393's or the KX-493's levels.
-- Whether `IC12` is through-hole on this unit.
+- ~~Whether `IC12` is through-hole on this unit.~~ Yes (photos, 2026-11-17).
+- Whether the main board's solder side can be reached (the bottom cover) for `CB7`'s and `IC12`'s joints.
 - Whether the AN78N05 has room for the Pico.
 - How strongly the display lines are pulled to −21 V when off (decides whether way B is safe to tap).
 

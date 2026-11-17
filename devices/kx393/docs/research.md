@@ -234,3 +234,36 @@ Remote Central also lists, for the double deck: Deck A/B `06`, Dir A `07`, Dir B
 `groove-rig` carries the five captured codes at 7A (`yamaha_kx393.yaml`, "not yet field-tested");
 `tools/test_ir.py` checks their data bytes against the manual's. Once the address is settled, groove-rig gets it, and
 the six other keys.
+
+## The photos (2026-11-17, case off, front panel on)
+
+The front panel stayed on: it didn't come off easily, and nothing below needs it off. Photos in `docs/images/`
+(2400 px; full size in `docs/images-originais/`, out of git).
+
+| Photo | What it shows |
+|---|---|
+| `front.jpg` | The front |
+| `main-board.jpg` | The main board (`VR28330`, `XN526`) from above, rear panel on the right |
+| `ic12-cb7-even.jpg` | `IC12` and `CB7` with the flat laid to the right: the even lines' silkscreen |
+| `cb7-odd-fl-power.jpg` | `CB7` with the flat laid to the left: the odd lines' silkscreen, and FL POWER |
+| `front-board-cb8.jpg` | The front board (`HCS-40`) from behind: `CB8`'s joints, the key ladder |
+| `front-board-sw10-sw11.jpg`, `front-board-sw12-sw13.jpg` | The rest of the front board's back |
+
+### What they settle
+
+- **`IC12` is through-hole**: a 52-pin shrink DIP, marked `YAMAHA XR448A0` / `4G83` (the LC65204A-4G83's mask). Pin
+  1 is at the notch, next to the board's screw by `µ-COM`. Legs 1 to 26 run down the side towards `XL1`/`C109`, and
+  27 to 52 come back up the side towards `CB7`.
+- **`CB7`'s silkscreen names every line, and it matches the manual's 27-way map.** The connector's two staggered rows
+  are labelled on each side: towards `IC12` the even lines (`KEY1`, `REM`, `+5V`, `G9` … `G1`, `P1`), towards FL POWER
+  the odd ones (`G`, `KEY2`, `G`, `F2`, `F1`, `P10` … `P2`). Line 1 (`G`) is the end next to `CB5`, and the end marked
+  `CB7 #3` is line 27.
+- **So the front-side wires can go on the main board**: ground, `KEY1`, `KEY2`, `REM` and `+5V` are the first six
+  lines of `CB7`, at its `CB5` end. That keeps them away from the filament (lines 7 and 9) and the display lines.
+- **`KEY1` is also on `CB5`** (`W1A`: `G`, `KEY1`), the 2-wire cable from the STANDBY/ON board.
+- **The front board's solder side faces the inside of the deck.** `CB8`'s joints, the key ladder (`R169` to `R178`)
+  and the keys' joints (`SW2` to `SW13`) can be reached from above with the case off, as `CB701` was on the CD-S300.
+  `CB8` has no line names printed, so if it gets used the beeper maps it.
+- `IC13` (BU2040, the port expander) and FL POWER (`Q36`, `Q37`, `Q39`, `C119`) are where the schematic puts them.
+- Not seen yet: the main board's solder side (whether the bottom cover comes off), and `CB7`'s and `IC12`'s joints
+  from below.
