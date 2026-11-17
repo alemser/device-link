@@ -1,23 +1,23 @@
-"""GET /device: quem é esta ponte e o que ela sabe fazer.
+"""GET /device: who this bridge is and what it can do.
 
-O contrato está no repositório amp-link (docs/contrato.md). Tudo aqui é fixo enquanto o programa roda: o cliente lê
-uma vez ao conectar. A versão é a mesma do GET /update.
+The contract is in the amp-link repository (docs/contract-v1.md). Everything here is fixed while the program runs:
+the client reads it once on connecting. The version is the same as GET /update's.
 
-Por enquanto (2026-11-09) a ponte do MR 780 só sabe se atualizar e configurar o Wi-Fi: o estado do amp depende das
-capturas do display (docs/plano.md, passo 3). Cada capacidade nova entra em FEATURES quando existir de verdade.
+For now (2026-11-09) the MR 780 bridge can only update itself and set up Wi-Fi: the amp's state depends on the
+display captures (docs/plan.md, step 3). Each new capability goes into FEATURES once it really exists.
 
-describe() roda igual no MicroPython (Pico) e no Python do computador (tools/test_device.py).
+describe() runs the same in MicroPython (Pico) and in the computer's Python (tools/test_device.py).
 """
 
-API = 1                         # só muda quando algo deixa de ser compatível
-NAME = "mr780"                  # o nome na descoberta e na rede (mr780.local, AmpLink-MR780-XXXX); o enviar.py lê
+API = 1                         # changes only when something stops being compatible
+NAME = "mr780"                  # the name in discovery and on the network (mr780.local, AmpLink-MR780-XXXX); enviar.py reads it
 KIND = "amplifier"
-MODEL = "Magnat MR 780"         # o nome completo: vai no /device e, como "label", na descoberta
-COLUMNS, ROWS = 16, 2           # o VFD: 2 linhas de 16 caracteres (docs/pesquisa-display.md)
+MODEL = "Magnat MR 780"         # the full name: in /device and, as "label", in discovery
+COLUMNS, ROWS = 16, 2           # the VFD: 2 lines of 16 characters (docs/research.md)
 FEATURES = ("update", "wifi_setup")
 
-# As entradas na ordem do botão SOURCE e do controle remoto, com os ids do groove-rig
-# (internal/catalog/profiles/magnat_mr780.yaml). Os nomes são os do manual; os do display vêm das capturas.
+# The inputs in the order of the SOURCE knob and the remote, with groove-rig's ids
+# (internal/catalog/profiles/magnat_mr780.yaml). The names are the manual's; the display's come from the captures.
 INPUTS = (("usb_audio", "USB"), ("bluetooth", "BT"), ("phono", "PHONO"), ("cd", "CD"), ("dvd", "DVD"),
           ("aux1", "AUX 1"), ("aux2", "AUX 2"), ("tape", "TAPE"), ("line_in", "LINE IN"), ("fm", "FM"),
           ("dab", "DAB"), ("opt1", "OPT 1"), ("opt2", "OPT 2"), ("coax1", "COAX 1"), ("coax2", "COAX 2"))
@@ -31,7 +31,7 @@ def describe(version):
 
 
 async def handle(req, writer):
-    """Rota /device (ver web.Publisher)."""
+    """The /device route (see web.Publisher)."""
     import ota
     from web import reply, reply_json
     if req.path != "/device":

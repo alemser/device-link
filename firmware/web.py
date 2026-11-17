@@ -1,17 +1,17 @@
-"""Servidor HTTP do Pico: publica o estado do aparelho na rede (o Wi-Fi fica no wifi.py).
+"""The Pico's HTTP server: publishes the device's state on the network (Wi-Fi is in wifi.py).
 
-Este arquivo é da base comum (amp-link, firmware-base/): mude lá e copie com o copiar.py, nunca aqui.
+This file belongs to the shared base (amp-link, firmware-base/): change it there and copy it with copiar.py, never here.
 
-    GET /state    o estado em JSON
-    GET /events   Server-Sent Events: um "data: {json}" a cada mudança
-    outras        rotas extras, por prefixo: routes={"/update": ota.handle, "/device": device.handle}
+    GET /state    the state as JSON
+    GET /events   Server-Sent Events: one "data: {json}" per change
+    others        extra routes, by prefix: routes={"/update": ota.handle, "/device": device.handle}
 
-Uso (com asyncio):
+Use (with asyncio):
     pub = Publisher(state, routes={...})
-    (routes: handler(req, writer) assíncrono; req = Request, ver abaixo; responde com reply())
+    (routes: async handler(req, writer); req = Request, below; answers with reply())
     asyncio.create_task(pub.serve())
     ...
-    pub.changed()      # chame depois de cada state.update() que devolveu True
+    pub.changed()      # call after every state change
 """
 
 import json
@@ -19,11 +19,11 @@ import asyncio
 
 from listeners import make_room
 
-CHUNK = 1024                    # o corpo vai em pedaços: o Wi-Fi do Pico tem pouca memória
+CHUNK = 1024                    # the body goes in chunks: the Pico's Wi-Fi has little memory
 
 
 class Request:
-    """Um pedido HTTP já lido até os cabeçalhos. O corpo fica em reader (length bytes)."""
+    """An HTTP request read up to its headers. The body is left in reader (length bytes)."""
 
     def __init__(self, method, path, headers, reader):
         self.method = method
@@ -32,18 +32,18 @@ class Request:
         for p in query.split("&"):
             key, _, value = p.partition("=")
             self.query[key] = value
-        self.headers = headers          # nomes em minúsculas
+        self.headers = headers          # names in lower case
         self.reader = reader
         self.length = int(headers.get("content-length", 0))
 
 
 async def reply(writer, status, ctype, body):
-    # no-store: tudo aqui muda com o estado e com as atualizações por OTA.
+    # no-store: everything here changes with the state and with OTA updates.
     writer.write(("HTTP/1.1 %s\r\nContent-Type: %s\r\nContent-Length: %d\r\nCache-Control: no-store\r\n"
                   "Access-Control-Allow-Origin: *\r\nConnection: close\r\n\r\n"
                   % (status, ctype, len(body))).encode())
     await writer.drain()
-    # Em pedaços: uma resposta grande de uma vez aperta a memória do Wi-Fi (issue #2).
+    # In chunks: a large answer in one go squeezes the Wi-Fi's memory (SP103 issue #2).
     for i in range(0, len(body), CHUNK):
         writer.write(body[i:i + CHUNK])
         await writer.drain()
@@ -58,20 +58,20 @@ class Publisher:
         self.state = state
         self.port = port
         self.routes = routes or {}
-        self.listeners = []             # conexões abertas em /events: (ip, writer), ver listeners.py
-        self.served = 0                 # pedidos respondidos desde que o Pico ligou
+        self.listeners = []             # open /events connections: (ip, writer), see listeners.py
+        self.served = 0                 # requests answered since the Pico started
 
     def _json(self):
         return json.dumps(self.state.to_dict())
 
     def changed(self):
-        """Avisa todos os ouvintes de /events (chamar depois de cada mudança)."""
+        """Tells every /events listener (call after each change)."""
         msg = ("data: " + self._json() + "\n\n").encode()
         for _, w in self.listeners:
             try:
                 w.write(msg)
             except Exception:
-                pass                    # a conexão caiu: o laço dela vai removê-la
+                pass                    # the connection dropped: its loop will remove it
 
     async def serve(self):
         await asyncio.start_server(self._client, "0.0.0.0", self.port)
@@ -118,15 +118,15 @@ class Publisher:
         except Exception:
             ip = None
         make_room(self.listeners, ip)
-        writer.write(("data: " + self._json() + "\n\n").encode())   # estado atual logo de cara
+        writer.write(("data: " + self._json() + "\n\n").encode())   # the current state straight away
         entry = (ip, writer)
         self.listeners.append(entry)
         try:
-            while entry in self.listeners:      # fora da lista = outra conexão tomou o lugar
-                await writer.drain()    # envia o que changed() escreveu; falha se a conexão caiu
+            while entry in self.listeners:      # off the list = another connection took its place
+                await writer.drain()    # sends what changed() wrote; fails if the connection dropped
                 await asyncio.sleep(1)
                 if entry in self.listeners:
-                    writer.write(b": ping\n\n")   # comentário SSE: mantém a conexão viva
+                    writer.write(b": ping\n\n")   # SSE comment: keeps the connection alive
         except Exception:
             pass
         finally:

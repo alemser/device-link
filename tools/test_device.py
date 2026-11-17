@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Testa no computador a descrição da ponte (firmware/device.py).
+"""Tests the bridge's description (firmware/device.py) on the computer.
 
     python3 tools/test_device.py
 """
@@ -19,10 +19,10 @@ assert d["kind"] == "amplifier"
 assert d["model"] == "Magnat MR 780"
 assert d["bridge_version"] == "abcd1234"
 assert len(d["inputs"]) == 15
-# A ordem do ciclo de entradas do groove-rig (profiles/magnat_mr780.yaml): não mudar sem mudar lá.
+# groove-rig's input cycle order (profiles/magnat_mr780.yaml): don't change it without changing it there.
 assert [i["id"] for i in d["inputs"]] == ["usb_audio", "bluetooth", "phono", "cd", "dvd", "aux1", "aux2", "tape",
                                           "line_in", "fm", "dab", "opt1", "opt2", "coax1", "coax2"]
 assert d["display"] == {"columns": 16, "rows": 2}
 assert d["features"] == ["update", "wifi_setup"]
-assert "volume_db" not in d and "tone_db" not in d     # ainda não se sabe: a app esconde o que falta
-print("tudo certo")
+assert "volume_db" not in d and "tone_db" not in d     # not known yet: the app hides what is missing
+print("all good")

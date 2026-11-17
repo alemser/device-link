@@ -5,11 +5,11 @@
 __pycache__/
 *.pyc
 
-# Ambiente Python local (mpremote)
+# Local Python environment (mpremote)
 .venv/
 
-# Manual oficial da Magnat: tem direitos autorais, fica só na cópia local
+# The official Magnat manual is copyrighted: local copy only
 docs/manual/
 
-# Nome e senha do Wi-Fi: só no computador e no Pico, nunca no GitHub
+# Wi-Fi name and password: only on the computer and the Pico, never on GitHub
 firmware/secrets.py

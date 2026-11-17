@@ -1,71 +1,80 @@
 # MR 780 mod
 
-As mesmas melhorias do SP103 (repositório `sp103-mod`), agora no receiver híbrido **Magnat MR 780**:
-um microcontrolador (provavelmente outro Raspberry Pi Pico 2 W) dentro do amp, que lê o que o amp mostra no display,
-publica o estado na rede e comanda o amp pelo Wi-Fi.
+The same improvements as on the SP103 (repository `sp103-mod`), now on the **Magnat MR 780** hybrid receiver: a
+Raspberry Pi Pico 2 W inside the amp that reads what the amp shows on its display, publishes the state on the network
+and controls the amp over Wi-Fi.
 
-O nome não é mais "display proxy" porque o projeto faz bem mais do que trocar textos no display: estado, comandos,
-VU meter e telas de informação.
+The name is no longer "display proxy" because the project does much more than swap texts on the display: state,
+commands, VU meter and information screens.
 
-## Situação (2026-11-07)
+## Status (2026-11-16)
 
-Início, na **fase 1: só ler o estado** (o que vai para o display, ligado ou standby), sem cortar nada. O display é um
-**VFD de matriz de pontos, 2 linhas × 16 caracteres**, com o controlador dentro do vidro, ligado à placa principal
-por um cabo flat de 21 vias e passo de 1,0 mm (`docs/pesquisa-display.md`). Em 2026-11-07, com o multímetro e o amp
-fora da tomada, foram mapeados no flat os GND, todos os botões, o VOLUME, o SOURCE e o sinal do controle remoto
-(`docs/medicoes.md`). Próximo passo: as tensões com o amp ligado, e depois o analisador lógico (`docs/plano.md`).
+Still in **phase 1: read the state only** (what goes to the display, on or standby), without cutting anything. The
+display is a **dot-matrix VFD, 2 lines × 16 characters**, with its controller inside the glass, connected to the main
+board by a 21-way flat cable with 1.0 mm pitch (`docs/research.md`). On 2026-11-07, with the multimeter and the amp
+unplugged, the GND lines, all the buttons, VOLUME, SOURCE and the remote's signal were mapped on the flat
+(`docs/measurements.md`). Next step: the voltages with the amp powered, then the logic analyzer (`docs/plan.md`).
 
-Em 2026-11-09, sem o amp, começou o firmware: a **base da ponte** (`firmware/ponte.py`), que configura o Wi-Fi sem
-cabo pela rede `AmpLink-MR780-XXXX`, é achada pela app Amp Link sem IP digitado e se atualiza pelo Wi-Fi. O `/state`
-ainda vem todo `null`: ler o display e comandar o amp dependem das capturas. Assim o Pico já pode ir para dentro do amp
-e receber o resto pelo Wi-Fi.
+The firmware started on 2026-11-09, without the amp: the **bridge base** (`firmware/ponte.py`), which sets up Wi-Fi
+without a cable through the `AmpLink-MR780-XXXX` network, is found by the DeviceLink app with no IP typed in, and
+updates itself over Wi-Fi. It already runs on the shared base from the `amp-link` repository (see "Folders"); updates
+over Wi-Fi take no password (a contract v2 decision; `firmware/secrets.example.py` explains). The bridge itself is
+still on contract `api` 1 (`firmware/device.py`), and `/state` still comes back all `null`: reading the display and
+controlling the amp depend on the captures (the plan's open steps 2 to 4). Even so, the Pico can already go inside the
+amp and get the rest over Wi-Fi.
 
-## O que vem do SP103
+## What comes from the SP103
 
-| No SP103 | No MR 780 | Observação |
+| On the SP103 | On the MR 780 | Notes |
 |---|---|---|
-| Nomes próprios nas entradas ("TUNER" vira "Rega Planar 2") | Sim | O MR 780 tem 15 fontes: PHONO, CD, DVD, AUX 1/2, TAPE, LINE IN, FM, DAB, OPT 1/2, COAX 1/2, USB, BT |
-| Estado do amp na rede (`/state`, `/device`) | Sim | Mesmo contrato da app Amp Link (repositório `amp-link`) |
-| Comandar pelo Wi-Fi: códigos do controle remoto direto na linha do IR | Sim | Por fio, sem Broadlink. Mais os botões do painel (DIRECT, DIM), que o controle remoto não tem |
-| Ligar o amp a partir do standby | Sim | No MR 780 o amp aquece as válvulas por ~30 s ao ligar |
-| VU meter no display enquanto toca | Provável | 2×16 como no SP103; depende de o controlador do VFD aceitar caracteres desenhados |
-| Telas de informação (agulha, qualidade do Bluetooth) | Sim | Mesmo tamanho de tela do SP103 |
-| Ajustar grave e agudo pelo Wi-Fi | Difícil | Botões giratórios, provavelmente analógicos. O DIRECT (liga e desliga o tom) é viável |
-| Alimentação pelo próprio amp, também em standby | A medir | O Pico pelo `D5V` |
-| Raspberry Pi Zero 2 W dentro do amp | Não | Descartado em 2026-11-08: sem fonte nova dentro do amp e sem risco de interferência na eletrônica |
+| Custom names for the inputs ("TUNER" becomes "Rega Planar 2") | Yes | The MR 780 has 15 sources: PHONO, CD, DVD, AUX 1/2, TAPE, LINE IN, FM, DAB, OPT 1/2, COAX 1/2, USB, BT |
+| Amp state on the network (`/state`, `/device`) | Yes | The same contract as the app (repository `amp-link`) |
+| Control over Wi-Fi: remote codes straight into the IR line | Yes | By wire, no Broadlink. Plus the panel buttons (DIRECT, DIM), which the remote does not have |
+| Power the amp on from standby | Yes | On the MR 780 the amp warms up the valves for ~30 s at power-on |
+| VU meter on the display while playing | Likely | 2×16 as on the SP103; depends on the VFD controller accepting custom characters |
+| Information screens (needle, Bluetooth quality) | Yes | Same screen size as the SP103 |
+| Bass and treble over Wi-Fi | Hard | Knobs, probably analogue. DIRECT (tone on and off) is feasible |
+| Powered by the amp itself, also in standby | To be measured | The Pico from `D5V` |
+| Raspberry Pi Zero 2 W inside the amp | No | Dropped on 2026-11-08: no new power supply inside the amp and no risk of interference with the electronics |
 
-Tudo isto está detalhado em `docs/plano.md`.
+All of this is detailed in `docs/plan.md`.
 
-## Documentos
+## Documents
 
-| Documento | Conteúdo |
+| Document | Contents |
 |---|---|
-| [`docs/plano.md`](docs/plano.md) | O plano, passo a passo, e as perguntas que as primeiras medições precisam responder |
-| [`docs/pesquisa-display.md`](docs/pesquisa-display.md) | O que se sabe do MR 780 pela web, pelo manual e pelas fotos: display, placas, botões, controle remoto |
-| [`docs/medicoes.md`](docs/medicoes.md) | Todas as leituras do multímetro, com a tabela das 21 vias do cabo flat |
-| [`docs/historico/brief-2026-10.md`](docs/historico/brief-2026-10.md) | O brief de 2026-10-28 a 30: primeiras fotos, medidas do cabo flat e as decisões das fases. Não descreve o estado atual |
+| [`docs/plan.md`](docs/plan.md) | The plan, step by step, and the questions the first measurements need to answer |
+| [`docs/research.md`](docs/research.md) | What is known about the MR 780 from the web, the manual and the photos: display, boards, buttons, remote |
+| [`docs/measurements.md`](docs/measurements.md) | All the multimeter readings, with the table of the flat cable's 21 lines |
+| [`docs/history/brief-2026-10.md`](docs/history/brief-2026-10.md) | The brief of 2026-10-28 to 30: first photos, flat cable measurements and the phase decisions. It does not describe the current state |
 
-O manual oficial fica só na cópia local, em `docs/manual/` (tem direitos autorais, não vai para o GitHub).
+The official manual stays in the local copy only, in `docs/manual/` (copyrighted, not on GitHub).
 
-## Pastas
+## Folders
 
-- `firmware/`: o programa do Pico (MicroPython). `main.py` (o porteiro das atualizações) e `secrets.py` (a senha das
-  atualizações, fora do git) só vão pelo cabo; o resto vai pelo Wi-Fi com `python3 tools/enviar.py`. `wifi.py`,
-  `web.py`, `ota.py`, `udp.py`, `listeners.py` e o próprio `main.py` são **cópias da base comum** (repositório
-  `amp-link`, pasta `firmware-base/`): mudar lá e copiar com `python3 ../amp-link/firmware-base/copiar.py`, nunca
-  aqui.
-- `tools/`: testes no computador (`python3 tools/test_wifi.py`, `python3 tools/test_listeners.py`,
-  `python3 tools/test_device.py`) e o `enviar.py`. O `enviar.py`, o `test_wifi.py` e o `test_listeners.py` também
-  vêm da base.
+- `firmware/`: the Pico's program (MicroPython).
+  - This project's: `ponte.py` (the program) and `device.py` (`/device`).
+  - **Copies of the shared base** (repository `amp-link`, folder `firmware-base/`): `wifi.py`, `web.py`, `ota.py`,
+    `udp.py`, `listeners.py` and `main.py`. Change them there and copy with
+    `python3 ../amp-link/firmware-base/copiar.py`, never here.
+  - `main.py` (the update gatekeeper) only goes to the Pico by USB; everything else goes over Wi-Fi.
+- `tools/`: the tests on the computer and `enviar.py` (update over Wi-Fi). `enviar.py`, `test_wifi.py` and
+  `test_listeners.py` come from the base; `test_device.py` is this project's.
+- `captures/`: logic-analyzer captures.
+- `docs/img/`: photos of the boards.
 
-## Instalar no Pico (pelo cabo, uma vez)
+## Test on the computer
 
 ```sh
-cp firmware/secrets.example.py firmware/secrets.py    # e preencher UPDATE_PASSWORD
+for t in wifi listeners device; do python3 tools/test_$t.py; done
+python3 ../amp-link/firmware-base/copiar.py --check    # are the base copies up to date?
+```
+
+## Install on the Pico (by USB, once)
+
+```sh
 mpremote fs cp firmware/*.py : + reset
 ```
 
-Sem rede salva, o Pico abre a rede `AmpLink-MR780-XXXX`: na app Amp Link, "Set up the amp's Wi-Fi". Daí em diante,
-atualizações só pelo Wi-Fi: `python3 tools/enviar.py`.
-- `captures/`: capturas do analisador lógico.
-- `docs/img/`: fotos da placa.
+With no saved network, the Pico opens the `AmpLink-MR780-XXXX` network (key `amplink-setup`): in the DeviceLink app,
+"Set up a new device's Wi-Fi". From then on, updates go over Wi-Fi: `python3 tools/enviar.py`.

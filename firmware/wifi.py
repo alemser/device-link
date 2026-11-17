@@ -1,35 +1,34 @@
-"""Wi-Fi do Pico: a rede de casa, a rede de configuração e a descoberta pela app.
+"""The Pico's Wi-Fi: the home network, the setup network, and discovery by the app.
 
-Este arquivo é da base comum (amp-link, firmware-base/): mude lá e copie com o copiar.py, nunca aqui.
+This file belongs to the shared base (amp-link, firmware-base/): change it there and copy it with copiar.py, never here.
 
-A rede de casa fica no wifi.json (gravado pela configuração, nunca pelo OTA). Sem ele, vale a do secrets.py
-(WIFI_SSID e WIFI_PASSWORD), para os Picos instalados antes desta versão.
+The home network lives in wifi.json (written by the setup, never by OTA). Without it, secrets.py's WIFI_SSID and
+WIFI_PASSWORD apply, for Picos installed before this version.
 
-Sem rede salva, ou sem conseguir conectar por OPEN_SETUP_AFTER_S, o Pico abre a rede de configuração
-"AmpLink-<PREFIXO>-XXXX" (WPA2, senha SETUP_KEY, a mesma em todos os Picos; a app conhece) e continua tentando a rede
-salva. Toda rede de configuração começa com SETUP_PREFIX: a app pede ao Android "uma rede que começa com AmpLink-" e
-serve para qualquer amp.
-Quem entra nela (a app, ou o navegador em http://192.168.4.1/) usa as rotas abaixo. Depois de conectar, a rede de
-configuração fecha sozinha em CLOSE_SETUP_AFTER_S, tempo para quem configurou ler o IP.
+With no saved network, or unable to connect for OPEN_SETUP_AFTER_S, the Pico opens the setup network
+"AmpLink-<PREFIX>-XXXX" (WPA2, key SETUP_KEY, the same on every Pico; the app knows it) and keeps trying the saved
+network. Every setup network starts with SETUP_PREFIX: the app asks Android for "a network starting with AmpLink-",
+which fits any device. Whoever joins it (the app, or a browser at http://192.168.4.1/) uses the routes below. Once
+connected, the setup network closes by itself after CLOSE_SETUP_AFTER_S, time for whoever set it up to read the IP.
 
     GET    /wifi            {"state", "detail", "ip", "ssid", "setup": {"open", "ssid"}}
-                            state e detail: a última tentativa (idle, connecting, connected, ou failed com o
-                            motivo); ip: o endereço de agora na rede de casa; ssid: a rede salva
-    GET    /wifi/networks   [{"ssid", "rssi", "secure"}, ...], da mais forte para a mais fraca
-    PUT    /wifi            {"ssid": "...", "psk": "..."}: troca a rede (psk vazio = rede aberta).
-                            Só com a rede de configuração aberta. Se a nova falhar, volta para a anterior.
-    POST   /wifi/setup      abre a rede de configuração por SETUP_WINDOW_S, sem largar a rede de casa
-    DELETE /wifi            esquece a rede salva (só com a rede de configuração aberta)
-    GET    /                a página de configuração, só com a rede de configuração aberta
+                            state and detail: the last attempt (idle, connecting, connected, or failed with the
+                            reason); ip: the address on the home network now; ssid: the saved network
+    GET    /wifi/networks   [{"ssid", "rssi", "secure"}, ...], strongest first
+    PUT    /wifi            {"ssid": "...", "psk": "..."}: switches network (empty psk = open network).
+                            Only with the setup network open. If the new one fails, back to the previous one.
+    POST   /wifi/setup      opens the setup network for SETUP_WINDOW_S, without leaving the home network
+    DELETE /wifi            forgets the saved network (only with the setup network open)
+    GET    /                the setup page, only with the setup network open
 
-Descoberta: a app manda "AMPLINK?" por broadcast UDP na porta DISCOVERY_PORT e o Pico responde
-{"name", "model", "ip"}, mais "label" (o nome completo, para mostrar) e "kind" (o tipo de aparelho) quando a ponte os
-informa. Assim a app acha o Pico sem IP fixo e já sabe o que achou.
+Discovery: the app broadcasts "AMPLINK?" (or "DEVICELINK?", contract v2) on UDP port DISCOVERY_PORT and the Pico
+answers {"name", "model", "ip"}, plus "label" (the full name, to show), "kind" (the type of device) and "api" (the
+contract version) when the bridge provides them. So the app finds the Pico without a fixed IP and knows what it found.
 
-Uso (com asyncio):
-    net = Wifi(model="mr780", hostname="mr780", prefix="MR780",     # cada ponte com os seus (device.py)
-               label="Magnat MR 780", kind="amplifier")
-    asyncio.create_task(net.task(aviso))      # aviso(ok, info) uma vez, como antes; nunca levanta erro
+Use (with asyncio):
+    net = Wifi(model="mr780", hostname="mr780", prefix="MR780",     # each bridge with its own (device.py)
+               label="Magnat MR 780", kind="amplifier", api=2)
+    asyncio.create_task(net.task(report))     # report(ok, info) once; never raises
     routes={"/wifi": net.handle, "/": net.page, ...}
 """
 
@@ -43,20 +42,21 @@ import udp
 
 SETUP_KEY = "amplink-setup"
 SETUP_PREFIX = "AmpLink-"
+PROBES = (b"AMPLINK?", b"DEVICELINK?")  # discovery: api 1 apps ask the first, the DeviceLink app the second
 NET_FILE = "wifi.json"
 DISCOVERY_PORT = 47800
-OPEN_SETUP_AFTER_S = 120    # sem conectar por esse tempo (e com rede salva), abre a rede de configuração
-CLOSE_SETUP_AFTER_S = 60    # depois de conectar
+OPEN_SETUP_AFTER_S = 120    # not connected for this long (with a saved network): open the setup network
+CLOSE_SETUP_AFTER_S = 60    # after connecting
 SETUP_WINDOW_S = 600        # POST /wifi/setup
 CONNECT_TIMEOUT_S = 15
 MAX_NETWORKS = 20
 
-# wlan.status() < 0 = falhou de vez
+# wlan.status() < 0 = failed for good
 REASONS = {-1: "connection failed", -2: "network not found", -3: "wrong password"}
 
 
 def _load(path=NET_FILE):
-    """A rede salva: {"ssid", "psk"}, ou None."""
+    """The saved network: {"ssid", "psk"}, or None."""
     try:
         with open(path) as f:
             net = json.load(f)
@@ -74,7 +74,7 @@ def _load(path=NET_FILE):
 
 
 def validate(data):
-    """O corpo do PUT /wifi. Devolve (ssid, psk) ou levanta ValueError com a mensagem para a app."""
+    """The PUT /wifi body. Returns (ssid, psk) or raises ValueError with the message for the app."""
     if not isinstance(data, dict):
         raise ValueError("expected a JSON object")
     ssid = data.get("ssid")
@@ -87,8 +87,8 @@ def validate(data):
 
 
 def collapse(scan, limit=MAX_NETWORKS):
-    """O resultado do WLAN.scan(): uma entrada por nome, a de sinal mais forte, da mais forte para a mais fraca.
-    No rp2 o 6º campo é uma contagem, não "oculta": a rede oculta aparece só com o nome vazio."""
+    """WLAN.scan()'s result: one entry per name, the strongest signal, strongest first.
+    On rp2 the 6th field is a count, not "hidden": a hidden network just shows an empty name."""
     best = {}
     for ssid, _bssid, _channel, rssi, security, _count in scan:
         if not ssid:
@@ -100,10 +100,12 @@ def collapse(scan, limit=MAX_NETWORKS):
 
 
 class Wifi:
-    def __init__(self, model, hostname, prefix, net_file=NET_FILE, retry_s=30, quick_tries=3, label="", kind=""):
+    def __init__(self, model, hostname, prefix, net_file=NET_FILE, retry_s=30, quick_tries=3, label="", kind="",
+                 api=0):
         self.model = model
-        self.label = label              # "Magnat MR 780": só para a descoberta
+        self.label = label              # "Magnat MR 780": for discovery only
         self.kind = kind                # "amplifier", "cd_player"
+        self.api = api                  # contract version, in the discovery answer (0 = not sent: api 1 bridges)
         self.hostname = hostname
         self.prefix = prefix
         self.net_file = net_file
@@ -111,14 +113,14 @@ class Wifi:
         self.quick_tries = quick_tries
         self.sta = None
         self.ap = None
-        self.name = prefix              # "MR780-D85E" quando o chip liga: o nome na descoberta
+        self.name = prefix              # "MR780-D85E" once the chip is up: the name in discovery
         self.setup_ssid = SETUP_PREFIX + prefix
         self.status = {"state": "idle", "detail": "", "ip": ""}
-        self.pending = None             # (ssid, psk) do PUT /wifi, feito pelo task()
-        self.close_setup_at = None      # time.time() em que a rede de configuração fecha
+        self.pending = None             # (ssid, psk) from PUT /wifi, carried out by task()
+        self.close_setup_at = None      # time.time() when the setup network closes
         self.offline_since = None
 
-    # --- a rede salva ---
+    # --- the saved network ---
 
     def saved(self):
         return _load(self.net_file)
@@ -134,13 +136,13 @@ class Wifi:
         except OSError:
             pass
 
-    # --- a rede de configuração ---
+    # --- the setup network ---
 
     def setup_open(self):
         return self.ap is not None and self.ap.active()
 
     def open_setup(self, window_s=None):
-        """Abre a rede de configuração. window_s: fecha sozinha depois disso, mesmo conectado (POST /wifi/setup)."""
+        """Opens the setup network. window_s: it closes by itself after that, even when connected (POST /wifi/setup)."""
         if not self.setup_open():
             self.ap.config(ssid=self.setup_ssid, key=SETUP_KEY)
             self.ap.active(True)
@@ -153,14 +155,14 @@ class Wifi:
             self.ap.active(False)
             print("Wi-Fi setup network closed")
 
-    # --- conectar ---
+    # --- connecting ---
 
     async def _connect(self, ssid, psk, first=False):
-        """Uma tentativa. Devolve (True, ip) ou (False, motivo) e atualiza o status."""
+        """One attempt. Returns (True, ip) or (False, reason) and updates the status."""
         self.status = {"state": "connecting", "detail": ssid, "ip": ""}
         if not first:
-            # Só depois da primeira: com o chip recém-ligado, um disconnect() antes do connect() faz a
-            # primeira tentativa falhar (status -1).
+            # Only after the first: with the chip just up, a disconnect() before connect() makes the first attempt
+            # fail (status -1).
             self.sta.disconnect()
         if psk:
             self.sta.connect(ssid, psk)
@@ -180,12 +182,12 @@ class Wifi:
         return False, reason
 
     async def _configure(self, ssid, psk):
-        """O PUT /wifi: tenta a rede nova; se falhar, volta para a anterior e a rede de configuração fica aberta."""
+        """PUT /wifi: tries the new network; if it fails, back to the previous one, and the setup network stays open."""
         previous = self.saved()
         ok, reason = await self._connect(ssid, psk)
         if not ok and reason == REASONS[-1]:
-            # "connection failed" (status -1) às vezes é só a primeira tentativa: visto com o hotspot do celular
-            # em 2026-11-08, como no reset do chip. Senha errada e rede sumida não melhoram tentando de novo.
+            # "connection failed" (status -1) is sometimes only the first attempt: seen with a phone hotspot on
+            # 2026-11-08, as at a chip reset. A wrong password or a missing network don't improve by retrying.
             ok, reason = await self._connect(ssid, psk)
         if ok:
             self._save(ssid, psk)
@@ -194,18 +196,18 @@ class Wifi:
         failed = self.status
         if previous:
             await self._connect(previous["ssid"], previous["psk"])
-        self.status = failed            # quem configurou precisa ver por que a rede nova falhou
+        self.status = failed            # whoever set it up needs to see why the new network failed
 
     async def _wait(self, seconds):
-        """Espera, mas acorda na hora se chegar um PUT /wifi."""
+        """Waits, but wakes at once if a PUT /wifi arrives."""
         end = time.time() + seconds
         while self.pending is None and time.time() < end:
             await asyncio.sleep(0.25)
 
     async def task(self, on_first_result=None):
-        """Conecta e mantém o Wi-Fi, em segundo plano. Nunca levanta erro: sem Wi-Fi, o resto do programa
-        (o display) segue normal. on_first_result(ok, info) é chamado uma vez: ao conectar, ou quando as
-        tentativas rápidas acabam (info = IP ou o motivo)."""
+        """Connects and keeps the Wi-Fi up, in the background. Never raises: without Wi-Fi the rest of the program
+        carries on. on_first_result(ok, info) is called once: on connecting, or when the quick attempts run out
+        (info = the IP or the reason)."""
         tries = 0
         reported = False
         while True:
@@ -215,9 +217,9 @@ class Wifi:
                     network.hostname(self.hostname)
                     self.sta = network.WLAN(network.STA_IF)
                     self.sta.active(True)
-                    self.sta.config(pm=0xA11140)    # sem economia de energia: responde mais rápido
+                    self.sta.config(pm=0xA11140)    # no power saving: answers faster
                     self.ap = network.WLAN(network.AP_IF)
-                    self.ap.active(False)           # pode ter ficado aberta de antes de um soft reset
+                    self.ap.active(False)           # may have been left open from before a soft reset
                     mac = self.sta.config("mac")
                     self.name = "%s-%02X%02X" % (self.prefix, mac[-2], mac[-1])
                     self.setup_ssid = SETUP_PREFIX + self.name
@@ -238,15 +240,15 @@ class Wifi:
                         tries += 1
                         result = await self._connect(net["ssid"], net["psk"], first=tries == 1)
                 elif not reported:
-                    # Já conectado (programa reiniciado pelo mpremote, sem reset do chip de Wi-Fi).
+                    # Already connected (program restarted by mpremote, without resetting the Wi-Fi chip).
                     result = (True, self.sta.ifconfig()[0])
                     self.status = {"state": "connected", "detail": "", "ip": result[1]}
                 self._supervise()
-            except Exception as e:      # chip de Wi-Fi com problema etc.
+            except Exception as e:      # Wi-Fi chip trouble etc.
                 print("Wi-Fi error:", e)
                 result = (False, str(e))
             if self.sta is not None and self.sta.isconnected():
-                tries = 0               # se cair depois, recomeça com tentativas rápidas
+                tries = 0               # if it drops later, start again with quick attempts
             if result and not reported and (result[0] or tries >= self.quick_tries or tries == 0):
                 reported = True
                 if on_first_result:
@@ -254,26 +256,26 @@ class Wifi:
             await self._wait(2 if 0 < tries < self.quick_tries else self.retry_s)
 
     def _supervise(self):
-        """Abre a rede de configuração quando falta Wi-Fi, e fecha quando não precisa mais."""
+        """Opens the setup network when Wi-Fi is missing, and closes it when no longer needed."""
         now = time.time()
         if self.sta.isconnected():
             self.offline_since = None
             if self.setup_open() and self.close_setup_at is None:
-                self.close_setup_at = now + CLOSE_SETUP_AFTER_S   # voltou sozinho (roteador religou)
+                self.close_setup_at = now + CLOSE_SETUP_AFTER_S   # came back by itself (router restarted)
         else:
             if self.offline_since is None:
                 self.offline_since = now
             if not self.setup_open() and (self.saved() is None or now - self.offline_since >= OPEN_SETUP_AFTER_S):
                 self.open_setup()
-            self.close_setup_at = None   # sem Wi-Fi, a rede de configuração fica aberta
+            self.close_setup_at = None   # without Wi-Fi, the setup network stays open
         if self.close_setup_at is not None and now >= self.close_setup_at:
             self.close_setup()
 
     # --- HTTP ---
 
     def describe(self):
-        """state e detail: a última tentativa. ip: o endereço de agora na rede de casa (depois de uma troca que
-        falhou, é o da rede anterior, para onde o Pico voltou)."""
+        """state and detail: the last attempt. ip: the address on the home network now (after a failed switch, the
+        previous network's, which the Pico went back to)."""
         net = self.saved()
         ip = self.sta.ifconfig()[0] if self.sta is not None and self.sta.isconnected() else ""
         return {"state": self.status["state"], "detail": self.status["detail"], "ip": ip,
@@ -281,11 +283,11 @@ class Wifi:
                 "setup": {"open": self.setup_open(), "ssid": self.setup_ssid}}
 
     async def handle(self, req, writer):
-        """Rotas /wifi (ver web.Publisher)."""
+        """Routes /wifi (see web.Publisher)."""
         from web import reply_json
         path, method = req.path.rstrip("/"), req.method
-        # O corpo é lido sempre, antes de responder: fechar a conexão com bytes não lidos faz o lwIP mandar um
-        # reset, e o cliente perde a resposta (visto com o 403 do PUT).
+        # The body is always read before answering: closing the connection with unread bytes makes lwIP send a
+        # reset, and the client loses the answer (seen with PUT's 403).
         body = await req.reader.readexactly(req.length) if req.length else b""
         if path == "/wifi" and method == "GET":
             return await reply_json(writer, self.describe())
@@ -310,13 +312,13 @@ class Wifi:
         return await reply_json(writer, {"error": "not found"}, "404 Not Found")
 
     async def page(self, req, writer):
-        """GET /: a página de configuração, só com a rede de configuração aberta (o Pico não tem página web)."""
+        """GET /: the setup page, only with the setup network open (the Pico has no web page otherwise)."""
         from web import reply
         if req.path != "/" or not self.setup_open():
             return await reply(writer, "404 Not Found", "text/plain", b"not found\n")
         await reply(writer, "200 OK", "text/html; charset=utf-8", PAGE.replace("NAME", self.setup_ssid).encode())
 
-    # --- descoberta ---
+    # --- discovery ---
 
     def answer(self):
         if self.sta is not None and self.sta.isconnected():
@@ -328,6 +330,8 @@ class Wifi:
             answer["label"] = self.label
         if self.kind:
             answer["kind"] = self.kind
+        if self.api:
+            answer["api"] = self.api        # contract v2: the app knows the version before asking anything
         return json.dumps(answer)
 
     async def _discovery(self):
@@ -340,10 +344,10 @@ class Wifi:
             try:
                 while udp.ready(poll):
                     data, addr = sock.recvfrom(64)
-                    if data.strip() == b"AMPLINK?":
+                    if data.strip() in PROBES:
                         sock.sendto(self.answer().encode(), addr)
             except OSError:
-                pass                    # fila vazia (sem poll) ou o Wi-Fi caiu no meio
+                pass                    # empty queue (without poll) or Wi-Fi dropped midway
             await asyncio.sleep(0.1)
 
 
