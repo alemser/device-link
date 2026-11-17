@@ -27,7 +27,7 @@ app needs no change unless the device brings a new kind of control.
 | Route | Group | Notes |
 |---|---|---|
 | UDP `AMPLINK?` / `DEVICELINK?` on port 47800 | core | Discovery; a bridge answers both |
-| `GET /device` | core | The description. Fixed while the bridge runs |
+| `GET /device` | core | The description. Changes only when the bridge restarts or when a setting it shows changes (the SP103's input names in its input chips); the app reads it on opening the device |
 | `GET /state`, `GET /events` | core | The state, once or as Server-Sent Events |
 | `POST /control` | `control` | Keys, steps, switches |
 | `GET /settings`, `PATCH /settings` | `settings` | The values a person may change |
