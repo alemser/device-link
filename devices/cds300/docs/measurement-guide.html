@@ -1,0 +1,492 @@
+<title>CD-S300 bench</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: one column of measurement cards (drawing beside steps and fields), grouped by "fora da tomada" / "ligado"; results table and copy button at the end. */
+:root {
+  --bg: #eef1f2; --paper: #ffffff; --ink: #1d2427; --muted: #5d6a70; --line: #cfd7da;
+  --dim: #0b7a8a; --dim-soft: #d7eef1; --warn: #a65b00; --warn-soft: #fbecd9; --ok: #2f7a3c;
+  --stop: #b3261e; --stop-soft: #f9dedc;
+  --pcb: #2f6b4a; --pcb-top: #3f8a60; --plastic: #e9e4d8; --plastic-edge: #b9b2a2; --metal: #b9c0c4;
+  --flat: #c9a24a; --flat-blue: #3c6fb0; --black: #2a2d30; --red: #c8352b; --hv: #d9822b;
+  --font-body: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #121618; --paper: #1b2124; --ink: #e4eaec; --muted: #9aa8ae; --line: #2f383c;
+  --dim: #4cc3d3; --dim-soft: #173338; --warn: #f0a650; --warn-soft: #3a2a17; --ok: #6cc47c;
+  --stop: #ff8a80; --stop-soft: #3d1c1a;
+  --pcb: #2c6a48; --pcb-top: #3c8a5e; --plastic: #3a3830; --plastic-edge: #6d675a; --metal: #8f979b;
+  --flat: #a8873c; --flat-blue: #5b8fd6; --black: #0b0d0e; --red: #ff6b5e; --hv: #f0a650; color-scheme: dark } }
+:root[data-theme="dark"] {
+  --bg: #121618; --paper: #1b2124; --ink: #e4eaec; --muted: #9aa8ae; --line: #2f383c;
+  --dim: #4cc3d3; --dim-soft: #173338; --warn: #f0a650; --warn-soft: #3a2a17; --ok: #6cc47c;
+  --stop: #ff8a80; --stop-soft: #3d1c1a;
+  --pcb: #2c6a48; --pcb-top: #3c8a5e; --plastic: #3a3830; --plastic-edge: #6d675a; --metal: #8f979b;
+  --flat: #a8873c; --flat-blue: #5b8fd6; --black: #0b0d0e; --red: #ff6b5e; --hv: #f0a650; color-scheme: dark }
+body { background: var(--bg); color: var(--ink); font-family: var(--font-body); font-size: 15px; line-height: 1.55;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 28px 64px; }
+.wrap { max-width: 1000px; margin: 0 auto; display: grid; gap: 22px; }
+h1, h2, h3 { text-wrap: balance; line-height: 1.2; margin: 0; }
+h1 { font-size: 1.75rem; font-weight: 600; }
+h2 { font-size: 1.2rem; font-weight: 600; }
+h3 { font-size: 1.02rem; font-weight: 600; }
+p { margin: 0; max-width: 70ch; }
+.lede { color: var(--muted); }
+.mono, code, .val { font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
+code { font-size: .9em; }
+.section-label { font-family: var(--font-mono); font-size: .75rem; letter-spacing: .08em; text-transform: uppercase; color: var(--dim); }
+.box { background: var(--paper); border: 1px solid var(--line); border-radius: 10px; padding: 20px; display: grid; gap: 12px; }
+.box.danger { border-color: var(--stop); }
+.box.danger h2 { color: var(--stop); }
+.rules { display: grid; gap: 8px; margin: 0; padding-left: 1.2em; }
+.rules li { max-width: 74ch; }
+.legend { display: flex; flex-wrap: wrap; gap: 8px 18px; font-size: .85rem; color: var(--muted); }
+.legend span { display: inline-flex; align-items: center; gap: 6px; }
+.sw { width: 14px; height: 14px; border-radius: 3px; display: inline-block; border: 1px solid var(--line); }
+.group-head { display: grid; gap: 6px; padding-top: 10px; }
+.m { background: var(--paper); border: 1px solid var(--line); border-radius: 10px; display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); overflow: hidden; }
+.m.wide { grid-template-columns: 1fr; }
+.m.wide figure { border-right: 0; border-bottom: 1px solid var(--line); }
+.m figure { margin: 0; background: color-mix(in srgb, var(--paper) 60%, var(--bg)); border-right: 1px solid var(--line); padding: 14px; display: flex; align-items: center; justify-content: center; min-width: 0; }
+.m svg { width: 100%; height: auto; display: block; max-width: 760px; }
+.m .body { padding: 18px 20px; display: grid; gap: 10px; align-content: start; min-width: 0; }
+.tag { display: inline-flex; align-items: center; justify-content: center; min-width: 30px; height: 30px; padding: 0 8px; border-radius: 6px; background: var(--dim); color: var(--paper); font-family: var(--font-mono); font-weight: 500; flex: none; }
+.title-row { display: flex; gap: 10px; align-items: center; }
+ol.steps { margin: 0; padding-left: 1.2em; display: grid; gap: 4px; }
+.fields { display: flex; flex-wrap: wrap; gap: 10px 14px; }
+.field { display: grid; gap: 4px; }
+.field label, .lab { font-size: .8rem; color: var(--muted); }
+input[type=text], select, textarea.notes { font-family: var(--font-mono); font-size: .95rem; padding: 7px 9px; border-radius: 6px; border: 1px solid var(--line); background: var(--bg); color: var(--ink); }
+input[type=text] { width: 7.5em; }
+select { font-family: var(--font-body); }
+input:focus-visible, select:focus-visible, textarea:focus-visible { outline: 2px solid var(--dim); outline-offset: 1px; }
+input.bad { border-color: var(--warn); }
+input.stop { border-color: var(--stop); background: var(--stop-soft); }
+.ref { font-size: .82rem; color: var(--muted); }
+.ref b { color: var(--ink); font-weight: 500; }
+.note { font-size: .85rem; background: var(--warn-soft); color: var(--ink); border-radius: 6px; padding: 8px 10px; }
+.note b { color: var(--warn); }
+.note.stop { background: var(--stop-soft); }
+.note.stop b { color: var(--stop); }
+.checks { display: grid; gap: 6px; }
+.checks label { display: flex; gap: 8px; align-items: baseline; font-size: .92rem; }
+table { border-collapse: collapse; width: 100%; font-size: .9rem; }
+th, td { text-align: left; padding: 6px 8px; border-bottom: 1px solid var(--line); vertical-align: middle; }
+th { font-weight: 500; color: var(--muted); font-size: .8rem; }
+td.val { white-space: nowrap; }
+tr.focus td { background: var(--dim-soft); }
+.st-ok { color: var(--ok); } .st-bad { color: var(--warn); font-weight: 500; } .st-stop { color: var(--stop); font-weight: 600; }
+.table-wrap { overflow-x: auto; }
+.vias input[type=text] { width: 5.5em; }
+.actions { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+button { font-family: var(--font-body); font-size: .95rem; font-weight: 500; padding: 9px 16px; border-radius: 7px; border: 1px solid var(--dim); background: var(--dim); color: var(--paper); cursor: pointer; }
+button.ghost { background: transparent; color: var(--dim); }
+button:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+#copied { font-size: .85rem; color: var(--ok); }
+textarea#out { width: 100%; min-height: 140px; font-family: var(--font-mono); font-size: .8rem; background: var(--bg); color: var(--ink); border: 1px solid var(--line); border-radius: 6px; padding: 8px; box-sizing: border-box; }
+textarea.notes { width: 100%; min-height: 70px; box-sizing: border-box; font-size: .85rem; }
+/* drawings */
+.s-pcb { fill: var(--pcb); } .s-pcbtop { fill: var(--pcb-top); }
+.s-plastic { fill: var(--plastic); stroke: var(--plastic-edge); stroke-width: 1; }
+.s-win { fill: var(--black); } .s-win.on { fill: var(--red); } .s-win.gnd { fill: var(--black); stroke: var(--ink); stroke-width: 1.5; }
+.s-metal { fill: var(--metal); } .s-flat { fill: var(--flat); } .s-flatblue { fill: var(--flat-blue); }
+.s-chip { fill: var(--black); }
+.s-red { stroke: var(--red); stroke-width: 3; fill: none; stroke-linecap: round; }
+.s-blk { stroke: var(--ink); stroke-width: 3; fill: none; stroke-linecap: round; }
+.s-redtip { fill: var(--red); } .s-blktip { fill: var(--ink); }
+.s-wire { stroke: var(--muted); stroke-width: 1.5; fill: none; }
+.s-dim { stroke: var(--dim); stroke-width: 1.6; fill: none; }
+.s-ext { stroke: var(--dim); stroke-width: 1; stroke-dasharray: 3 3; fill: none; }
+.s-beep { stroke: var(--dim); stroke-width: 2; stroke-dasharray: 5 4; fill: none; }
+.s-arrow { fill: var(--dim); }
+.s-hv { fill: var(--hv); opacity: .28; stroke: var(--hv); stroke-width: 1.5; }
+.s-zone { fill: var(--dim-soft); stroke: var(--dim); stroke-width: 1.2; }
+.s-box { fill: var(--paper); stroke: var(--line); stroke-width: 1.2; }
+.s-lab { fill: var(--muted); font-family: var(--font-body); font-size: 11px; }
+.s-ink { fill: var(--ink); font-family: var(--font-body); font-size: 12px; font-weight: 500; }
+.s-big { fill: var(--dim); font-family: var(--font-mono); font-size: 14px; font-weight: 500; }
+.s-pin { fill: var(--ink); font-family: var(--font-mono); font-size: 10px; }
+.s-hint { fill: var(--muted); font-family: var(--font-body); font-size: 10px; font-style: italic; }
+.s-hvlab { fill: var(--hv); font-family: var(--font-body); font-size: 11px; font-weight: 600; }
+.s-redlab { fill: var(--red); font-family: var(--font-body); font-size: 11px; font-weight: 600; }
+@media (max-width: 760px) {
+  .m { grid-template-columns: 1fr; }
+  .m figure { border-right: 0; border-bottom: 1px solid var(--line); }
+}
+@media (prefers-reduced-motion: no-preference) { .s-red, .s-redtip, .s-win { transition: all .2s ease; } }
+</style>
+
+<style>
+/* Marks drawn over the real photos: fixed bright colours, because the photo under them is the same in both themes. */
+:root { --mk: #ffd400; --mk-hot: #ff2d55; --mk-ok: #34c759; --mk-ink: #111111; }
+.photo { width: 100%; height: auto; display: block; border-radius: 6px; }
+.o-ring { fill: none; stroke: var(--mk); stroke-width: 7; }
+.o-ring.hot { stroke: var(--mk-hot); stroke-width: 9; }
+.o-ring.gnd { stroke: #ffffff; stroke-width: 7; stroke-dasharray: 14 8; }
+.o-ring.dim { stroke: var(--mk); stroke-width: 4; opacity: .55; }
+.o-zone { fill: rgba(255,45,85,.18); stroke: var(--mk-hot); stroke-width: 6; stroke-dasharray: 18 10; }
+.o-box { fill: none; stroke: var(--mk); stroke-width: 6; stroke-dasharray: 16 10; }
+.o-line { stroke: var(--mk); stroke-width: 6; fill: none; }
+.o-t { font-family: var(--font-body); font-weight: 600; font-size: 46px; fill: var(--mk); paint-order: stroke; stroke: var(--mk-ink); stroke-width: 10px; stroke-linejoin: round; }
+.o-t.hot { fill: var(--mk-hot); }
+.o-t.wht { fill: #ffffff; }
+.o-t.sm { font-size: 34px; stroke-width: 8px; }
+.o-n { font-family: var(--font-mono); font-weight: 500; font-size: 26px; fill: #ffffff; paint-order: stroke; stroke: var(--mk-ink); stroke-width: 6px; text-anchor: middle; }
+.m.wide figure { padding: 10px; }
+.m.wide svg { max-width: 100%; }
+.zoomhint { font-size: .78rem; color: var(--muted); text-align: center; }
+figure.zoomable { flex-direction: column; gap: 6px; cursor: zoom-in; }
+.zoom-over { position: fixed; inset: 0; background: rgba(0,0,0,.92); z-index: 50; overflow: auto; cursor: zoom-out;
+  padding: max(10px, env(safe-area-inset-top, 0px)) max(10px, env(safe-area-inset-right, 0px)) max(10px, env(safe-area-inset-bottom, 0px)) max(10px, env(safe-area-inset-left, 0px)); }
+.zoom-over svg { width: 200%; min-width: 1200px; height: auto; display: block; }
+@media (min-width: 1300px) { .zoom-over svg { width: 100%; min-width: 0; } }
+</style>
+
+<div class="wrap">
+  <header style="display:grid; gap:8px">
+    <span class="section-label">CD-S300 mod · before soldering</span>
+    <h1>Bench measurements</h1>
+    <p class="lede">Everything is on your own photos of the device: yellow circles are where to touch, red is where not to. Tap a photo to enlarge it. The fields are saved in this browser, and at the end a button copies everything for the chat.</p>
+  </header>
+
+  <section class="box danger">
+    <h2>Safety</h2>
+    <ul class="rules">
+      <li><b>230 V on the power-supply board</b> (the upright board on the left, with the transformer). With the device plugged in, keep your hands away from it.</li>
+      <li><b>−27 V and the display filament</b> on the 4-pin <code>W702</code> connector, at the left end of the front board (red area in the photos). Don't touch.</li>
+      <li><b>One hand only</b> with the device on; the black probe held by a crocodile clip.</li>
+      <li><b>Any value above 3.4 V on the lines: stop</b> and send it before going on. The page paints the field red.</li>
+      <li>Beep (continuity) <b>only with the device unplugged</b>.</li>
+    </ul>
+  </section>
+
+  <div id="cards" style="display:grid; gap:16px"></div>
+
+  <section class="box">
+    <span class="section-label">Result</span>
+    <h2>Check</h2>
+    <p class="lede">Orange differs from the expected value, red means stop. The text under the table is what goes to the chat.</p>
+    <div class="table-wrap"><table id="res">
+      <thead><tr><th>What</th><th>Your reading</th><th>Expected</th><th>Status</th></tr></thead>
+      <tbody></tbody>
+    </table></div>
+    <div class="field" style="gap:6px">
+      <label for="f_notas">Notes (anything else you noticed)</label>
+      <textarea id="f_notas" class="notes" data-key="notas"></textarea>
+    </div>
+    <div class="actions">
+      <button id="copy" type="button">Copy the measurements for the chat</button>
+      <button id="clear" type="button" class="ghost">Clear fields</button>
+      <span id="copied" role="status"></span>
+    </div>
+    <textarea id="out" readonly aria-label="Text to paste in the chat"></textarea>
+  </section>
+
+  <section class="box">
+    <span class="section-label">Left for later</span>
+    <h2>Not needed now</h2>
+    <ul class="rules">
+      <li><b>The flat's other lines</b> (LEDs, keys): the Pico doesn't connect to them.</li>
+      <li><b>The Wi-Fi interference test</b>: done in the first test with the Pico inside the device.</li>
+      <li><b>How the device comes back after the plug is pulled</b>: only if a Wi-Fi plug is ever wanted.</li>
+    </ul>
+  </section>
+</div>
+
+<script>
+(() => {
+  // ------------------------------------------------------------------ the photos (marks in a 2000 x 1500 grid)
+  const IMG = { cb301: "guide/cb301-pernas.jpg", solda: "guide/20261116_175957.jpg", soldaIR: "guide/20261116_180004.jpg", geral: "guide/20261116_111202.jpg", cb701: "guide/20261116_111519.jpg", u701: "guide/20261116_111503.jpg", cb304: "guide/20261116_084644.jpg" };
+
+  // CB701 from the solder side (photo 111519). From the silkscreen: lines 1 to 15 left to right, odd ones on the top
+  // row (8 joints), even ones on the bottom row (7). Confirmed with the beep (card 2).
+  const NAMES = { 1: "DGND", 2: "KEY_2", 3: "KEY_1", 4: "KEY_0", 5: "LED_/USB2", 6: "LED_/USB1", 7: "LED_PDIRECT", 8: "LED_POWER",
+    9: "DGND", 10: "REM", 11: "D+3.3V", 12: "FL_/RST", 13: "FL_CLK", 14: "FL_DATA", 15: "FL_/CS" };
+  const PAD = {};
+  [930, 985, 1043, 1100, 1157, 1213, 1270, 1328].forEach((x, i) => PAD[2 * i + 1] = [x, 296]);
+  [958, 1015, 1072, 1130, 1185, 1243, 1300].forEach((x, i) => PAD[2 * i + 2] = [x, 357]);
+  const SOLDER = [15, 14, 13, 12, 9];          // the reading wires: /CS, DATA, CLK, /RST, DGND
+  const W702 = `<rect x="70" y="370" width="130" height="200" rx="10" class="o-zone"/><text x="215" y="440" class="o-t hot sm">W702: don't touch</text>`;
+
+  function photo(key, inner, label) {
+    return `<svg viewBox="0 0 2000 1500" role="img" aria-label="${label}"><image href="${IMG[key]}" width="2000" height="1500"/>${inner}</svg>`;
+  }
+
+  function photoP(key, inner, label) {   // portrait photos, 843 x 1125
+    return `<svg viewBox="0 0 843 1125" role="img" aria-label="${label}"><image href="${IMG[key]}" width="843" height="1125"/>${inner}</svg>`;
+  }
+  function drawSolda() {
+    let b = "";
+    const lab = (x, y, t, cls = "") => b += `<text x="${x}" y="${y}" class="o-t sm${cls}" style="font-size:26px;stroke-width:6px">${t}</text>`;
+    b += `<ellipse cx="250" cy="480" rx="62" ry="105" class="o-ring hot" style="stroke-width:5"/>`; lab(20, 300, "1: large joint, reaches the pad above", " hot");
+    b += `<circle cx="600" cy="560" r="42" class="o-ring hot" style="stroke-width:5"/>`; lab(430, 790, "2: loose strands", " hot");
+    b += `<circle cx="618" cy="392" r="26" class="o-ring hot" style="stroke-width:5"/>`;
+    b += `<circle cx="365" cy="520" r="34" class="o-ring gnd" style="stroke-width:4"/>`; lab(300, 470, "top 6th (3.3 V)", " wht");
+    return photoP("solda", b, "The wires soldered on CB701");
+  }
+  function drawSoldaIR() {
+    let b = "";
+    const lab = (x, y, t, cls = "") => b += `<text x="${x}" y="${y}" class="o-t sm${cls}" style="font-size:28px;stroke-width:6px">${t}</text>`;
+    b += `<circle cx="365" cy="540" r="45" class="o-ring hot" style="stroke-width:5"/>`; lab(430, 470, "3: copper near leg B (ground)", " hot");
+    b += `<ellipse cx="330" cy="695" rx="110" ry="55" class="o-ring hot" style="stroke-width:5"/>`; lab(430, 760, "4: leg C and the pad to its left", " hot");
+    b += `<circle cx="310" cy="420" r="34" class="o-ring" style="stroke-width:4"/>`; lab(355, 395, "A");
+    return photoP("soldaIR", b, "The remote wire on leg C of U701");
+  }
+
+  function drawPernas() {
+    // CB301 from the front: 10 bare legs above the white housing, the large capacitor on the right.
+    const LEGS = [47, 213, 380, 547, 713, 873, 1040, 1200, 1367, 1533];
+    let b = "";
+    LEGS.forEach((x, i) => {
+      const n = i + 1, hot = n === 5, gnd = n === 6;
+      b += `<text x="${x}" y="800" class="o-t sm${hot ? " hot" : gnd ? " wht" : ""}" text-anchor="middle">${n}</text>`;
+      if (hot || gnd) b += `<rect x="${x - 34}" y="70" width="68" height="200" rx="14" class="o-ring${hot ? " hot" : " gnd"}"/>`;
+    });
+    b += `<text x="560" y="380" class="o-t hot">5th: D+5 (solder here, on the bare leg)</text>`;
+    b += `<text x="900" y="460" class="o-t wht sm">6th: ground (DGND)</text>`;
+    b += `<text x="1640" y="1000" class="o-t sm">large capacitor</text><text x="1640" y="1040" class="o-t sm">(right-hand side)</text>`;
+    return photo("cb301", b, "CB301's legs, with D+5 and ground");
+  }
+
+  function drawGeral() {
+    let b = `<rect x="270" y="70" width="370" height="640" rx="16" class="o-zone"/><text x="300" y="60" class="o-t hot">power supply: 230 V</text>`;
+    b += `<rect x="1330" y="40" width="660" height="660" rx="16" class="o-box"/><text x="1350" y="30" class="o-t">main board (CB304, CB301)</text>`;
+    b += `<rect x="1680" y="690" width="250" height="110" rx="12" class="o-box"/><text x="1650" y="850" class="o-t">CB701</text>`;
+    b += `<circle cx="1385" cy="745" r="42" class="o-ring"/><text x="1180" y="660" class="o-t sm">U701 receiver, behind</text><text x="1180" y="700" class="o-t sm">(next to the open key)</text>`;
+    b += `<path d="M1600,330 C1650,500 1720,560 1790,690" class="o-line" stroke-dasharray="16 10"/><text x="1440" y="560" class="o-t sm">the flat</text>`;
+    b += `<text x="40" y="1460" class="o-t wht sm">front board: everything to solder is behind it</text>`;
+    return photo("geral", b, "Overview of the open device");
+  }
+
+  function drawCB701(active) {
+    let b = W702;
+    for (let n = 1; n <= 15; n++) {
+      const [x, y] = PAD[n], need = SOLDER.includes(n) || n === 11 || n === 10;
+      const cls = n === active ? "o-ring hot" : NAMES[n] === "DGND" ? "o-ring gnd" : need ? "o-ring" : "o-ring dim";
+      b += `<circle cx="${x}" cy="${y}" r="25" class="${cls}"/>`;
+    }
+    const tag = (n, txt, x, y) => b += `<line x1="${PAD[n][0]}" y1="${PAD[n][1] + 26}" x2="${x}" y2="${y - 40}" class="o-line"/><text x="${x}" y="${y}" class="o-t sm${n === active ? " hot" : ""}">${txt}</text>`;
+    tag(15, "top 8th", 1440, 160); tag(14, "bottom 7th", 1440, 470);
+    tag(13, "top 7th", 1440, 225); tag(12, "bottom 6th", 1280, 540);
+    tag(11, "top 6th", 1000, 160); tag(10, "bottom 5th", 1060, 540);
+    tag(9, "top 5th", 760, 160);
+    b += `<rect x="1215" y="440" width="190" height="190" rx="10" class="o-box"/><text x="1430" y="650" class="o-t sm">R701–R704</text>`;
+    b += `<text x="60" y="1060" class="o-t wht sm">Behind the front board, W702 on the left. Count left to right</text>`;
+    return photo("cb701", b, "CB701 joints, numbered");
+  }
+
+  function drawCB304() {
+    // CB304 on the main board (photo 084644): windows in a column; the silkscreen names the even lines.
+    let b = "";
+    const y = n => 1305 - (n - 2) * 40.5, X = 1772;
+    for (const n of [1, 2, 6, 7]) {
+      b += `<circle cx="${X}" cy="${y(n)}" r="20" class="o-ring${n === 7 ? " gnd" : ""}"/>`;
+      b += `<text x="${X - 40}" y="${y(n) + 12}" class="o-t sm" text-anchor="end">${n}</text>`;
+    }
+    b += `<path d="M${X + 60},${y(1)} L${X + 60},${y(15)}" class="o-line"/>`;
+    b += `<text x="${X + 80}" y="${y(1) + 10}" class="o-t sm">1 = the bottom end</text>`;
+    b += `<rect x="1020" y="620" width="460" height="230" rx="12" class="o-box"/><text x="900" y="600" class="o-t sm">white connector with coloured wires</text>`;
+    b += `<text x="560" y="1470" class="o-t sm">count from the end FAR from the connector with coloured wires</text>`;
+    b += `<text x="60" y="60" class="o-t wht sm">CB304, main board. Fine probe: the windows are 1.25 mm apart</text>`;
+    return photo("cb304", b, "CB304 windows with their names");
+  }
+
+  function drawU701(active) {
+    let b = "";
+    const legs = { A: [975, 685], B: [970, 746], C: [968, 808] };
+    for (const [k, [x, y]] of Object.entries(legs)) {
+      b += `<circle cx="${x}" cy="${y}" r="24" class="o-ring${k === active ? " hot" : ""}"/>`;
+      b += `<text x="${x + 50}" y="${y + 16}" class="o-t${k === active ? " hot" : ""}">${k}</text>`;
+    }
+    b += `<rect x="940" y="640" width="270" height="215" rx="10" class="o-box"/><text x="1230" y="900" class="o-t sm">U701 (receiver)</text>`;
+    b += `<rect x="555" y="665" width="100" height="160" rx="8" class="o-box"/><text x="470" y="900" class="o-t sm">IC702 (5 legs)</text>`;
+    for (const [x, y] of [[583, 690], [628, 690], [583, 800], [605, 800], [628, 800]]) b += `<circle cx="${x}" cy="${y}" r="11" class="o-ring dim"/>`;
+    b += `<text x="40" y="1460" class="o-t wht sm">A, B and C: the receiver's three legs, as in this photo (A on top)</text>`;
+    return photo("u701", b, "The U701 receiver's legs and IC702");
+  }
+
+  function drawCB301() {
+    // CB301 in the same photo 111519, at the bottom: 10 pins showing, pin 10 (P-MUTE) on the left.
+    let b = W702;
+    const x = k => 985 + (10 - k) * 36.5, Y = 1185;
+    for (let k = 10; k >= 1; k--) b += `<circle cx="${x(k)}" cy="${Y}" r="15" class="o-ring${k === 6 ? " hot" : k === 5 ? " gnd" : " dim"}"/>`;
+    b += `<line x1="${x(6)}" y1="${Y + 18}" x2="900" y2="1400" class="o-line"/><text x="640" y="1450" class="o-t hot">5th: D+5</text>`;
+    b += `<line x1="${x(5)}" y1="${Y + 18}" x2="1300" y2="1400" class="o-line"/><text x="1200" y="1450" class="o-t wht">6th: DGND</text>`;
+    b += `<text x="870" y="1110" class="o-t sm">CB301</text>`;
+    return photo("cb701", b, "CB301 pins with D+5");
+  }
+
+  // ------------------------------------------------------------------ cards
+  const sel = (key, opts) => `<select id="f_${key}" data-key="${key}"><option value=""></option>${opts.map(o => `<option>${o}</option>`).join("")}</select>`;
+  const inp = (key, ph = "0.00") => `<input id="f_${key}" data-key="${key}" type="text" inputmode="decimal" placeholder="${ph}" autocomplete="off">`;
+  const fld = (key, label, control) => `<div class="field"><label for="f_${key}">${label}</label>${control}</div>`;
+  const W = { P: "black (ground)", C: "grey (/CS)", L: "orange (CLK)", V: "teal (DATA)", A: "yellow (/RST)", R: "purple (remote)" };
+  const PAIRS = [];
+  const WK = Object.keys(W);
+  WK.forEach((a, i) => WK.slice(i + 1).forEach(b => PAIRS.push([W[a], W[b], "x_" + a + b])));
+  WK.forEach(a => PAIRS.push([W[a], "top 6th (3.3 V)", "x_" + a + "T"]));
+  const POS = { 9: "top 5th", 10: "bottom 5th", 11: "top 6th", 12: "bottom 6th", 13: "top 7th", 14: "bottom 7th", 15: "top 8th" };
+  const VOLTS = [[11, "D+3.3V", 3.4], [15, "FL_/CS", 3.3], [12, "FL_/RST", 3.3], [10, "REM", 3.4]];
+  const TOL = 0.25, LIMIT = 3.4;
+
+  const CARDS = [
+    { id: "1", title: "Where everything is", fig: drawGeral(), sec: "Device unplugged",
+      steps: ["Everything to solder is <b>behind the front board</b>, the long black board with the display. Its back is green and has the joints.", "The grey flat cable joins that board (<code>CB701</code>) to the main board (<code>CB304</code>), on the right.", "The remote receiver (<code>U701</code>) is behind the front board, near the open/close key."],
+      body: "", ref: "Nothing to measure on this card: it is just the map." },
+    { id: "2", title: "Confirm the CB701 joint map", fig: `<div id="fig_cb701map">${drawCB701(0)}</div>`, fig2: drawCB304(),
+      steps: ["<b><code>CB701</code> joints</b> (top photo): behind the front board, with the 4-pin <code>W702</code> connector on your left. Two rows: <b>8 joints on top, 7 below</b>. Always count left to right (\"top 5th\" = the fifth joint of the top row).", "<b><code>CB304</code> windows</b> (bottom photo, main board): count from the end <b>farthest</b> from the white connector with coloured wires. The window at that end is 1.", "One multimeter probe in the window, the other on the given joint. If all three beep, the map is right."],
+      body: `<div class="table-wrap"><table><thead><tr><th>CB304</th><th>CB701</th><th>Beeped?</th></tr></thead><tbody>
+        <tr><td>Window <b>2</b></td><td>bottom <b>7th</b> (the last)</td><td>${sel("map14", ["yes", "no"])}</td></tr>
+        <tr><td>Window <b>6</b></td><td>bottom <b>5th</b></td><td>${sel("map10", ["yes", "no"])}</td></tr>
+        <tr><td>Window <b>1</b></td><td>top <b>8th</b> (the last)</td><td>${sel("map15", ["yes", "no"])}</td></tr>
+        </tbody></table></div>`,
+      ref: "If one doesn't beep, find which joint it beeps with and write it in the notes (for example: \"window 2 beeped on top 1st\")." },
+    { id: "3", title: "Which receiver leg is the output", fig: `<div id="fig_u701">${drawU701("")}</div>`,
+      steps: ["Behind the front board, near the open key: the <code>U701</code> receiver has three legs in a row (A, B, C in the photo).", "One probe on a leg, the other on the legs of the small <code>IC702</code> chip, to the left.", "The output is the leg that beeps with <b>two neighbouring legs</b> of IC702. The remote's wire goes there."],
+      body: `<div class="fields">${fld("u_out_leg", "Leg that beeps with IC702", sel("u_out_leg", ["A", "B", "C", "none", "more than one"]))}</div>`,
+      ref: "Expected: exactly one. The schematic puts the output first (A), but the photo doesn't prove the order." },
+    { id: "4", title: "The voltages, on the CB701 joints", fig: `<div id="fig_cb701v">${drawCB701(11)}</div>`, sec: "Device on, stopped, no disc",
+      steps: ["Multimeter on DC volts (V⎓, 20 V). <b>Black probe on top 5th</b> (ground, dashed white circle), held by a clip.", "Red probe on each joint in the table. Clicking a field paints the right joint red in the photo.", "Last, the red probe on the receiver's output leg (card 3)."],
+      body: `<div class="table-wrap vias"><table><thead><tr><th>Joint</th><th>Expected</th><th>Measured (V)</th><th></th></tr></thead><tbody>
+        ${VOLTS.map(([n, name, exp]) => `<tr data-pad="${n}"><td><b>${POS[n]}</b> <span class="ref">${name}</span></td><td class="val">${String(exp)}</td><td>${inp("v" + n)}</td><td class="val" id="st_v${n}"></td></tr>`).join("")}
+        <tr data-leg="out"><td><b>U701</b> <span class="ref">output leg</span></td><td class="val">3.3</td><td>${inp("u_out")}</td><td class="val" id="st_uout"></td></tr>
+        </tbody></table></div>`,
+      ref: "On one row the joints are 2.5 mm apart: much easier than the CB304 windows." },
+    { id: "5", title: "The Pico's power: D+5", fig: drawCB301(),
+      steps: ["<b>Device plugged in.</b> Black probe clipped to <b>top 5th of CB701</b> (the ground used before). On <code>CB301</code> ground sits right next to D+5: a slipping probe there makes a short.", "On the main board, the white <code>CB301</code> connector, with 10 pins showing. Count from the end <b>opposite the large round capacitor with a cross on top</b>: <code>D+5</code> is the <b>5th pin</b>. Red probe on it.", "After about 30 minutes playing, <b>switch off and unplug</b>, and touch the metal heatsink on the power-supply board (the <code>IC801</code> regulator)."],
+      body: `<div class="fields">${fld("d5", "D+5 (V)", inp("d5"))}${fld("ic801", "Heatsink after 30 min", sel("ic801", ["cold", "warm", "hot, can hold it", "hot, can't hold it"]))}</div>
+        <p class="note"><b>Only if it is too hot to hold:</b> also measure the 9th pin, counting from the same end (<code>+B2</code>, about 12 V). ${inp("b2")}</p>`,
+      ref: "Expected: D+5 between <b>4.75 and 5.25</b>. If it reads about −5, you are on the 2nd pin (A-5): count again. The heatsink only tells something after 30 minutes playing." },
+    { id: "6", title: "Check the soldering before switching on", fig: drawSolda(), fig2: drawSoldaIR(), sec: "After soldering: device unplugged",
+      steps: ["<b>Device unplugged</b> and nothing on the other end of the wires. Multimeter on beep.", "Touch the probes to the <b>loose ends</b> of each pair of wires in the table (easier than on the joints).", "A <b>short beep that stops by itself</b> is normal: capacitors charging. A <b>beep that doesn't stop</b> is a short: don't switch on, send which pair it was.", "The red circles in the photos are the likeliest places for a short: loose strands or too much solder."],
+      body: `<div class="table-wrap"><table><thead><tr><th>Between</th><th>And</th><th>Beep</th></tr></thead><tbody>
+        ${PAIRS.map(([a, b2, k]) => `<tr><td>${a}</td><td>${b2}</td><td>${sel(k, ["no beep", "short and stops", "continuous"])}</td></tr>`).join("")}
+        </tbody></table></div>`,
+      ref: "Colours as read in the photos: black = ground, grey = FL_/CS (top 8th), orange = FL_CLK, teal = FL_DATA, yellow = FL_/RST, purple = remote. If different, say so in the notes." },
+    { id: "7", title: "Solder the Pico's power", fig: drawPernas(), sec: "Power: device unplugged",
+      steps: ["<b>CD player unplugged and Pico off USB.</b>", "On <code>CB301</code> (main board), each pin has a <b>bare metal leg</b> above the white housing. Count from the left, with the large capacitor on your right: the <b>5th</b> is <code>D+5</code>, the <b>6th</b> is ground.", "Solder a wire on the <b>top of leg 5</b>, away from the white plastic: tin the wire's end first, touch it and heat briefly. Do the same on leg 6 with another wire (or use the ground already on the Pico's pin 3 and skip this).", "Beep between the two new wires: a short beep that stops is normal (capacitors); one that doesn't stop is a short.", "On the Pico: the <code>D+5</code> wire to <b>VSYS, pin 39</b> (right-hand row, 2nd from the USB). Ground to <b>GND, pin 38</b> (just below, square pad)."],
+      body: `<div class="fields">${fld("p_solda", "Soldered on legs 5 and 6?", sel("p_solda", ["yes", "only 5 (ground through pin 3)"]))}${fld("p_bip", "Beep between the new wires", sel("p_bip", ["no beep", "short and stops", "continuous"]))}</div>
+        <p class="note stop"><b>Once D+5 is connected:</b> never plug the Pico into the Mac's USB with this wire on. USB would power the CD player from behind. The first install over USB is done before connecting this wire; after that, everything is over Wi-Fi.</p>`,
+      ref: "You measured 5.05 V on leg 5 and 12.00 V on leg 9 (+B2): the same map. The legs are further apart than the CB701 joints." },
+  ];
+
+  const host = document.getElementById("cards");
+  for (const c of CARDS) {
+    if (c.sec) host.insertAdjacentHTML("beforeend", `<div class="group-head"><span class="section-label">${c.sec}</span></div>`);
+    const el = document.createElement("article");
+    el.className = "m wide";
+    el.innerHTML = `<figure class="zoomable">${c.fig}${c.fig2 || ""}<span class="zoomhint">tap to enlarge</span></figure>
+      <div class="body">
+        <div class="title-row"><span class="tag">${c.id}</span><h3>${c.title}</h3></div>
+        <ol class="steps">${c.steps.map(s => `<li>${s}</li>`).join("")}</ol>
+        ${c.body}
+        <p class="ref">${c.ref}</p>
+      </div>`;
+    host.appendChild(el);
+  }
+
+  // zoom: a photo opens full screen
+  document.addEventListener("click", e => {
+    const over = document.querySelector(".zoom-over");
+    if (over) { over.remove(); return; }
+    const fig = e.target.closest("figure.zoomable");
+    if (!fig) return;
+    const svg = e.target.closest("svg") || fig.querySelector("svg");
+    const o = document.createElement("div");
+    o.className = "zoom-over"; o.innerHTML = svg.outerHTML;
+    document.body.appendChild(o);
+  });
+  document.addEventListener("keydown", e => { if (e.key === "Escape") document.querySelector(".zoom-over")?.remove(); });
+
+  // highlight the pad being measured
+  document.querySelectorAll("tr[data-pad] input").forEach(i => i.addEventListener("focus", () => {
+    document.getElementById("fig_cb701v").innerHTML = drawCB701(Number(i.closest("tr").dataset.pad));
+  }));
+  document.getElementById("f_u_out").addEventListener("focus", () => {
+    document.getElementById("fig_cb701v").innerHTML = drawCB701(0);
+    const leg = document.getElementById("f_u_out_leg").value;
+    document.getElementById("fig_u701").innerHTML = drawU701(leg);
+  });
+
+  // ------------------------------------------------------------------ values
+  const STORE = "cds300-measurements-v4";
+  const fields = [...document.querySelectorAll("[data-key]")];
+  const get = k => { const e = document.querySelector(`[data-key="${k}"]`); return e ? e.value.trim() : ""; };
+  const num = s => { const t = String(s).trim().replace(",", "."); return t === "" ? NaN : Number(t); };
+  const fmt = x => Number.isFinite(x) ? x.toFixed(2) : "—";
+  const volt = (exp, x) => !Number.isFinite(x) ? ["", ""] : x > LIMIT ? ["st-stop", "STOP: above 3.4 V"]
+    : Math.abs(x - exp) <= TOL ? ["st-ok", "ok"] : ["st-bad", "different"];
+  const mark = (id, inputId, s) => {
+    const c = document.getElementById(id); c.className = "val " + s[0]; c.textContent = s[1];
+    const e = document.getElementById(inputId); e.classList.toggle("stop", s[0] === "st-stop"); e.classList.toggle("bad", s[0] === "st-bad");
+  };
+
+  const tbody = document.querySelector("#res tbody");
+  function render() {
+    const rows = [], lines = [`CD-S300 measurements (${new Date().toISOString().slice(0, 10)}):`];
+    const row = (what, val, exp, [cls, st]) => rows.push(`<tr><td>${what}</td><td class="val">${val}</td><td class="val">${exp}</td><td class="${cls}">${st}</td></tr>`);
+
+    const maps = [["map14", "window 2 → bottom 7th"], ["map10", "window 6 → bottom 5th"], ["map15", "window 1 → top 8th"]].filter(([k]) => get(k));
+    for (const [k, n] of maps) row(n, get(k), "yes", get(k) === "yes" ? ["st-ok", "ok"] : ["st-bad", "map wrong"]);
+    if (maps.length) lines.push("CB701 map: " + maps.map(([k, n]) => `${n}: ${get(k)}`).join("; "));
+
+    const leg = get("u_out_leg");
+    if (leg) { row("U701: output leg", leg, "A, B or C", ["A", "B", "C"].includes(leg) ? ["st-ok", "ok"] : ["st-bad", "check"]); lines.push(`U701 output (A on top, as in the photo): ${leg}`); }
+
+    let stop = false; const vl = [];
+    for (const [n, name, exp] of VOLTS) {
+      const x = num(get("v" + n)), s = volt(exp, x);
+      mark("st_v" + n, "f_v" + n, s);
+      if (s[0] === "st-stop") stop = true;
+      if (Number.isFinite(x)) { row(`${POS[n]} (${name})`, fmt(x) + " V", fmt(exp), s); vl.push(`${name}=${get("v" + n)}`); }
+    }
+    const uo = num(get("u_out")), su = volt(3.3, uo);
+    mark("st_uout", "f_u_out", su);
+    if (su[0] === "st-stop") stop = true;
+    if (Number.isFinite(uo)) { row("U701 output, idle", fmt(uo) + " V", "3.30", su); vl.push(`U701_OUT=${get("u_out")}`); }
+    if (vl.length) lines.push("Voltages (V, stopped, no disc, black on top 5th): " + vl.join(", "));
+    if (stop) lines.push("WARNING: a value above 3.4 V.");
+
+    const d5 = num(get("d5")), b2 = num(get("b2")), ic = get("ic801"), pl = [];
+    if (Number.isFinite(d5)) { row("D+5", fmt(d5) + " V", "4.75–5.25", d5 >= 4.75 && d5 <= 5.25 ? ["st-ok", "ok"] : d5 < 0 ? ["st-bad", "wrong pin (A-5?)"] : ["st-bad", "out of range"]); pl.push(`D+5=${get("d5")} V`); }
+    if (ic) { row("IC801 after 30 min", ic, "warm", ic.startsWith("hot, can't") ? ["st-bad", "little headroom: measure +B2"] : ["st-ok", "ok"]); pl.push(`IC801=${ic}`); }
+    if (Number.isFinite(b2)) { row("+B2", fmt(b2) + " V", "~12", b2 > 9 && b2 < 17 ? ["st-ok", "ok"] : ["st-bad", "different"]); pl.push(`+B2=${get("b2")} V`); }
+    if (pl.length) lines.push("Power: " + pl.join(", "));
+
+    const done = PAIRS.filter(([, , k]) => get(k));
+    if (done.length) {
+      const bad = done.filter(([, , k]) => get(k) === "continuous");
+      row("Soldering check", `${done.length} of ${PAIRS.length} pairs`, "no short", bad.length ? ["st-stop", `short on ${bad.length}`] : ["st-ok", "ok"]);
+      lines.push(`Soldering check: ${done.length} of ${PAIRS.length} pairs, ` + (bad.length ? "SHORT (continuous beep) on: " + bad.map(([a, b2]) => `${a} × ${b2}`).join("; ") : "no short")
+        + (done.some(([, , k]) => get(k) === "short and stops") ? ". Short beep on: " + done.filter(([, , k]) => get(k) === "short and stops").map(([a, b2]) => `${a} × ${b2}`).join("; ") : ""));
+    }
+    if (get("p_solda") || get("p_bip")) {
+      const pb = get("p_bip");
+      row("Power soldered", get("p_solda") || "—", "no short", pb === "continuous" ? ["st-stop", "SHORT"] : pb ? ["st-ok", "ok"] : ["", ""]);
+      lines.push(`Power: soldered=${get("p_solda") || "?"}, beep between the wires=${pb || "?"}`);
+    }
+    if (get("notas")) lines.push("Notes: " + get("notas"));
+    if (!rows.length) rows.push(`<tr><td colspan="4" class="ref">Nothing measured yet. Rows appear here as you fill in the cards.</td></tr>`);
+    tbody.innerHTML = rows.join("");
+    document.getElementById("out").value = lines.join("\n");
+  }
+
+  function save() { try { const o = {}; for (const e of fields) o[e.dataset.key] = e.value; localStorage.setItem(STORE, JSON.stringify(o)); } catch (e) {} }
+  try { const o = JSON.parse(localStorage.getItem(STORE) || "{}"); for (const e of fields) if (o[e.dataset.key] != null) e.value = o[e.dataset.key]; } catch (e) {}
+  for (const e of fields) { e.addEventListener("input", () => { save(); render(); }); e.addEventListener("change", () => { save(); render(); }); }
+
+  document.getElementById("copy").addEventListener("click", () => {
+    const tx = document.getElementById("out"), msg = document.getElementById("copied");
+    const fallback = () => { tx.focus(); tx.select(); msg.textContent = "Text selected: use the system's Copy."; };
+    try { navigator.clipboard.writeText(tx.value).then(() => { msg.textContent = "Copied. Paste it in the chat."; }, fallback); } catch (e) { fallback(); }
+  });
+  let armed = false;
+  document.getElementById("clear").addEventListener("click", e => {
+    if (!armed) { armed = true; e.target.textContent = "Click again to clear"; setTimeout(() => { armed = false; e.target.textContent = "Clear fields"; }, 3000); return; }
+    for (const f of fields) f.value = "";
+    save(); render(); armed = false; e.target.textContent = "Clear fields";
+  });
+  render();
+})();
+</script>

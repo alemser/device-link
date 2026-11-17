@@ -1,0 +1,18 @@
+# macOS
+.DS_Store
+
+# Python
+__pycache__/
+*.pyc
+
+# Ambiente Python local (mpremote)
+.venv/
+
+# Manual de serviço da Yamaha: tem direitos autorais, fica só na cópia local
+docs/manual/
+
+# Senha das atualizações: só no computador e no Pico, nunca no GitHub
+firmware/secrets.py
+
+# Fotos originais em resolução cheia: as do repositório são cópias reduzidas (2400 px)
+docs/images-originais/
