@@ -1,7 +1,7 @@
 """GET /device: who this bridge is and what it can do, in the DeviceLink contract api 2 (device-link docs/contract-v2.md).
 
-The app builds the KX-393's screen from this: the state fields to show, the remote in groups, and the settings (none
-here). Nothing changes while the bridge runs, so the JSON is built once, on the first request, and served as stored
+The app builds the KX-393's screen from this: the state fields to show and the remote in groups (the
+contract carries nothing else). Nothing changes while the bridge runs, so the JSON is built once, on the first request, and served as stored
 bytes afterwards (a Pico should not rebuild 1 KB of JSON per request).
 
 No state fields yet: the state reader (the microcontroller's mode lines, then maybe the display's lines) comes after
@@ -37,8 +37,7 @@ _cached = None
 def describe(version, name):
     controls = [{"group": g, "keys": list(keys)} for g, keys in CONTROLS]
     return {"api": API, "kind": KIND, "model": MODEL, "name": name, "bridge_version": version,
-            "firmware": FIRMWARE, "features": list(FEATURES), "state": list(STATE), "controls": controls,
-            "settings": []}
+            "firmware": FIRMWARE, "features": list(FEATURES), "state": list(STATE), "controls": controls}
 
 
 def check():
