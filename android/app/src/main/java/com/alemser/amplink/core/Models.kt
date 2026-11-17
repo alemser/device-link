@@ -84,6 +84,8 @@ data class SettingField(
     val step: Double? = null,
     val charset: String? = null,
     val values: List<String> = emptyList(),
+    /** Words to show for [values], in the same order (enum); the values themselves when absent. */
+    val labels: List<String> = emptyList(),
 )
 
 /** `GET /update`: the running firmware and each file's sha256. */

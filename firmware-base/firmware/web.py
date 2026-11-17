@@ -3,7 +3,7 @@
 This file belongs to the shared base (amp-link, firmware-base/): change it there and copy it with copiar.py, never here.
 
     GET /state    the state as JSON
-    GET /events   Server-Sent Events: one "data: {json}" per change
+    GET /events   Server-Sent Events: one "data: {json}" on change (at most 4 per second, always the latest)
     others        extra routes, by prefix: routes={"/update": ota.handle, "/device": device.handle}
 
 Use (with asyncio):
@@ -20,6 +20,10 @@ import asyncio
 from listeners import make_room
 
 CHUNK = 1024                    # the body goes in chunks: the Pico's Wi-Fi has little memory
+# /events: at most one state every EVENT_GAP_S, always the latest. Sending one on every change (turning the SP103's
+# volume gives dozens per second) fills lwIP's memory, and then each write stalls the Pico for 10 s (SP103 issue #2).
+EVENT_GAP_S = 0.25
+PING_S = 1                      # groove-rig gives up after 5 s of silence
 
 
 class Request:
@@ -60,18 +64,15 @@ class Publisher:
         self.routes = routes or {}
         self.listeners = []             # open /events connections: (ip, writer), see listeners.py
         self.served = 0                 # requests answered since the Pico started
+        self.version = 0                # goes up on every changed(); each listener keeps the last one it sent
 
     def _json(self):
         return json.dumps(self.state.to_dict())
 
     def changed(self):
-        """Tells every /events listener (call after each change)."""
-        msg = ("data: " + self._json() + "\n\n").encode()
-        for _, w in self.listeners:
-            try:
-                w.write(msg)
-            except Exception:
-                pass                    # the connection dropped: its loop will remove it
+        """Marks the state as changed (call after each change). Each listener's loop in _events() does the sending, at
+        most one state every EVENT_GAP_S, always the latest."""
+        self.version += 1
 
     async def serve(self):
         await asyncio.start_server(self._client, "0.0.0.0", self.port)
@@ -121,12 +122,23 @@ class Publisher:
         writer.write(("data: " + self._json() + "\n\n").encode())   # the current state straight away
         entry = (ip, writer)
         self.listeners.append(entry)
+        sent = self.version
+        quiet = 0
         try:
             while entry in self.listeners:      # off the list = another connection took its place
-                await writer.drain()    # sends what changed() wrote; fails if the connection dropped
-                await asyncio.sleep(1)
-                if entry in self.listeners:
-                    writer.write(b": ping\n\n")   # SSE comment: keeps the connection alive
+                await writer.drain()            # fails if the connection dropped
+                await asyncio.sleep(EVENT_GAP_S)
+                if entry not in self.listeners:
+                    break
+                if self.version != sent:
+                    sent = self.version
+                    quiet = 0
+                    writer.write(("data: " + self._json() + "\n\n").encode())
+                else:
+                    quiet += 1
+                    if quiet * EVENT_GAP_S >= PING_S:
+                        quiet = 0
+                        writer.write(b": ping\n\n")   # SSE comment: keeps the connection alive
         except Exception:
             pass
         finally:

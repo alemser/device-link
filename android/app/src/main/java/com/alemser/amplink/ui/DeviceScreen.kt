@@ -46,6 +46,7 @@ import com.alemser.amplink.core.Release
 import com.alemser.amplink.core.SettingField
 import com.alemser.amplink.core.StateField
 import com.alemser.amplink.core.UpdateStep
+import com.alemser.amplink.core.isIpv4
 import com.alemser.amplink.core.Updater
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -111,9 +112,12 @@ private fun DeviceBody(client: BridgeClient, description: Description, modifier:
     val commands = remember(scope) { Commands(scope) }
 
     Column(modifier, verticalArrangement = Arrangement.spacedBy(16.dp)) {
-        StatusSection(description.state, state, feed)
+        // A field a control already shows (volume next to its − and +) is not repeated in the status.
+        val bound = description.controls.flatMap { g -> (g.steps + g.switches).mapNotNull { it.state } + listOfNotNull(g.select?.state) }
+        StatusSection(description.state.filter { it.id !in bound }, state, feed)
         commands.error?.let { Hint(it, MaterialTheme.colorScheme.error) }
-        description.controls.forEach { group -> ControlSection(group, state, commands, client) }
+        val units = description.state.associate { it.id to it.unit }
+        description.controls.forEach { group -> ControlSection(group, state, commands, client, units) }
         if (description.settings.isNotEmpty()) SettingsSection(client, description.settings)
         if (description.has("update") && description.firmware != null) {
             FirmwareSection(client, description.firmware, description.bridgeVersion)
@@ -172,7 +176,13 @@ private fun show(field: StateField, value: JsonElement?): String? {
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-private fun ControlSection(group: ControlGroup, state: JsonObject?, commands: Commands, client: BridgeClient) {
+private fun ControlSection(
+    group: ControlGroup,
+    state: JsonObject?,
+    commands: Commands,
+    client: BridgeClient,
+    units: Map<String, String?>,
+) {
     Section(groupTitle(group.group)) {
         if (group.keys.isNotEmpty()) {
             val iconsOnly = group.keys.all { keyIcon(it) != null }
@@ -199,7 +209,9 @@ private fun ControlSection(group: ControlGroup, state: JsonObject?, commands: Co
             }
         }
         group.steps.forEach { bound ->
-            val value = bound.state?.let { at(state, it) as? JsonPrimitive }?.contentOrNull ?: "—"
+            val raw = bound.state?.let { at(state, it) as? JsonPrimitive }?.contentOrNull
+            val unit = bound.state?.let { units[it] }
+            val value = raw?.let { if (unit != null) "$it $unit" else it } ?: "—"
             Stepper(bound.label ?: groupTitle(bound.target), value, !commands.working, !commands.working,
                 onDown = { commands.run { client.step(bound.target, false) } },
                 onUp = { commands.run { client.step(bound.target, true) } })
@@ -229,6 +241,10 @@ private fun groupTitle(group: String): String = when (group) {
     "numbers" -> "Track number"
     "modes" -> "Modes"
     "source" -> "Source"
+    "power" -> "Power"
+    "volume" -> "Volume"
+    "input" -> "Input"
+    "tone" -> "Tone and balance"
     else -> group.replace('_', ' ').replaceFirstChar { it.uppercase() }
 }
 
@@ -263,19 +279,37 @@ private fun SettingsSection(client: BridgeClient, fields: List<SettingField>) {
                     "bool" -> SwitchRow(field.label ?: field.id, (current as? JsonPrimitive)?.booleanOrNull ?: false) {
                         pending = pending + (field.id to JsonPrimitive(it))
                     }
-                    "enum" -> FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        field.values.forEach { v ->
-                            FilterChip(selected = v == text, onClick = { pending = pending + (field.id to JsonPrimitive(v)) },
-                                label = { Text(stateWord(v)) })
+                    "enum" -> Column {
+                        field.label?.let { Text(it) }
+                        FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            field.values.forEachIndexed { i, v ->
+                                FilterChip(selected = v == text, onClick = { pending = pending + (field.id to JsonPrimitive(v)) },
+                                    label = { Text(field.labels.getOrNull(i) ?: stateWord(v)) })
+                            }
                         }
+                    }
+                    "int" -> {
+                        val n = (current as? JsonPrimitive)?.longOrNull
+                        val step = (field.step ?: 1.0).toLong().coerceAtLeast(1)
+                        Stepper(
+                            field.label ?: field.id,
+                            n?.toString() ?: "—",
+                            n != null && (field.min == null || n - step >= field.min),
+                            n != null && (field.max == null || n + step <= field.max),
+                            onDown = { if (n != null) pending = pending + (field.id to JsonPrimitive(n - step)) },
+                            onUp = { if (n != null) pending = pending + (field.id to JsonPrimitive(n + step)) },
+                        )
                     }
                     else -> OutlinedTextField(
                         value = text,
                         onValueChange = { typed ->
-                            val clipped = field.max?.let { typed.take(it.toInt()) } ?: typed
+                            val allowed = if (field.charset == "lcd") typed.filter { it in ' '..'}' && it != '\\' } else typed
+                            val clipped = field.max?.let { allowed.take(it.toInt()) } ?: allowed
                             pending = pending + (field.id to JsonPrimitive(clipped))
                         },
                         label = { Text(field.label ?: field.id) },
+                        isError = field.type == "ip" && text.isNotEmpty() && !isIpv4(text),
+                        supportingText = if (field.type == "ip") ({ Text("An IP address, like 192.168.1.50") }) else null,
                         singleLine = true,
                         modifier = Modifier.fillMaxWidth(),
                     )

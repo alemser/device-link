@@ -1,0 +1,348 @@
+{
+ "api": 2,
+ "kind": "amplifier",
+ "model": "Acoustic Solutions SP103",
+ "name": "SP103-D4FE",
+ "bridge_version": "77b01422",
+ "firmware": "alemser/sp103-mod",
+ "features": [
+  "control",
+  "settings",
+  "update",
+  "wifi_setup"
+ ],
+ "state": [
+  {
+   "id": "power",
+   "type": "enum",
+   "values": [
+    "on",
+    "standby"
+   ]
+  },
+  {
+   "id": "lcd",
+   "type": "lines",
+   "label": "Display"
+  },
+  {
+   "id": "volume_db",
+   "type": "number",
+   "label": "Volume",
+   "unit": "dB"
+  },
+  {
+   "id": "input_name",
+   "type": "text",
+   "label": "Input"
+  },
+  {
+   "id": "bass_db",
+   "type": "number",
+   "label": "Bass",
+   "unit": "dB"
+  },
+  {
+   "id": "treble_db",
+   "type": "number",
+   "label": "Treble",
+   "unit": "dB"
+  },
+  {
+   "id": "balance.db",
+   "type": "number",
+   "label": "Balance",
+   "unit": "dB"
+  },
+  {
+   "id": "loudness",
+   "type": "bool",
+   "label": "Loudness"
+  },
+  {
+   "id": "speakers",
+   "type": "bool",
+   "label": "Speakers"
+  }
+ ],
+ "controls": [
+  {
+   "group": "power",
+   "keys": [
+    "power_toggle"
+   ]
+  },
+  {
+   "group": "volume",
+   "steps": [
+    {
+     "target": "volume",
+     "state": "volume_db",
+     "label": "Volume"
+    }
+   ]
+  },
+  {
+   "group": "input",
+   "select": {
+    "state": "input_id",
+    "options": [
+     {
+      "id": "phono",
+      "name": "PHONO",
+      "key": "select_phono"
+     },
+     {
+      "id": "tuner",
+      "name": "TUNER",
+      "key": "select_tuner"
+     },
+     {
+      "id": "tape_aux",
+      "name": "TAPE/AUX",
+      "key": "select_tape_aux"
+     },
+     {
+      "id": "cd",
+      "name": "CD",
+      "key": "select_cd"
+     },
+     {
+      "id": "dvd",
+      "name": "DVD",
+      "key": "select_dvd"
+     },
+     {
+      "id": "dab",
+      "name": "DAB",
+      "key": "select_dab"
+     }
+    ]
+   }
+  },
+  {
+   "group": "tone",
+   "steps": [
+    {
+     "target": "bass",
+     "state": "bass_db",
+     "label": "Bass"
+    },
+    {
+     "target": "treble",
+     "state": "treble_db",
+     "label": "Treble"
+    },
+    {
+     "target": "balance",
+     "state": "balance.db",
+     "label": "Balance"
+    }
+   ]
+  },
+  {
+   "group": "modes",
+   "switches": [
+    {
+     "target": "loudness",
+     "state": "loudness",
+     "label": "Loudness"
+    },
+    {
+     "target": "speakers",
+     "state": "speakers",
+     "label": "Speakers"
+    }
+   ]
+  }
+ ],
+ "settings": [
+  {
+   "id": "inputs.PHONO",
+   "type": "text",
+   "label": "PHONO",
+   "group": "Input names",
+   "max": 16,
+   "charset": "lcd"
+  },
+  {
+   "id": "inputs.TUNER",
+   "type": "text",
+   "label": "TUNER",
+   "group": "Input names",
+   "max": 16,
+   "charset": "lcd"
+  },
+  {
+   "id": "inputs.TAPE/AUX",
+   "type": "text",
+   "label": "TAPE/AUX",
+   "group": "Input names",
+   "max": 16,
+   "charset": "lcd"
+  },
+  {
+   "id": "inputs.CD",
+   "type": "text",
+   "label": "CD",
+   "group": "Input names",
+   "max": 16,
+   "charset": "lcd"
+  },
+  {
+   "id": "inputs.DVD",
+   "type": "text",
+   "label": "DVD",
+   "group": "Input names",
+   "max": 16,
+   "charset": "lcd"
+  },
+  {
+   "id": "inputs.DAB",
+   "type": "text",
+   "label": "DAB",
+   "group": "Input names",
+   "max": 16,
+   "charset": "lcd"
+  },
+  {
+   "id": "boot.0",
+   "type": "text",
+   "label": "Line 1 (ACOUSTIC)",
+   "group": "Boot screen",
+   "max": 16,
+   "charset": "lcd"
+  },
+  {
+   "id": "boot.1",
+   "type": "text",
+   "label": "Line 2 (SOLUTIONS)",
+   "group": "Boot screen",
+   "max": 16,
+   "charset": "lcd"
+  },
+  {
+   "id": "about.0",
+   "type": "text",
+   "label": "Line 1 (Amplifier SP103)",
+   "group": "About screen",
+   "max": 16,
+   "charset": "lcd"
+  },
+  {
+   "id": "about.1",
+   "type": "text",
+   "label": "Line 2 (SW version 1.0)",
+   "group": "About screen",
+   "max": 16,
+   "charset": "lcd"
+  },
+  {
+   "id": "vu.on",
+   "type": "bool",
+   "label": "VU meter while music plays",
+   "group": "VU meter"
+  },
+  {
+   "id": "vu.layout",
+   "type": "enum",
+   "label": "Layout",
+   "group": "VU meter",
+   "values": [
+    "bars",
+    "deck",
+    "scale",
+    "kx393"
+   ]
+  },
+  {
+   "id": "vu.relay",
+   "type": "ip",
+   "label": "Source (the VU relay's IP)",
+   "group": "VU meter"
+  },
+  {
+   "id": "info.on",
+   "type": "bool",
+   "label": "Info screens",
+   "group": "Info screens"
+  },
+  {
+   "id": "info.mode",
+   "type": "enum",
+   "label": "Show them",
+   "group": "Info screens",
+   "values": [
+    "temp",
+    "fixed"
+   ],
+   "labels": [
+    "For a few seconds",
+    "All the time"
+   ]
+  },
+  {
+   "id": "info.show.stylus",
+   "type": "bool",
+   "label": "Stylus hours (turntable inputs)",
+   "group": "Info screens"
+  },
+  {
+   "id": "info.show.quality",
+   "type": "bool",
+   "label": "Bluetooth quality (DAB)",
+   "group": "Info screens"
+  },
+  {
+   "id": "info.secs",
+   "type": "int",
+   "label": "Seconds on screen",
+   "group": "Info screens",
+   "min": 3,
+   "max": 60,
+   "step": 1
+  },
+  {
+   "id": "info.source",
+   "type": "ip",
+   "label": "Source (IP; empty = the VU's)",
+   "group": "Info screens"
+  },
+  {
+   "id": "info.turntable.PHONO",
+   "type": "bool",
+   "label": "PHONO",
+   "group": "Turntable inputs"
+  },
+  {
+   "id": "info.turntable.TUNER",
+   "type": "bool",
+   "label": "TUNER",
+   "group": "Turntable inputs"
+  },
+  {
+   "id": "info.turntable.TAPE/AUX",
+   "type": "bool",
+   "label": "TAPE/AUX",
+   "group": "Turntable inputs"
+  },
+  {
+   "id": "info.turntable.CD",
+   "type": "bool",
+   "label": "CD",
+   "group": "Turntable inputs"
+  },
+  {
+   "id": "info.turntable.DVD",
+   "type": "bool",
+   "label": "DVD",
+   "group": "Turntable inputs"
+  },
+  {
+   "id": "info.turntable.DAB",
+   "type": "bool",
+   "label": "DAB",
+   "group": "Turntable inputs"
+  }
+ ]
+}

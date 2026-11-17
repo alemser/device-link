@@ -46,6 +46,30 @@ class DescriptionTest {
         assertNull(parseFeed("data: not json"))
     }
 
+    /** The SP103 bridge's whole description (sp103-mod firmware/device.py, 2026-11-17), saved as a resource. */
+    @Test
+    fun readsTheAmplifiersDescription() {
+        val json = javaClass.classLoader!!.getResource("sp103-device.json")!!.readText()
+        val d = decode<Description>(json)
+        assertEquals("amplifier", d.kind)
+        assertEquals("alemser/sp103-mod", d.firmware)
+        assertEquals(listOf("power", "volume", "input", "tone", "modes"), d.controls.map { it.group })
+        assertEquals(KeyRef("power_toggle"), d.controls[0].keys[0])
+        assertEquals("volume_db", d.controls[1].steps[0].state)
+        val input = d.controls[2].select!!
+        assertEquals("input_id", input.state)
+        assertEquals(SelectOption("tape_aux", "TAPE/AUX", "select_tape_aux"), input.options[2])
+        assertEquals(listOf("loudness", "speakers"), d.controls[4].switches.map { it.target })
+        val byId = d.settings.associateBy { it.id }
+        assertEquals("lcd", byId["inputs.TUNER"]!!.charset)
+        assertEquals(16.0, byId["inputs.TUNER"]!!.max)
+        assertEquals(listOf("For a few seconds", "All the time"), byId["info.mode"]!!.labels)
+        assertEquals("int", byId["info.secs"]!!.type)
+        assertEquals(3.0, byId["info.secs"]!!.min)
+        assertEquals("ip", byId["vu.relay"]!!.type)
+        assertEquals("dB", d.state.first { it.id == "balance.db" }.unit)
+    }
+
     @Test
     fun hashesLikeTheBridge() {
         // sha256 of "print(1)\n", as ota.py's _sha and enviar.py's sha compute it.

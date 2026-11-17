@@ -47,4 +47,4 @@ the Picos refer to them; a bridge's `main.py` imports `ponte` and only changes o
 |---|---|
 | `mr780-mod` | Uses the base (2026-11-16) |
 | `cds300-mod` | Uses the base (2026-11-16), on contract `api` 2 |
-| `sp103-mod` | **Not yet.** The base came out of its files, but its `web.py` carries `/names` and its `main.py` imports `escuta.py` and writes to the LCD. Its `wifi.py`, `ota.py`, `udp.py` and `listeners.py` only differ in comments and in the newer changes here |
+| `sp103-mod` | Uses the base (2026-11-17) except `main.py` (its own imports `escuta.py` and shows errors on the LCD): copy with `copiar.py --skip firmware/main.py`. On contract `api` 2 |

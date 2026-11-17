@@ -1,9 +1,9 @@
 # DeviceLink contract, `api` 2 (draft)
 
 **Draft, 2026-11-16.** Successor of `docs/contract-v1.md` (`api` 1, the amplifier-only contract). Written for three
-devices: the Acoustic Solutions SP103 and the Magnat MR 780 (amplifiers) and the Yamaha CD-S300 (CD player). Nothing
-here is implemented yet; the CD-S300 bridge already serves part of it (`kind`, `keys`, the `transport`/`media`/`disc`
-state groups).
+devices: the Acoustic Solutions SP103 and the Magnat MR 780 (amplifiers) and the Yamaha CD-S300 (CD player). In use
+since 2026-11-16 by the CD-S300 (keys, no settings) and since 2026-11-17 by the SP103 (steps, switches, a select and 25
+settings); the MR 780 bridge is still `api` 1.
 
 A **device** is a piece of equipment with a Pico inside (the **bridge**). The **app** (DeviceLink, today's Amp Link) finds
 every device on the home Wi-Fi, shows them in one list, and builds each device's screen from what the device says about
@@ -16,8 +16,9 @@ app needs no change unless the device brings a new kind of control.
    the first time.
 2. **Self-describing.** `GET /device` says what the device is, what its state holds, which controls it takes and which
    settings can be changed. The app renders from that, not from a per-model screen.
-3. **Light enough for a Pico.** Every answer is small and built once: the description is serialised at boot and served
-   as stored bytes (under 1.5 KB), the state is under 0.5 KB, and nothing is computed per request that could be cached.
+3. **Light enough for a Pico.** Every answer is small and built once: the description is serialised on the first
+   request and served as stored bytes (the CD-S300's is about 1 KB, the SP103's, with its settings, about 4.5 KB), the
+   state is under 0.5 KB, and nothing is computed per request that could be cached.
 4. **Compatible.** `api` 1 bridges keep working: the app shows them with today's amplifier screens until they move to
    `api` 2.
 
@@ -128,12 +129,13 @@ What a person may change, for example the SP103's input names and boot text, or 
 |---|---|
 | `text` | `max` (characters), `charset` (`lcd`: ASCII from space to `}`, no `\`) |
 | `bool` | |
-| `enum` | `values` |
+| `enum` | `values`, and optionally `labels` (the words to show, in the same order) |
 | `int` | `min`, `max`, `step` |
 | `ip` | IPv4, or empty |
 
 `GET /settings` answers `{"<id>": value, ...}`. `PATCH /settings` takes only the ids that change and answers the full
-object, or `400` naming the id that was refused. Unlike `api` 1's `PUT /names`, nothing left out is reset. The app waits
+object, or `400 {"error": "...", "id": "<id>"}` naming the id that was refused (without `id` when the refusal is about
+several together). Unlike `api` 1's `PUT /names`, nothing left out is reset. The app waits
 1 s after the last edit before sending (each write goes to flash).
 
 ## `GET /state` and `GET /events`
