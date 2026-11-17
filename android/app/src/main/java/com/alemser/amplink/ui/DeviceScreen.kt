@@ -315,9 +315,10 @@ private fun SettingsSection(client: BridgeClient, fields: List<SettingField>) {
                     )
                 }
             }
-            error?.let { Hint(it, MaterialTheme.colorScheme.error) }
         }
     }
+    // Once, under the sections: the bridge's own message, which names the setting it refused.
+    error?.let { Hint(it, MaterialTheme.colorScheme.error) }
 }
 
 // ---------------------------------------------------------------- firmware

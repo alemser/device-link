@@ -3,7 +3,7 @@
  "kind": "amplifier",
  "model": "Acoustic Solutions SP103",
  "name": "SP103-D4FE",
- "bridge_version": "77b01422",
+ "bridge_version": "973fed99",
  "firmware": "alemser/sp103-mod",
  "features": [
   "control",
