@@ -1,128 +1,236 @@
-# KX-393: what is known before opening it (2026-11-17)
+# KX-393: what the manuals say (2026-11-17)
 
-Written away from the deck: no photos, no measurements and no service manual yet. Sources:
+Written away from the deck: no photos or measurements yet. Sources, both in the local copy `docs/manual/` (not on
+GitHub):
 
-- Yamaha's **owner's manual** for the KX-493/KX-393 (11 pages, English and French, printed in Malaysia, `VZ 77980`),
-  from Yamaha's own site. Page numbers below are the manual's.
-- The first two pages of the **service manual** (KX-393/493, printed in Japan, January 1998), seen as a preview: the
-  cover with the contents, and the front panels. The full manual is still to be downloaded (`docs/plan.md`, step 1).
-- **Remote Central**'s Pronto codes for the KX-W421, and `groove-rig`'s model built from them
-  (`internal/catalog/models/yamaha_kx393.yaml`).
+- Yamaha's **owner's manual** for the KX-493/KX-393 (11 pages, `VZ 77980`), from Yamaha's site.
+- The **service manual** for the KX-393/493 (35 pages, January 1998), from audiocircuit.dk
+  (`Yamaha-KX493-tape-sm.pdf`). A scan with no text layer: read from the images. The PDF's page numbers differ from
+  the printed ones (some PDF pages are two-page spreads or fold-outs):
+
+| Printed page | PDF page | Contents |
+|---|---|---|
+| 12 to 13 | 10 | µ-COM data: the LC65204A pinout and the KX-393's pin table |
+| 14 | 11 | The KX-493's pin table |
+| 15 | 12 | Display data: the glass, its pins and the grid/anode map |
+| 16 | 13 | KX-393 block diagram |
+| 26 | 14 (fold-out) | **KX-393 schematic**, with the remote code table |
+| 27 | 15 (fold-out) | KX-493 schematic |
+
+Where a value was read from a small part of the scan, it says so: to confirm on the bench.
 
 ## Summary
 
-- A single-well, 2-head stereo cassette deck from 1998, with Dolby B/C, HX Pro, auto tape tuning and a fluorescent
-  display (tape counter, peak meters, indicators).
-- **It has a standby.** STANDBY/ON is a key, not a mains switch, and the deck draws 5 W in standby (page 5 and
-  specifications). So something stays powered while the deck is "off": maybe a place for the Pico, and maybe a way
-  to switch the deck on over Wi-Fi. The schematic will tell.
-- **It has a remote sensor**, for the optional RKX1 remote: the same way in as on the CD-S300, a wire on the sensor's
-  output.
-- Only five remote codes are published (play, rewind, fast forward, stop, record). The others are to be found by
-  sending candidate codes (`tools/ir_sweep.py`).
-- How the display is driven (by the microcontroller directly, or through a driver chip with a serial bus as on the
-  CD-S300) decides how the state is read. Not known until the service manual.
+- **The microcontroller drives the display directly.** `IC12`, a Sanyo **LC65204A-4G83** (4-bit, 5 V, 52 pins), has
+  high-voltage outputs for the glass: 9 grids and 10 anodes, swinging between about +4.8 V and −21 V. There is no
+  display bus to listen to, as there was on the CD-S300.
+- **The deck's mode is on a few 5 V logic pins** of the same chip: capstan motor, solenoid, bias, line mute, rec mute,
+  rec/play select, head select, the reel pulse, and a 2-wire serial bus to the port expander (tape type, tape tuning).
+  The manual has a table of their levels in each mode.
+- **Display, keys and the remote sensor share one 27-way flat** between the main board (`CB7`) and the front board
+  (`CB8`), Molex 52045/52044 at 1.25 mm, the same connectors as the CD-S300's.
+- **The remote sensor drives the microcontroller directly** (`REM`, no gate in between): the Pico pulls it low, as on
+  the SP103.
+- **STANDBY/ON is a momentary key that grounds the `KEY1` line.** The transformer is always on and the
+  microcontroller always powered; standby is the microcontroller switching things off. So the Pico can live in
+  standby and switch the deck on by pulling `KEY1` low.
+- **Every remote code is in the manual** (11 keys), but its custom code (7F) differs from the captured codes' (7A).
 
-## The service manual (contents, from the preview)
+## The microcontroller (`IC12`, LC65204A-4G83; printed page 13)
 
-| Section | Pages |
-|---|---|
-| To service personnel, front panels | 1 |
-| Rear panel | 2 |
-| Specifications | 3 |
-| Internal view | 4 |
-| Disassembly procedures | 5 to 7 |
-| Adjustments | 8 to 11 |
-| **µ-COM data** (the microcontroller's pins) | 12 to 14 |
-| **Display data** (the display's grids and segments) | 15 |
-| KX-393 block diagram | 16 |
-| KX-393 printed circuit boards | 18 to 21 |
-| **KX-393 schematic** | 26 |
-| Parts list | 28 to 45 |
+Drawn as a 52-pin dual-in-line package: through-hole legs, if the photos agree. 4 MHz crystal (`XL1`), +5 V.
 
-The pages in bold answer the open questions. 35 pages in all. Third-party sites have it (Elektrotanya,
-audioservicemanuals, ManualMachine); Elektrotanya's download sits behind a browser check, so it is downloaded by hand.
+| Pin | Port | Function | Logic |
+|---|---|---|---|
+| 1 | PA0 | Operation key (1), A/D: `KEY1` | |
+| 2 | PA1 | Operation key (2), A/D: `KEY2` | |
+| 3, 4 | PA2, PA3 | Meter input L, R (A/D, from the meter amp `IC11`) | |
+| 5 | PB0 | Mecha switch (A/D) | |
+| 6 | PB1 | Mecha switch and timer (A/D) | |
+| 7 | PB2 | **Reel pulse** | |
+| 8 | PB3 | Power pulse (mains present) | |
+| 15 | RES | Reset | |
+| 19 | PF0 | **Port expander clock** (to `IC13`) | |
+| 20 | PF1 | **Port expander data** | |
+| 21 | PF2 | **Bias** | H: on |
+| 22 | PF3 | **Remote input** (`REM`) | |
+| 23 | PC0 | **Mecha drive: capstan motor** | H: on |
+| 24 | PC1 | **Mecha drive: solenoid** | H: on |
+| 25 | PC2 | Not used (47 kΩ to ground) | |
+| 26 | PC3 | **Head select** | H: rec |
+| 27 | PD0 | **Line mute** | H: on |
+| 28 | PD1 | **Rec mute** | H: on |
+| 29 | PD2 | Dolby 1 (Dolby on/off) | H: off |
+| 30 | PD3 | Dolby 2 (Dolby C on/off) | H: off |
+| 31 | PK0 | MPX filter | H: on |
+| 32 | PK1 | **Rec/PB select** | H: play |
+| 33 | PK2 | FL filament on/off (the schematic draws `P10` here) | H: on |
+| 34 to 42 | PK3 … PM3 | FL segments 9 to 1 | H: on |
+| 43 to 51 | PN0 … PP0 | FL digits (grids) 1 to 9 | H: on |
+| 52 | Vp | −21 V, the high-voltage outputs' supply | |
 
-## The front panel (owner's manual, pages 1 and 5 to 12)
+### The levels in each mode (printed page 13)
 
-**Keys:** STANDBY/ON, EJECT, INTRO SCAN (◄◄ and ►►), COUNTER RESET, MEMORY, AUTO TAPE TUNING, DOLBY NR
-(OFF / B / C / MPX), and the transport: ◄◄, ►►, ► (play), ■ (stop), REC/PAUSE, MUTE/SEARCH.
+The KX-393's table, as printed:
 
-**Knobs:** PHONES LEVEL, BIAS ADJUST, PLAY TRIM, BALANCE, REC LEVEL. Analogue, out of reach of the Pico.
+| Pin | Name | Stop | Play | FF/REW | Search | Rec pause | Rec |
+|---|---|---|---|---|---|---|---|
+| 21 | Bias | H | H | H | H | H | L |
+| 27 | Line mute | L | L | H | L | H | H |
+| 28 | Rec mute | H | H | H | H | H | L |
+| 32 | Rec/PB select | H | H | H | H | L | L |
 
-**What the KX-393 lacks** (KX-493 only): repeat (0-M and full), the timer switch, the sub panel, the reel motor.
+The KX-493's table (printed page 14) has the opposite levels for bias and line mute (bias H only in Rec; line mute L
+in Play, Rec pause and Rec), which fits the "H: on" column better. **One of the two is wrong, or the KX-393 differs:
+the multimeter decides**, pin by pin in each mode. Either way, together with the capstan motor (pin 23) these pins
+tell stop, play, winding, rec pause and rec apart. FF and REW look the same on them (the KX-393 has one motor; the
+KX-493's reel FF/REW pins are "not used" here); the reel pulse's rate tells winding from playing.
 
-### What the display shows
+### The port expander (`IC13`, BU2040; printed page 13)
 
-From the manual's figures and text; the exact glass, with its grids and segments, is on the service manual's page 15.
+A serial-in, parallel-out chip on pins 19 (clock) and 20 (data): two logic lines to listen to with the PIO, as on the
+CD-S300. Its outputs:
 
-| Indicator | Shows | Owner's manual |
-|---|---|---|
-| Tape counter | 4 digits, `0000` after COUNTER RESET; counts reel turns, not time | page 9 |
-| PEAK level meters | Left and right, from −30 to +8 dB (−30, −20, −17, −14, −12, −10, −8, −6, −4, −2, 0, +2, +4, +6, +8); the Dolby mark at −2 dB | page 11 |
-| Tape type | Lights when a cassette is in: normal, CrO2 (high) or metal, from the cassette's detection slots | pages 5 and 14 |
-| Dolby B, Dolby C | The NR setting | page 5 |
-| MPX FILTER | The 19 kHz filter, for recording from FM | page 9 |
-| REC | Recording or rec-pause | page 9 |
-| SYNCHRO | CD synchronised recording | page 9 |
-| TAPE TUNING | Auto tape tuning done | page 10 |
-| MEMORY | Memory stop set | page 8 |
-| INTRO ◄◄ / ►► | Intro scan, either direction | page 7 |
+| Pin | Name | Logic | Pin | Name |
+|---|---|---|---|---|
+| 4 | LH (normal tape) | H: on | 10 | Level 3 |
+| 5 | High (CrO2) | H: on | 11 | Level 4 |
+| 6 | Metal | H: on | 12 | Bias 1 |
+| 7 | 70 µs (EQ) | H: on | 13 | Bias 2 |
+| 8 | Tape tuning | | 14 | Bias 3 |
+| 9 | Level 1 | | 15 | Bias 4 |
 
-The transport (playing, winding, stopped) is likely shown too (arrows), but the manual doesn't say.
+So the bus carries the **tape type**, and the auto tape tuning's result.
 
-### Functions worth knowing for the bridge
+## The display (printed page 15)
 
-- **Selection search:** ◄◄ or ►► together with MUTE/SEARCH skips to the previous or next song (blanks of at least 4
-  s). That is `previous` and `next` in the contract.
+`V1`, **BJ214GK** (Yamaha part VQ667400), 47 pins: filament `F1`/`F2`, anodes `P1` to `P10`, grids `1G` to `9G`.
+Multiplexed: the microcontroller lights one grid at a time and puts that grid's anodes high.
+
+| Anode | 9G | 8G | 7G | 6G | 5G | 4G | 3G | 2G | 1G |
+|---|---|---|---|---|---|---|---|---|---|
+| P1 | a | a | a | a | L1 | L5 | L9 | L13 | 0-M |
+| P2 | b | b | b | b | L2 | L6 | L10 | L14 | FULL |
+| P3 | c | c | c | c | L3 | L7 | L11 | L15 | INTRO |
+| P4 | d | d | d | d | L4 | L8 | L12 | I/NORM | ◁ |
+| P5 | e | e | e | e | R1 | R5 | R9 | R13 | ▷ |
+| P6 | f | f | f | f | R2 | R6 | R10 | R14 | Dolby B |
+| P7 | g | g | g | g | R3 | R7 | R11 | R15 | Dolby C |
+| P8 | REPEAT | — | ▫ | SYNCHRO | R4 | R8 | R12 | II/HIGH | Dolby S |
+| P9 | MEMORY | — | — | REC | TAPE TUNING | — | — | IV/METAL | MPX FILTER |
+| P10 | — | — | — | S1 | S1 | S1 | S1 | S1 | — |
+
+- Grids 9 to 6 are the **4-digit counter** (7 segments each; 9G is the leftmost digit and also carries REPEAT and
+  MEMORY).
+- Grids 5 to 2 are the **peak meters**: `L1`–`L15` and `R1`–`R15`, from −30 to +8 dB (−30, −20, −17, −14, −12, −10, −8,
+  −6, −4, −2 (the Dolby mark), 0, +2, +4, +6, +8). `S1` is the meter's printed scale.
+- Grid 1 carries the indicators. REPEAT, 0-M and FULL are the KX-493's (the KX-393 has no repeat), as is Dolby S.
+- There is no play or wind arrow: the transport isn't on the display, except INTRO ◁ ▷.
+
+On the front board the schematic gives the voltages while playing: grids and most anodes "~" (multiplexed), `P8`
+−20.3 V, `P9` −14.3 V, `P10` 4.4 V, the filament at −16.3 V.
+
+## The 27-way flat (schematic, right side)
+
+From `CB7` (main board, Molex 52045) to `CB8` (front board, Molex 52044), through a jumper flat (`#3`). The lines in
+the order drawn, from the top (pin 1 side to be confirmed on the boards):
+
+| # | Line | # | Line | # | Line |
+|---|---|---|---|---|---|
+| 1 | `G` (ground) | 10 | `G8` | 19 | `P6` |
+| 2 | `KEY1` | 11 | `P10` | 20 | `G3` |
+| 3 | `KEY2` | 12 | `G7` | 21 | `P5` |
+| 4 | `REM` | 13 | `P9` | 22 | `G2` |
+| 5 | `G` | 14 | `G6` | 23 | `P4` |
+| 6 | `+5V` | 15 | `P8` | 24 | `G1` |
+| 7 | `F` (filament) | 16 | `G5` | 25 | `P3` |
+| 8 | `G9` | 17 | `P7` | 26 | `P1` |
+| 9 | `F` (filament) | 18 | `G4` | 27 | `P2` |
+
+Everything the bridge needs on the front side is here: ground, `KEY1`, `KEY2`, `REM`, `+5V`, and all 19 display lines.
+**The filament (`F`, about −16 V with AC on top) and the display lines (down to −21 V) sit next to the logic lines.**
+
+### The keys
+
+`KEY1` and `KEY2` are A/D inputs (pins 1 and 2), each pulled to +5 V through 10 kΩ (`R142`, `R143`). Each key grounds
+its line through a ladder of resistors. Read from the scan (to confirm):
+
+| Line | 0 Ω | 1.2 kΩ | 2.5 kΩ | 4.7 kΩ | 7.7 kΩ | 11.6 kΩ | 17.8 kΩ |
+|---|---|---|---|---|---|---|---|
+| `KEY1` | **STANDBY/ON** (`SW1`, own board) | STOP | PLAY | FF | REW | INTRO ▷ | INTRO ◁ |
+| `KEY2` | REC/PAUSE | MUTE/SEARCH | DOLBY NR | AUTO TAPE TUNING | COUNTER RESET | MEMORY | |
+
+STANDBY/ON (`SW1`, "POWER") sits on its own small board (`MAIN(4)`), wired by `W1` to `CB5`, and shorts `KEY1` to
+ground. It is a momentary key, not a mains switch.
+
+### The remote sensor
+
+`U1`, **SPS-421-1**, on the front board: ground, `VC` 4.8 V and `VO` 4.8 V (idle). `VO` is the `REM` line, which goes
+down the flat straight to pin 22. No gate in between: the Pico can pull it low.
+
+## Power (schematic, "power supply"; block diagram)
+
+- The mains goes straight to transformer `T501` (`CB501`): **no switch in the primary**. The transformer is always on,
+  which is the 5 W in standby.
+- Windings: 4.8 V AC for the filament, 22.4 V AC through bridge `D8` (S1VB20) to `VB` (26.6 V), and the others.
+- `IC14`, an **AN78N05** regulator, from 13.0 V: 5.6 V at its output (lifted by `D6`), then 4.8 V through `D4`/`D5`:
+  the `+5V` of the microcontroller and the front board, always on.
+- `+15V` from `Q35`, `−21V` from `Q36` (for the display), and the muting circuit (`Q38`, line mute at power on and off).
+- `POWER PULSE` (pin 8) lets the microcontroller see the mains go.
+
+So the Pico can take power from the deck's +5 V and stay on in standby. The AN78N05 is a 300 mA part; with 13 V in,
+the Pico's 50 to 100 mA adds up to 0.75 W to it. To check on the bench (its temperature), or feed the Pico from `VB`
+through a small buck converter instead.
+
+## The front panel (owner's manual)
+
+**Keys:** STANDBY/ON, EJECT (mechanical), INTRO SCAN ◁ and ▷, COUNTER RESET, MEMORY, AUTO TAPE TUNING, DOLBY NR,
+◄◄, ►►, ►, ■, REC/PAUSE, MUTE/SEARCH. **Knobs:** phones level, bias adjust, play trim, balance, rec level.
+
+Functions worth knowing:
+
+- **Selection search:** ◄◄ or ►► with MUTE/SEARCH skips to the previous or next song (blanks of at least 4 s).
 - **Intro scan:** plays the first seconds of each song, either direction.
-- **Memory stop:** winding stops at the memorised counter reading.
-- **0-stop and rec return:** during recording, RESET rewinds to `0000`, ◄◄ rewinds to where the recording began.
+- **Memory stop**, **0-stop**, **rec return**: winding stops at a memorised reading, at `0000`, or where recording
+  began.
 - **Rec mute:** records 4 s of silence and pauses.
-- **Auto tape tuning:** about 20 s of recording and playback in rec-pause, to set the bias and sensitivity.
-- **CD synchronised recording:** with a Yamaha CD player whose remote has a SYNCHRO key, the CD starts and the deck
-  records. The CD-S300's remote has no SYNCHRO key, but the bridges could do the same over Wi-Fi.
-
-## Power (owner's manual, specifications)
-
-- 230 V, 50 Hz (Europe and UK model). 12 W on, **5 W in standby**.
-- "This unit is not disconnected from the AC power source as long as it is connected to the wall outlet, even if the
-  unit itself is turned off. This state is called the standby mode." (page 2)
-- Still to learn from the schematic: whether STANDBY/ON is a key read by the microcontroller (which then switches a
-  relay) or a latching switch; which supply lives in standby and how much it can give (a Pico 2 W with Wi-Fi takes
-  up to about 100 mA at 5 V); whether the microcontroller runs in standby.
+- **Auto tape tuning:** about 20 s in rec pause, to set bias and sensitivity.
+- **CD synchronised recording:** with a Yamaha CD player whose remote has a SYNCHRO key. The bridges could do it
+  over Wi-Fi instead.
+- Power: 230 V, 50 Hz; 12 W on, 5 W in standby.
 
 ## The remote
 
-### The RKX1
+The KX-393 was sold without a remote. The optional one is the **RKX1** (VU643800), shared with other decks.
 
-The KX-393 was sold without a remote. The optional one is the **RKX1**, made for several decks (single and double).
-Its keys, from the drawing on page 15: INTRO SCAN, DECK A/B, DIR A, DIR B, DUBBING, COUNTER RESET, SEARCH, REC/PAUSE,
-REC MUTE, PLAY, STOP, and the winding keys. The double-deck keys (DECK A/B, DIR A/B, DUBBING) do nothing on the KX-393.
-Range 7 m, 30°.
+### The codes (schematic page, "Remote Control Data")
 
-### The codes
-
-No table exists for the KX-393. Remote Central has Pronto codes for the KX-W421 (a double deck that uses the RKX1), and
-decoded they are **NEC, address 7A/85**. IRDB's Yamaha "Tape Deck" device 122 (`0x7A`) agrees on play, rewind, fast
-forward, stop and record.
-
-| Key | Command | Contract name | On the KX-393 |
+| Key | Custom | Data | Contract name |
 |---|---|---|---|
-| Play | `00` | `play` | Expected |
-| Rew | `01` | `rewind` | Expected |
-| Ffwd | `02` | `fast_forward` | Expected |
-| Stop | `03` | `stop` | Expected |
-| Record | `04` | `record` | Expected (REC/PAUSE) |
-| Deck A/B | `06` | — | Double decks only |
-| Dir A | `07` | — | Auto-reverse decks only |
-| Dir B | `40` | — | Auto-reverse decks only |
+| Intro scan ◁ | 7F | `1E` | `intro_scan_back` |
+| Intro scan ▷ | 7F | `1F` | `intro_scan_forward` |
+| Counter reset | 7F | `0D` | `counter_reset` |
+| Search ◄◄ | 7F | `0B` | `previous` |
+| Search ►► | 7F | `0A` | `next` |
+| ◄◄ | 7F | `01` | `rewind` |
+| Play | 7F | `00` | `play` |
+| ►► | 7F | `02` | `fast_forward` |
+| Rec/pause | 7F | `04` | `record` |
+| Stop | 7F | `03` | `stop` |
+| Rec mute | 7F | `05` | `rec_mute` |
 
-Decoded with a script on 2026-11-17; each code's command and its inverse check out. None tested on the deck yet.
+The KX-493's table is the same. **No power code**: power is the `KEY1` line.
 
-**Missing:** pause, rec mute, search (previous, next), intro scan, counter reset and power. The gap at `05` is a good
-guess for one of them. They are found by sending candidates over the IR wire and watching the deck
-(`tools/ir_sweep.py`, `POST /ir/send?code=XX`), with an unrecordable cassette.
+### The address
 
-`groove-rig` carries the five known codes (`yamaha_kx393.yaml`, "not yet field-tested"); `tools/test_ir.py` checks
-the bridge's against them. Codes found here go there too.
+The only captured codes are Remote Central's Pronto codes for the KX-W421, from its remote VS90590 (not the RKX1).
+Decoded they are **NEC, address 7A/85**, with the same data bytes as the table above for play, rewind, fast forward,
+stop and record; IRDB's Yamaha "Tape Deck" device 122 (`0x7A`) agrees. On the CD-S300 the manual's custom code (79)
+was the NEC address as is. So either the KX-393 answers to 7F and the KX-W421 to 7A, or the manual's 7F is
+written another way. The first test on the deck settles it (`tools/ir_try.py`). The bridge defaults to 7F.
+
+Remote Central also lists, for the double deck: Deck A/B `06`, Dir A `07`, Dir B `40`. Not used on the KX-393.
+
+`groove-rig` carries the five captured codes at 7A (`yamaha_kx393.yaml`, "not yet field-tested");
+`tools/test_ir.py` checks their data bytes against the manual's. Once the address is settled, groove-rig gets it, and
+the six other keys.

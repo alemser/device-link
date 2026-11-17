@@ -20,8 +20,9 @@ assert d["name"] == "KX393-1A2B" and d["bridge_version"] == "abcd1234"
 assert d["firmware"] == "alemser/kx393-mod"
 assert d["features"] == ["control", "update", "wifi_setup"]
 assert d["state"] == []                 # no state reader yet (docs/plan.md)
-assert [c["group"] for c in d["controls"]] == ["transport", "record"]
-assert d["controls"][0]["keys"] == ["rewind", "play", "stop", "fast_forward"]
+assert [c["group"] for c in d["controls"]] == ["power", "transport", "record", "modes"]
+assert d["controls"][0]["keys"] == ["power_toggle"]
+assert d["controls"][1]["keys"] == ["previous", "rewind", "play", "stop", "fast_forward", "next"]
 assert d["settings"] == []
 # The remote holds exactly the keys the IR sender can send: none missing, none unknown.
 assert device.check() == ([], []), device.check()

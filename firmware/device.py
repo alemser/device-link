@@ -4,9 +4,8 @@ The app builds the KX-393's screen from this: the state fields to show, the remo
 here). Nothing changes while the bridge runs, so the JSON is built once, on the first request, and served as stored
 bytes afterwards (a Pico should not rebuild 1 KB of JSON per request).
 
-No state fields yet: how the bridge will know the deck's state (the display, or the microcontroller's lines) waits for
-the service manual and the photos (docs/plan.md). The planned fields are transport, the counter, the tape type and
-Dolby NR.
+No state fields yet: the state reader (the microcontroller's mode lines, then maybe the display's lines) comes after
+the bench (docs/plan.md). The planned fields are power, transport, the tape type, Dolby and the counter.
 
 describe() runs the same in MicroPython (Pico) and CPython (tools/test_device.py).
 """
@@ -21,12 +20,15 @@ KIND = "tape_deck"
 MODEL = "Yamaha KX-393"
 FIRMWARE = "alemser/kx393-mod"  # the GitHub repository whose releases carry this firmware (enviar.py --publish)
 FEATURES = ("control", "update", "wifi_setup")
+PANEL_KEYS = ("power_toggle",)  # pressed on the KEY1 line, not sent as IR (panel.py)
 
 STATE = ()
 
 CONTROLS = (
-    ("transport", ("rewind", "play", "stop", "fast_forward")),
-    ("record", ("record",)),
+    ("power", ("power_toggle",)),
+    ("transport", ("previous", "rewind", "play", "stop", "fast_forward", "next")),
+    ("record", ("record", "rec_mute")),
+    ("modes", ("intro_scan_back", "intro_scan_forward", "counter_reset")),
 )
 
 _cached = None
@@ -40,9 +42,10 @@ def describe(version, name):
 
 
 def check():
-    """Every key in the remote is one the IR sender knows (tools/test_device.py)."""
+    """Every key in the remote is one the bridge can press (tools/test_device.py)."""
     listed = [k for _, keys in CONTROLS for k in keys]
-    return sorted(set(listed) - set(ir_codes.KEYS)), sorted(set(ir_codes.KEYS) - set(listed))
+    known = set(ir_codes.KEYS) | set(PANEL_KEYS)
+    return sorted(set(listed) - known), sorted(known - set(listed))
 
 
 async def handle(req, writer):

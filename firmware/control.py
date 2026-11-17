@@ -1,24 +1,28 @@
 """Commands to the KX-393 over the network (the contract's "control" group).
 
-    POST /control?target=key&name=play     one remote key (ir_codes.KEYS); answers with the state
-    POST /ir/send?cmd=play                 the same key; answers with the IR line's status
-    POST /ir/send?code=05                  any command byte (hex) at the deck's address, to find unknown codes
+    POST /control?target=key&name=play     one remote key (ir_codes.KEYS) or power_toggle; answers with the state
+    POST /ir/send?cmd=play                 one remote key; answers with the IR line's status
+    POST /ir/send?code=00&address=7A       any command byte (hex), at the given address or the default one: for
+                                           settling the address (ir_codes.py) and trying other codes
     GET  /ir                               the IR line's status and the list of keys
 
+The remote keys go out as IR (ir.py). power_toggle has no IR code: it presses STANDBY/ON on the KEY1 line (panel.py).
 Only the "key" target exists: the contract's other targets (volume, tone) belong to amplifiers.
 
-One request at a time: while a key is going out, the next one gets "busy". A key takes about 110 ms, with the
-silence at the end.
+One request at a time: while a key is going out, the next one gets "busy". An IR key takes about 110 ms, with the
+silence at the end; power_toggle about 200 ms.
 
 check() and parse_code() run the same in MicroPython (Pico) and in the computer's Python (tools/test_control.py).
 """
 
 import ir_codes
 
+POWER = "power_toggle"
+
 
 def check(key, sending):
     """The error text to show the person (in English, as in the contract), or None if the key can go out."""
-    if key not in ir_codes.COMMANDS:
+    if key not in ir_codes.COMMANDS and key != POWER:
         return "unknown key"
     if sending:
         return "busy"
@@ -26,7 +30,7 @@ def check(key, sending):
 
 
 def parse_code(text):
-    """A command byte from its hex text ("05", "0x40"), or None if it isn't one."""
+    """A byte from its hex text ("05", "0x7A"), or None if it isn't one."""
     if not text:
         return None
     if text[:2] in ("0x", "0X"):
@@ -37,23 +41,32 @@ def parse_code(text):
 
 
 class Control:
-    def __init__(self, state, remote):
+    def __init__(self, state, remote, panel=None):
         self.state = state
         self.remote = remote
+        self.panel = panel
 
-    def _press(self, key):
-        error = check(key, self.remote.sending())
-        if error is None:
+    def _busy(self):
+        return self.remote.sending() or (self.panel is not None and self.panel.pressing)
+
+    async def _press(self, key):
+        error = check(key, self._busy())
+        if error is None and key == POWER:
+            if self.panel is None:
+                return "unknown key"
+            await self.panel.press_power()
+        elif error is None:
             self.remote.send(key)
         return error
 
-    def _press_code(self, text):
-        command = parse_code(text)
-        if command is None:
+    def _press_code(self, query):
+        command = parse_code(query.get("code"))
+        address = parse_code(query["address"]) if "address" in query else ir_codes.ADDRESS
+        if command is None or address is None:
             return "bad code"
-        if self.remote.sending():
+        if self._busy():
             return "busy"
-        self.remote.send_command(command)
+        self.remote.send_command(command, address)
         return None
 
     async def handle(self, req, writer):
@@ -66,11 +79,12 @@ class Control:
         if req.path == "/control":
             if req.query.get("target") != "key":
                 return await reply_json(writer, {"error": "unknown target"}, "400 Bad Request")
-            error = self._press(req.query.get("name"))
+            error = await self._press(req.query.get("name"))
         elif "code" in req.query:
-            error = self._press_code(req.query.get("code"))
+            error = self._press_code(req.query)
         else:
-            error = self._press(req.query.get("cmd"))
+            key = req.query.get("cmd")
+            error = "unknown key" if key == POWER else await self._press(key)
         if error:
             return await reply_json(writer, {"error": error}, "400 Bad Request")
         await reply_json(writer, self.state.to_dict() if req.path == "/control" else self.remote.status())

@@ -1,7 +1,7 @@
 """The KX-393 bridge: the program main.py imports when the Pico starts.
 
-Wi-Fi without a cable (wifi.py), updates over Wi-Fi (ota.py), /device and the remote-control keys (control.py, ir.py).
-The state reader comes later, once the service manual and the photos say where to read the state from (docs/plan.md).
+Wi-Fi without a cable (wifi.py), updates over Wi-Fi (ota.py), /device, the remote-control keys (control.py, ir.py)
+and STANDBY/ON on the KEY1 line (panel.py). The state reader comes after the bench (docs/plan.md).
 
 Run from the computer:  .venv/bin/mpremote run firmware/ponte.py   (or install and reset: see README)
 """
@@ -13,6 +13,7 @@ import device
 import ota
 from control import Control
 from ir import Remote
+from panel import Panel
 from web import Publisher
 from wifi import Wifi
 
@@ -24,14 +25,16 @@ class State:
         self.version = 0
 
     def to_dict(self):
-        # Without a state reader nothing is known, not even power: whether the Pico stays on in standby is still open.
+        # Without a state reader nothing is known, not even power: the Pico stays on in standby (the +5 V lives on),
+        # but on and standby look the same until the mode lines are wired.
         return {"power": None, "updated_at": time.ticks_ms(), "version": self.version}
 
 
 state = State()
 net = Wifi(model=device.NAME, hostname=device.NAME, prefix=device.NAME.upper(),
            label=device.MODEL, kind=device.KIND, api=device.API)
-control = Control(state, Remote())      # early: until then GP6 has the RP2350's pull-down, which loads the IR line
+# Early: until then GP6 and GP7 have the RP2350's pull-down, which loads the IR and KEY1 lines.
+control = Control(state, Remote(), Panel())
 pub = None
 wifi_ok = False
 

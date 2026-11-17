@@ -2,12 +2,12 @@
 
 Wiring (planned, not yet soldered; docs/plan.md):
 
-    GP6 = the remote sensor's output, before anything the main board puts after it. GP6, as on the CD-S300, so the
-    same harness serves the logic analyzer (channel 5) and the bridge. Which leg is the output, and whether the line
-    is idle at 5 V or at 3.3 V, comes from the service manual and the multimeter (docs/plan.md, step 2).
+    GP6 = the REM line, on the CB8 joint of the 27-way flat (front board). The service manual's schematic: the
+    remote sensor U1 (SPS-421-1) drives REM straight into the microcontroller's REMOCON input (IC12 pin 22), with no
+    gate in between, as on the SP103. Idle at 4.8 V (schematic); the RP2350's pins tolerate it while powered.
 
 SAFETY RULE (the SP103's): GP6 is NEVER driven to 1. Its output value stays 0 and only the direction changes, at the
-lowest drive strength (2 mA). The line rises through the sensor's own resistor.
+lowest drive strength (2 mA). The line rises through the sensor's own output.
 
 The PIO holds the line at 0 only for a counted time. While waiting for the next time, the line is released: if the
 DMA stopped midway, the line would not stay stuck at 0 and a real remote keeps working. The DMA feeds the times by
@@ -72,14 +72,14 @@ class Remote:
     def send(self, key):
         self.send_command(ir_codes.COMMANDS[key])
 
-    def send_command(self, command):
-        """Any command byte at the deck's address: how the codes with no published value are found."""
-        words = ir_codes.frame_command(command)
+    def send_command(self, command, address=ir_codes.ADDRESS):
+        """Any command byte, at the deck's address or another: how the address is settled (ir_codes.py)."""
+        words = ir_codes.frame_command(command, address)
         self._words = array("I", words)
         self._until = time.ticks_add(time.ticks_ms(), sum(words) // 1000 + 10)
         self.dma.config(read=self._words, write=self._fifo, count=len(words), ctrl=self._ctrl, trigger=True)
         self.sent += 1
-        self.last = command
+        self.last = "%02X/%02X" % (address, command)
 
     def status(self):
         return {"commands": list(ir_codes.KEYS), "sending": self.sending(), "sent": self.sent,

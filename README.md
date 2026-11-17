@@ -9,38 +9,40 @@ network, it describes itself, and the DeviceLink app builds its screen from that
 
 ## Status (2026-11-17)
 
-**Started away from the deck**: no photos, measurements or service manual yet.
+**Started away from the deck**: both manuals read, no photos or measurements yet.
 
 | Requirement | Status |
 |---|---|
-| Know the state | Open: from the display's bus or the microcontroller's lines, decided after the service manual (`docs/plan.md`, step 2) |
-| Remote control over Wi-Fi | In code, not tested: `POST /control?target=key&name=play` (play, stop, rewind, fast forward, record), NEC 7A/85. The missing codes are found with `tools/ir_sweep.py` |
+| Know the state | Planned: from the microcontroller's 5 V mode pins and the port expander's bus; the display is driven directly, with no bus (`docs/plan.md`) |
+| Remote control over Wi-Fi | In code, not tested: `POST /control?target=key&name=play`, the 11 keys of the service manual's table. The address (7F or 7A) is settled on the deck with `tools/ir_try.py` |
+| Power over Wi-Fi | In code, not tested: `power_toggle` pulls the `KEY1` line low, which is what STANDBY/ON does |
 | Easy to undo | Planned: wires on existing joints, nothing removed |
 | DeviceLink | `/device`, discovery, Wi-Fi setup and updates from the shared base |
 
-Next: download the service manual and take the photos (`docs/plan.md`, step 1).
+Next: the photos (`docs/plan.md`, step 1), then the multimeter guide.
 
 ## Documents
 
 | Document | Contents |
 |---|---|
 | [`docs/plan.md`](docs/plan.md) | The plan, the safety rules, the open decisions and the ideas |
-| [`docs/research.md`](docs/research.md) | What the owner's manual and the published remote codes say |
+| [`docs/research.md`](docs/research.md) | What the owner's manual and the service manual say: the microcontroller's pins, the display map, the flat, the power supply, the remote codes |
 | [`docs/measurements.md`](docs/measurements.md) | The bench measurements and the log of what was done |
 
-The service manual stays in the local copy only, in `docs/manual/` (copyrighted, not on GitHub).
+The manuals stay in the local copy only, in `docs/manual/` (copyrighted, not on GitHub). The service manual is
+`Yamaha-KX493-tape-sm.pdf` from audiocircuit.dk (covers both models).
 
 ## Folders
 
 - `firmware/`: the Pico's program (MicroPython).
   - This project's: `ponte.py` (the program), `device.py` (`/device`), `ir_codes.py` (the remote codes), `ir.py`
-    (the IR line) and `control.py` (the `/control` and `/ir` routes).
+    (the IR line), `panel.py` (STANDBY/ON on the `KEY1` line) and `control.py` (the `/control` and `/ir` routes).
   - **Copies of the shared base** (repository `device-link`, folder `firmware-base/`): `wifi.py`, `web.py`, `ota.py`,
     `udp.py`, `listeners.py` and `main.py`. Change them there and copy with
     `python3 ../device-link/firmware-base/copiar.py`, never here.
   - `main.py` (the update gatekeeper) only goes to the Pico by USB; everything else goes over Wi-Fi.
 - `tools/`: the tests on the computer, `enviar.py` (update over Wi-Fi; `--publish` makes the GitHub release the app
-  updates from) and `ir_sweep.py` (finds the missing remote codes). `enviar.py`, `test_wifi.py` and
+  updates from) and `ir_try.py` (settles the remote's address on the deck). `enviar.py`, `test_wifi.py` and
   `test_listeners.py` come from the base.
 - `captures/`: logic-analyzer captures, when there are any.
 

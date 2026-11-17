@@ -20,8 +20,10 @@ MODEL = os.path.expanduser("~/Projects/groove-rig/internal/catalog/models/yamaha
 TICK_US = 269 / 8.192           # Broadlink's time unit
 LONG_US = 1000                  # above this, the space is a 1 bit
 
-# The KX-W421's Pronto codes from Remote Central, decoded (docs/research.md), copied separately to catch typos.
-DECODED = {"play": 0x00, "rewind": 0x01, "fast_forward": 0x02, "stop": 0x03, "record": 0x04}
+# The service manual's "Remote Control Data" table (docs/research.md), copied separately to catch typos.
+MANUAL = {"intro_scan_back": 0x1E, "intro_scan_forward": 0x1F, "counter_reset": 0x0D, "previous": 0x0B,
+          "next": 0x0A, "rewind": 0x01, "play": 0x00, "fast_forward": 0x02, "record": 0x04, "stop": 0x03,
+          "rec_mute": 0x05}
 
 
 def decode(words):
@@ -48,28 +50,38 @@ def captured(body):
     return times
 
 
-assert ir_codes.COMMANDS == DECODED
-assert set(ir_codes.KEYS) == set(ir_codes.COMMANDS) and len(ir_codes.KEYS) == len(ir_codes.COMMANDS)
+assert ir_codes.COMMANDS == MANUAL
+assert set(ir_codes.KEYS) == set(ir_codes.COMMANDS) and len(ir_codes.KEYS) == len(ir_codes.COMMANDS) == 11
 assert len(set(ir_codes.COMMANDS.values())) == len(ir_codes.COMMANDS)      # no code repeated
+assert (ir_codes.ADDRESS, ir_codes.ADDRESS_CAPTURED) == (0x7F, 0x7A)
 
-for command in range(256):
-    words = ir_codes.frame_command(command)
-    # Pairs of line at 0 and released: the PIO always ends waiting for the next line at 0.
-    assert len(words) == 2 + 64 + 2, command
-    assert words[0] == 9000 and words[1] == 4500, command
-    assert all(w == 560 for w in words[2:-1:2]), command    # every line-at-0 pulse has the same length
-    assert words[-1] >= 40000, command                      # the silence between two keys
-    assert decode(words) == [0x7A, 0x85, command, command ^ 0xFF], command
+for address in (ir_codes.ADDRESS, ir_codes.ADDRESS_CAPTURED):
+    for command in range(256):
+        words = ir_codes.frame_command(command, address)
+        # Pairs of line at 0 and released: the PIO always ends waiting for the next line at 0.
+        assert len(words) == 2 + 64 + 2, command
+        assert words[0] == 9000 and words[1] == 4500, command
+        assert all(w == 560 for w in words[2:-1:2]), command    # every line-at-0 pulse has the same length
+        assert words[-1] >= 40000, command                      # the silence between two keys
+        assert decode(words) == [address, address ^ 0xFF, command, command ^ 0xFF], command
 
 for key, command in ir_codes.COMMANDS.items():
-    assert ir_codes.frame(key) == ir_codes.frame_command(command), key
+    assert ir_codes.frame(key) == ir_codes.frame_command(command, 0x7F), key
 
 if os.path.exists(MODEL):
     with open(MODEL) as f:
         codes = dict(re.findall(r"^  (\w+):.*\n\s+format: broadlink_ir\n\s+body: (\S+)", f.read(), re.M))
-    assert set(codes) == set(ir_codes.COMMANDS), set(codes) ^ set(ir_codes.COMMANDS)
-    for key in ir_codes.COMMANDS:
-        assert decode(captured(codes[key])) == decode(ir_codes.frame(key)), key
+    # groove-rig has the five captured codes, at the captured address: the same command bytes as the manual's.
+    assert set(codes) <= set(ir_codes.COMMANDS), set(codes) - set(ir_codes.COMMANDS)
+    addresses = set()
+    for key in codes:
+        got = decode(captured(codes[key]))
+        assert got[0] in (ir_codes.ADDRESS, ir_codes.ADDRESS_CAPTURED), key
+        assert got == decode(ir_codes.frame_command(ir_codes.COMMANDS[key], got[0])), key
+        addresses.add(got[0])
+    if addresses != {ir_codes.ADDRESS}:
+        print("note: groove-rig's codes are at address %s, the bridge's default is %02X (settle it on the deck)"
+              % ("/".join("%02X" % a for a in sorted(addresses)), ir_codes.ADDRESS))
 else:
     print("warning: no %s, didn't compare with groove-rig" % MODEL)
 

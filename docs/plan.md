@@ -1,121 +1,160 @@
 # Plan
 
 The fourth modified device, after the SP103, the MR 780 and the CD-S300, and the same path: look and measure first,
-then capture, and only then solder. Like the CD-S300 there is a service manual with a schematic, so the multimeter
-only checks what the schematic says.
+then capture, and only then solder. The service manual has the schematic and the microcontroller's pin table
+(`docs/research.md`), so the multimeter only checks what they say.
 
-Written on 2026-11-17, away from the deck: before any photo, measurement or service manual. Everything below that
-depends on the hardware is marked as open.
+Written on 2026-11-17, away from the deck: after reading both manuals, before any photo or measurement.
 
 ## Safety
 
-- The KX-393 plugs straight into the mains (230 V), and **stays powered in standby** (5 W): pressing STANDBY/ON
-  does not cut the mains. Unplug it before touching anything inside.
-- A fluorescent display needs a negative voltage (around −25 to −30 V) and an AC filament. Where those run is on the
-  schematic; the Pico connects only to logic.
-- **The logic is probably 5 V** (a 1998 design), not the CD-S300's 3.3 V. The RP2350's pins tolerate 5 V only while the
-  Pico is powered, so every line the Pico reads gets checked first, and a divider or a series resistor goes in where
-  needed (step 2).
-- **Recording erases tape.** Every test of the remote codes uses a cassette with both record tabs broken off, or no
-  cassette: an unknown code may start recording.
-- Pico wires only on existing through-hole joints, never on SMD pads. Each wire held with hot glue or kapton tape.
-  Nothing removed: to undo, unsolder the wires.
+- The KX-393 plugs straight into the mains (230 V) and **the transformer is always on**: STANDBY/ON is a logic key,
+  not a switch. Unplug the deck before opening it and before touching anything inside.
+- **The display runs at up to −21 V**, and its filament at about −16 V with 4.8 V AC on top. Both sit on the 27-way
+  flat, **next to** the lines the Pico uses (`KEY1`, `KEY2`, `REM`, `+5V`). A slipped probe or a solder bridge there
+  puts −21 V on a Pico pin. Solder those joints with the plug out, and check each one for shorts with the beeper.
+- **The logic is 5 V.** The RP2350's pins tolerate 5 V only while the Pico itself is powered. The Pico takes its
+  power from the deck's own +5 V, so both come and go together, but every input gets a series resistor or a divider
+  anyway (step 3 decides which).
+- **Recording erases tape.** Every IR test uses a cassette with both record tabs broken off, or no cassette.
+- Pico wires only on existing through-hole joints (the flat's joints on the front board, the microcontroller's legs),
+  never on SMD pads. Each wire held with hot glue or kapton tape. Nothing removed: to undo, unsolder the wires.
 
 ## Goals
 
 Taken from the CD-S300's (2026-11-16), to confirm with the owner:
 
-1. **Know the state**: playing, winding, stopped, recording or rec-paused, cassette in, the counter, the tape type,
-   Dolby.
-2. **Remote control over Wi-Fi**, with the remote's codes sent down a wire.
+1. **Know the state**: on or standby; stopped, playing, winding, searching, rec pause or recording; the tape type;
+   Dolby; the counter.
+2. **Remote control over Wi-Fi**, including power, with nothing pressed by hand.
 3. **Easy to undo**: nothing removed.
 
 Alongside: the DeviceLink contract `api` 2 (`device-link/docs/contract-v2.md`), `kind` `tape_deck`.
 
-## Step 1: service manual and photos
+## Where the state comes from (from the service manual, 2026-11-17)
 
-**The service manual** (to do by hand: the download page has a browser check): "YAMAHA KX-393 493 SM" on
-Elektrotanya, or the same 35 pages from audioservicemanuals or ManualMachine. Into `docs/manual/` (kept out of git:
-copyrighted), with a `.txt` of its text alongside (`pdftotext -layout`). The pages that matter are listed in
-`docs/research.md`.
+The display is driven straight by the microcontroller (no bus to listen to, unlike the CD-S300), so there are two
+ways in:
 
-**The photos** (into `docs/images/`, reduced to 2400 px; full size in `docs/images-originais/`, out of git):
+| Way | What it gives | Cost |
+|---|---|---|
+| **A. The mode pins** of the microcontroller (5 V logic) | The transport (motor, solenoid, bias, line mute, rec/play select), the reel pulse, and the port expander's 2-wire bus (tape type) | About 8 wires on the chip's legs, each with a divider |
+| **B. The display lines** on the flat (19 lines, +4.8 to −21 V) | Everything the display shows: the counter as shown, the peak meters, every indicator | 19 wires, each with a level shifter that must not load the display (off-level drive to be measured first) |
+
+**Start with A.** It answers the first goal except the counter, with few wires and plain logic. The counter can be
+kept by the bridge from the reel pulse (and reset with `counter_reset`), close enough for "where on the tape". **B
+is the second phase**, if the true counter or the meters are wanted (the meters are the VU-source idea).
+
+Power (on or standby) needs one more line either way: `P10` on the flat (the meter scale, at 4.4 V while the display is
+on, off in standby) through a level shifter, or a 5 V signal that only lives while on (to find on the bench).
+
+## The wiring (planned)
+
+### On the front board, at the flat's joints (`CB8`)
+
+| Wire | `CB8` line | Pico pin | What for |
+|---|---|---|---|
+| Ground | `G` (line 1 or 5) | 3 (GND) | Common ground |
+| `REM` | line 4 | 9 (GP6) | Send the remote's keys: pull low only, against the sensor's output, as on the SP103 |
+| `KEY1` | line 2 | 10 (GP7) | Press STANDBY/ON: pull low only, against 10 kΩ |
+| `+5V` | line 6 | 39 (VSYS) | Power the Pico, also in standby (see "Power on and off") |
+
+`KEY1` and `KEY2` could also be read (through a divider into an ADC pin) to see which panel key was pressed: that
+tells FF from REW and catches COUNTER RESET from the panel. Optional.
+
+### On the main board, at the microcontroller's legs (`IC12`)
+
+Each through a 10 kΩ / 20 kΩ divider (5 V to 3.3 V), unless step 3 shows the RP2350's 5 V tolerance is enough.
+
+| Pin | Signal | Pico pin | Why |
+|---|---|---|---|
+| 23 | Capstan motor | GP8 | Tape moving |
+| 24 | Solenoid | GP9 | Heads engaged |
+| 21 | Bias | GP10 | Recording |
+| 27 | Line mute | GP11 | Winding, rec pause |
+| 32 | Rec/PB select | GP12 | Rec pause or recording |
+| 7 | Reel pulse | GP13 | The counter, winding against playing |
+| 19 | Expander clock | GP14 | Tape type (PIO sniffer) |
+| 20 | Expander data | GP15 | Tape type |
+
+Later, if wanted: 29 and 30 (Dolby), 31 (MPX), 28 (rec mute), 26 (head select).
+
+**Rule:** with the `+5V` wire on VSYS, never plug the Pico into a computer's USB: USB would feed the deck's logic.
+Updates go over Wi-Fi.
+
+## Power on and off
+
+From the schematic: the transformer is always on, the AN78N05 (`IC14`) keeps the +5 V up in standby, and STANDBY/ON
+grounds `KEY1`. So:
+
+- **The Pico lives in standby** on the deck's +5 V, and stays on the network.
+- **`power_toggle` presses STANDBY/ON** by pulling `KEY1` low for 200 ms (`firmware/panel.py`). The remote has no
+  power code.
+- To check: the AN78N05 is a 300 mA regulator fed from 13 V; the Pico adds up to about 0.75 W to it. Feel or measure
+  its temperature after an hour with the Pico on. If it runs hot, feed the Pico from `VB` (26.6 V) through a small
+  buck converter.
+
+## Step 1: photos
+
+The service manual is here (2026-11-17, `docs/manual/`). The photos (into `docs/images/`, reduced to 2400 px; full
+size in `docs/images-originais/`, out of git):
 
 | Photo | Why |
 |---|---|
 | Front, rear and the label | Model, voltage, serial, date |
-| Inside, from above, case off | Board layout, which board holds what |
-| Each board's solder side that can be seen without unscrewing | Joints for the wires |
-| The display board from behind, and its cable to the main board | How the display is driven |
-| The microcontroller, close enough to read its marking | Its part number and pin 1 |
-| The remote sensor from behind, its legs | Where the IR wire goes |
-| The power supply and transformer, and any small second transformer | What lives in standby |
-| Every connector between boards, with its silkscreen | Where to measure |
-| The display lit, with a cassette playing | Which indicators exist on this unit |
+| Inside, from above, case off | Which board is where |
+| The microcontroller (`IC12`), close enough to read its marking, and its legs from the solder side | Package (through-hole?) and pin 1 |
+| The 27-way flat at both ends (`CB7`, `CB8`) and `CB8`'s joints from the solder side | Where the front-side wires go, line 1's end |
+| The remote sensor (`U1`) and the front board behind the display | The `REM` path |
+| The STANDBY/ON board (`SW1`) and its wires | The `KEY1` path |
+| The power supply: `IC14` with its heatsink (if any), `T501` | Room for the Pico's current |
+| The display lit, with a cassette playing | The indicators on this unit |
 
-## Step 2: where the state comes from (decide after step 1)
+## Step 2: multimeter
 
-Two ways in, chosen from the service manual's "µ-COM data" and "display data" pages:
+With an illustrated guide page (as for the CD-S300, `cds300-mod/docs/measurement-guide.html`), built on the photos:
 
-| Way | When | Cost |
-|---|---|---|
-| **A. The display bus** | The display has its own driver chip (an FL driver with a serial bus, as on the CD-S300): the Pico listens to 3 or 4 logic lines with the PIO | Like the CD-S300: a sniffer and a parser |
-| **B. The display lines** | The microcontroller drives the glass directly (grids and segments, high voltage, multiplexed) | Many lines at up to −30 V: needs level shifting on each. Probably not worth it |
-| **C. The microcontroller's lines** | B, or to add to A: the transport (motor, solenoid or mode switch), the reel pulse (counter), cassette in, record tabs, tape type, Dolby | A few logic lines, each with a divider if 5 V |
+1. **The mode table:** pins 21, 23, 24, 26, 27, 28 and 32 in stop, play, FF, REW, search, rec pause and rec. Settles
+   which of the two printed tables is right (`docs/research.md`).
+2. The `CB8` map: which joint is which line (beeps to the microcontroller's pins), line 1's end.
+3. `+5V` on and in standby, `REM` at rest, `KEY1` at rest and with each key pressed (checks the ladder).
+4. `P10` and one grid line, on and in standby, against ground: the display lines' levels.
+5. The `IC14` temperature with a 100 mA load (later, with the Pico on).
 
-A is the hope. C alone gives the transport and the cassette, but not the counter as shown or the peak meters.
+## Step 3: logic analyzer
 
-## Step 3: multimeter
+1. The port expander's bus (pins 19 and 20) while loading normal, CrO2 and metal tapes: the bit order and the frame.
+2. The reel pulse (pin 7) while playing and winding: pulses per counter step, and the rates.
+3. For way B later: one grid and one anode line through a divider, to see the multiplex timing.
 
-With an illustrated guide page (as for the CD-S300, `cds300-mod/docs/measurement-guide.html`), built once the photos
-and the schematic say where. At least:
-
-1. The logic voltage on the lines the Pico would use, and the remote sensor's output at rest.
-2. The supply the Pico would take, on and in standby.
-3. Which sensor leg is the output (continuity to the microcontroller's remote input).
-
-## Step 4: logic analyzer
-
-If way A: one capture of the display bus while playing, as on the CD-S300 (`cds300-mod/docs/protocol.md`). With 5 V
-lines, through dividers.
-
-## Step 5: the program
+## Step 4: the program
 
 1. **The bridge base**: done (2026-11-17). Cable-free Wi-Fi setup (`AmpLink-KX393-XXXX`, key `amplink-setup`),
    discovery, updates over Wi-Fi, from the shared base (`device-link`, `firmware-base/`).
-2. **`/device`**: done, with no state fields and the five known keys.
-3. **The remote keys and `/control`**: done in code, not tested on the deck. NEC 7A/85 (`firmware/ir_codes.py`).
-4. **The missing codes**: `POST /ir/send?code=XX` sends any command byte; `tools/ir_sweep.py` walks the likely ones
-   and logs what the deck did. Once the IR wire is in.
-5. **The state reader**: after steps 2 to 4.
-
-## Power on and off (open)
-
-The deck has a standby, unlike the CD-S300. What the schematic has to answer:
-
-- Is STANDBY/ON a key read by the microcontroller, with a relay for the main supply? Then the microcontroller (and the
-  remote sensor) run in standby, and the deck can be switched on by a code, or by pressing the key's line.
-- Does the standby supply have room for the Pico (up to about 100 mA at 5 V with Wi-Fi)? If yes, the Pico lives in
-  standby and the bridge knows `power` (on or standby). If not, the Pico takes the main 5 V and leaves the network in
-  standby, as the CD-S300 does when switched off.
-- Does the RKX1 have a power code at all? It has no POWER key in the manual's drawing.
+2. **`/device`**: done, with the 11 remote keys and `power_toggle`, and no state fields yet.
+3. **The remote keys and `/control`**: done in code, not tested. **First test on the deck: the address**
+   (`tools/ir_try.py`: PLAY at 7F, then at 7A), then each key once.
+4. **`power_toggle`**: done in code (`panel.py`), not tested.
+5. **The state reader** (way A): after steps 2 and 3.
 
 ## Ideas
 
 | Idea | What it is | Needs |
 |---|---|---|
-| Record the CD | The CD-S300 bridge starts the disc, the KX-393 bridge goes from rec-pause to record: CD synchronised recording over Wi-Fi | The central point; the transport known on both |
+| Record the CD | The CD-S300 bridge starts the disc, the KX-393 bridge goes from rec pause to record: CD synchronised recording over Wi-Fi | The central point; the transport known on both |
 | Amp follows the deck | Play on the deck switches the amp on and selects TAPE | The central point |
-| VU source | The peak meters, read from the display, as the VU source for the SP103 and MR 780 | Way A, if the meters are in the bus |
-| Counter to time | The counter counts reel turns; with the tape length it becomes minutes left | The counter |
+| VU source | The peak meters, from the display lines, as the VU source for the SP103 and MR 780 | Way B |
+| Counter to time | The counter counts reel turns; with the tape length it becomes minutes left | The reel pulse |
 | Tape library | Name a cassette once (`groove-catalog`), with the counter readings of its songs | The counter |
-| Auto stop at the end | Stop and rewind when the tape ends (the deck stops by itself; the bridge only rewinds) | The transport |
+| Rewind at the end | When the tape ends (the deck stops by itself), rewind | The transport |
 
 ## Open questions
 
-- Everything in step 2 and "Power on and off".
-- The missing remote codes.
-- Whether the RKX1 itself turns up: with it, the codes come from a capture instead of a sweep.
+- The remote's address: 7F (the manual) or 7A (the captured codes).
+- The mode table: the KX-393's or the KX-493's levels.
+- Whether `IC12` is through-hole on this unit.
+- Whether the AN78N05 has room for the Pico.
+- How strongly the display lines are pulled to −21 V when off (decides whether way B is safe to tap).
 
 ## Wire log
 
