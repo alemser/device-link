@@ -60,12 +60,14 @@ every line, `docs/research.md`) would need the bottom cover off.
 `G`, `F`, `F`, `P10` … `P2`) and 13 for the even ones (`KEY1`, `REM`, `+5V`, `G9` … `P1`). The wires go on the first
 three joints of each row at the line 1 end. The beeper finds that end before anything is soldered (step 2).
 
-| Wire | `CB8` line | Pico pin | What for |
-|---|---|---|---|
-| Ground | `G` (line 1 or 5) | 3 (GND) | Common ground |
-| `REM` | line 4 | 9 (GP6) | Send the remote's keys: pull low only, against the sensor's output, as on the SP103 |
-| `KEY1` | line 2 | 10 (GP7) | Press STANDBY/ON: pull low only, against 10 kΩ |
-| `+5V` | line 6 | 39 (VSYS) | Power the Pico, also in standby (see "Power on and off") |
+Confirmed on 2026-11-17 (`docs/measurements.md`): line 1 is the left end, looking at the front board from behind.
+
+| Wire | `CB8` line | `CB8` joint (from the left) | Pico pin | What for |
+|---|---|---|---|---|
+| Ground | `G` (line 1) | top 1 | 3 (GND) | Common ground |
+| `REM` | line 4 | bottom 2 | 9 (GP6) | Send the remote's keys: pull low only, against the sensor's output, as on the SP103 |
+| `KEY1` | line 2 | bottom 1 | 10 (GP7) | Press STANDBY/ON: pull low only, against 10 kΩ |
+| `+5V` | line 6 | bottom 3 | 39 (VSYS) | Power the Pico, also in standby (see "Power on and off") |
 
 Line 7 (`F`, the filament, about −16 V) is the joint after line 5 on the odd row, diagonally next to `+5V`. Check 6
 against 7 with the beeper after soldering.
