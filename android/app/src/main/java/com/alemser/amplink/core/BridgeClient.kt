@@ -54,15 +54,6 @@ class BridgeClient(val host: String) {
         post("/control?target=key&name=${java.net.URLEncoder.encode(key, "UTF-8")}")
     }
 
-    /** The values a person may change. */
-    suspend fun settings(): JsonObject = Wire.parseToJsonElement(send(request("/settings"))).jsonObject
-
-    /** Changes only the given settings; answers all of them. */
-    suspend fun patchSettings(changes: JsonObject): JsonObject {
-        val body = changes.toString().toRequestBody(JSON)
-        return Wire.parseToJsonElement(send(request("/settings").newBuilder().patch(body).build())).jsonObject
-    }
-
     /** The running firmware (`GET /update`). */
     suspend fun updateStatus(): UpdateStatus = decode(send(request("/update")))
 
@@ -153,7 +144,6 @@ class BridgeClient(val host: String) {
     private suspend fun send(request: Request): String = http.fetch(request)
 
     private companion object {
-        val JSON = "application/json".toMediaType()
         val OCTETS = "application/octet-stream".toMediaType()
         const val CONNECT_TIMEOUT_S = 5L
 

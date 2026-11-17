@@ -4,7 +4,6 @@ import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonNamingStrategy
-import kotlinx.serialization.json.JsonPrimitive
 
 /** The JSON of the DeviceLink contract (docs/contract-v2.md). A missing or null field means "not known". */
 @OptIn(ExperimentalSerializationApi::class)
@@ -19,7 +18,7 @@ val Wire: Json = Json {
 /** The DeviceLink contract (docs/contract-v2.md): the device describes itself and the app builds its screen. */
 const val DEVICELINK_API = 2
 
-/** `GET /device` in api 2: what the device is, its state fields, its remote and its settings. */
+/** `GET /device` in api 2: what the device is, its state fields and its remote. */
 @Serializable
 data class Description(
     val api: Int,
@@ -31,7 +30,6 @@ data class Description(
     val features: List<String> = emptyList(),
     val state: List<StateField> = emptyList(),
     val controls: List<ControlGroup> = emptyList(),
-    val settings: List<SettingField> = emptyList(),
 ) {
     fun has(feature: String) = feature in features
 }
@@ -71,27 +69,6 @@ data class Select(val state: String? = null, val options: List<SelectOption> = e
 
 @Serializable
 data class SelectOption(val id: String, val name: String, val key: String)
-
-/** A value a person may change (`GET`/`PATCH /settings`). */
-@Serializable
-data class SettingField(
-    val id: String,
-    val type: String,
-    val label: String? = null,
-    val group: String? = null,
-    val max: Double? = null,
-    val min: Double? = null,
-    val step: Double? = null,
-    val charset: String? = null,
-    val values: List<String> = emptyList(),
-    /** Words to show for [values], in the same order (enum); the values themselves when absent. */
-    val labels: List<String> = emptyList(),
-    val hint: String? = null,
-    /** Shown only while these settings have these values. */
-    val `when`: Map<String, JsonPrimitive> = emptyMap(),
-    /** What the device shows while the text is empty (its own text). */
-    val placeholder: String? = null,
-)
 
 /** `GET /update`: the running firmware and each file's sha256. */
 @Serializable

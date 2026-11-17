@@ -1,45 +1,50 @@
 # DeviceLink contract, `api` 2
 
 **2026-11-17.** The one contract between the bridges and the DeviceLink app. It replaced `api` 1 (the amplifier-only
-contract, removed on 2026-11-17; it is in the git history). Spoken by the Yamaha CD-S300 (keys, no settings, since
-2026-11-16), the Acoustic Solutions SP103 (steps, switches, a select and 25 settings, since 2026-11-17) and the Magnat
-MR 780 bridge (no state or controls yet, not installed).
+contract, removed on 2026-11-17; it is in the git history). Spoken by the Yamaha CD-S300 (keys, since 2026-11-16), the
+Acoustic Solutions SP103 (steps, switches and a select, since 2026-11-17), the Magnat MR 780 bridge (no state or
+controls yet, not installed) and the Yamaha KX-393 bridge (no hardware yet).
 
 A **device** is a piece of equipment with a Pico inside (the **bridge**). The **app** (DeviceLink) finds every device on
-the home Wi-Fi, shows them in one list, and builds each device's screen from what the device says about itself: its
-state, its remote, and the settings a person may change. Adding a device type means writing its bridge; the app needs no
-change unless the device brings a new kind of control.
+the home Wi-Fi, shows them in one list, and builds each device's screen from what the device says about itself: **what
+it is, its state and its remote (IR)**. Nothing more: the contract is the same lean one for every device, the one the
+CD-S300 set. Adding a device type means writing its bridge; the app needs no change unless the device brings a new
+kind of control.
+
+What is particular to one device (the SP103's display texts, VU meter and info screens) stays out of the contract. Such
+a bridge serves [its own page](#a-devices-own-page) for it; the app neither shows nor links it.
 
 ## Goals
 
 1. **Plug in and it shows up.** A device on the Wi-Fi answers discovery; the app lists it within seconds, marked new
    the first time.
-2. **Self-describing.** `GET /device` says what the device is, what its state holds, which controls it takes and which
-   settings can be changed. The app renders from that, not from a per-model screen.
-3. **Light enough for a Pico.** Every answer is small and built once: the description is serialised on the first
-   request and served as stored bytes (the CD-S300's is about 1 KB, the SP103's, with its settings, about 5.5 KB), the
-   state is under 0.5 KB, and nothing is computed per request that could be cached.
+2. **Self-describing.** `GET /device` says what the device is, what its state holds and which controls it takes. The
+   app renders from that, not from a per-model screen.
+3. **The same lean interface everywhere.** Device information, state and remote; no per-device configuration.
+4. **Light enough for a Pico.** Every answer is small and built once: the description is serialised on the first
+   request and served as stored bytes (the CD-S300's is about 1 KB, the SP103's about 1.7 KB), the state is under
+   0.5 KB, and nothing is computed per request that could be cached.
 
 ## Routes
 
 | Route | Group | Notes |
 |---|---|---|
 | UDP `DEVICELINK?` on port 47800 | core | [Discovery](#discovery) |
-| `GET /device` | core | The description. Changes only when the bridge restarts or when a setting it shows changes (the SP103's input names in its input chips); the app reads it on opening the device |
+| `GET /device` | core | The description. Changes only when the bridge restarts or when the device's own page renames something it shows (the SP103's input names in its input chips); the app reads it on opening the device |
 | `GET /state`, `GET /events` | core | The state, once or as Server-Sent Events |
 | `POST /control` | `control` | Keys, steps, switches |
-| `GET /settings`, `PATCH /settings` | `settings` | The values a person may change |
 | `GET /update` and the upload routes | `update` | Firmware over Wi-Fi (`firmware-base/firmware/ota.py`) |
 | `GET /wifi` and the setup routes | `wifi_setup` | [Wi-Fi setup](#wi-fi-setup-wifi_setup) |
 
-A bridge may have routes of its own for diagnosis with curl (the SP103's `/status`, `/bus`, `/ir`); the app doesn't use
-them.
+A bridge may have routes of its own, outside the contract: for diagnosis with curl (the SP103's `/status`, `/bus`,
+`/ir`) and for [its own page](#a-devices-own-page) (the SP103's `/settings`). The app doesn't use them.
 
 ## Transport
 
 - HTTP/1.1 without TLS, on the local network only, no authentication. Don't count on `.local` names: the app finds a
   bridge by discovery and keeps its IP.
-- The bridge has only an API. The only page is the Wi-Fi setup page, and only with the setup network open.
+- The contract is an API only. A bridge's pages are its own: the Wi-Fi setup page (at `/`, only with the setup network
+  open) and, where a device has extras, [its own page](#a-devices-own-page).
 - Every answer closes the connection (`Connection: close`), except `/events`.
 - JSON answers, with `Cache-Control: no-store` and `Access-Control-Allow-Origin: *`.
 - Errors: `400` (or `403`, `404`) with `{"error": "text"}`, in English, ready to show as they are.
@@ -76,8 +81,7 @@ a device switched on appears without a refresh, and one switched off is greyed a
    {"group": "modes", "keys": ["repeat", "shuffle", "repeat_a_b", "program", "display", "dimmer"]},
    {"group": "numbers", "keys": ["digit_1", "digit_2", "digit_3", "digit_4", "digit_5", "digit_6", "digit_7",
                                  "digit_8", "digit_9", "digit_0", "enter", "clear"]},
-   {"group": "source", "keys": ["cd_usb", "pure_direct", "folder_down", "folder_up"]}],
- "settings": []}
+   {"group": "source", "keys": ["cd_usb", "pure_direct", "folder_down", "folder_up"]}]}
 ```
 
 | Field | Meaning |
@@ -90,7 +94,9 @@ a device switched on appears without a refresh, and one switched off is greyed a
 | `features` | Optional route groups present on this bridge |
 | `state` | The state fields worth showing, in display order (below) |
 | `controls` | The remote, in groups, in display order (below) |
-| `settings` | What a person may change (below); empty or absent when nothing is |
+
+That is the whole description. (Until 2026-11-17 it also had `settings`; the app ignores the field from an older
+bridge.)
 
 ### State fields
 
@@ -132,35 +138,21 @@ when `power` is unknown.
 Group names the app knows and lays out on purpose: `power`, `transport`, `volume`, `input`, `tone`, `modes`, `numbers`,
 `source`. Any other group is shown as a plain row of buttons, in order.
 
-### Settings
+## A device's own page
 
-What a person may change, for example the SP103's input names and boot text, or the VU source. Each setting:
+What only one device has, and what changes how the device itself behaves rather than what it plays, stays out of the
+contract: the SP103's input names, boot and about screens, VU meter and info screens, for instance. A bridge with such
+extras serves its own web page, opened in a browser at the bridge's IP:
 
-```json
-{"id": "inputs.TUNER", "type": "text", "label": "TUNER", "max": 16, "charset": "lcd", "group": "Input names"}
-```
+- At `/` (while the setup network is open, `/` is the Wi-Fi setup page instead) and at a fixed path of its own that
+  always answers (the SP103's `/config`).
+- Over routes of its own (the SP103's `GET`/`PATCH /settings`, `GET /settings/fields`), documented in the device's
+  repository. Nothing in this contract depends on them, and they may change with the bridge.
+- The page is part of the bridge's firmware (a `.py` holding the HTML, so it goes in the same updates), small (under
+  6 KB) and sent in chunks like any answer.
 
-| `type` | Extra |
-|---|---|
-| `text` | `max` (characters), `charset` (`lcd`: ASCII from space to `}`, no `\`) |
-| `bool` | |
-| `enum` | `values`, and optionally `labels` (the words to show, in the same order) |
-| `int` | `min`, `max`, `step` |
-| `ip` | IPv4, or empty |
-
-Any setting may also carry:
-
-| Field | Meaning |
-|---|---|
-| `group` | The heading it goes under, in order |
-| `hint` | A short text shown under it |
-| `when` | `{"<id>": value, ...}`: shown only while those settings have those values (the SP103's VU layout only with the VU on) |
-| `placeholder` | For `text`: what the device shows while the text is empty (its own text, such as `ACOUSTIC`) |
-
- `GET /settings` answers `{"<id>": value, ...}`. `PATCH /settings`
-takes only the ids that change and answers the full object, or `400 {"error": "...", "id": "<id>"}` naming the id that
-was refused (without `id` when the refusal is about several together); nothing left out is reset. The app waits 1 s
-after the last edit before sending: each write goes to flash.
+The app doesn't show, read or link these. A change made there reaches the app only through the contract: as state (the
+display's `lcd` lines) or, rarely, a new description (the SP103's input chips carry the input names chosen on its page).
 
 ## `GET /state` and `GET /events`
 
@@ -229,17 +221,20 @@ with that prefix (`WifiNetworkSpecifier`) and the system shows the matching ones
    bridge's network memory and can freeze it for 10 s.
 3. **With nothing for 5 s, consider the state unknown** and reconnect with a growing wait, from 1 s to 30 s.
 4. **The other routes are on demand:** one request when opening the screen or the section, no repeating.
-5. **Wait at least 1 s after the last edit before `PATCH /settings`.**
-6. **Don't treat `null` as off.** After a bridge restarts with its device in standby, `power` stays `null`.
-7. **Discovery repeats every 5 s, but only while the device list is visible.**
+5. **Don't treat `null` as off.** After a bridge restarts with its device in standby, `power` stays `null`.
+6. **Discovery repeats every 5 s, but only while the device list is visible.**
 
 ## Decided (2026-11-16 and 17)
 
 - Firmware releases live in each device's own repository, named by `/device` `firmware`.
 - Updates take no password.
-- The SP103 moved to `api` 2: its `/names` configuration became `/settings` (2026-11-17).
+- The SP103 moved to `api` 2 (2026-11-17).
 - `api` 1 was removed from the bridges and the app on 2026-11-17 (the `AMPLINK?` probe, `/names`, the amplifier tabs).
+- **The contract is the lean one the CD-S300 set: device, state and remote (2026-11-17).** The `settings` field and
+  route group left the contract and the app; the SP103 keeps its display configuration, now on [its own
+  page](#a-devices-own-page). `api` stays 2: an older app shows no settings for a bridge that sends none, and this app
+  ignores `settings` from an older bridge.
 
 ## Open
 
-- The `kind` values beyond the three devices built so far.
+- The `kind` values beyond the devices built so far.

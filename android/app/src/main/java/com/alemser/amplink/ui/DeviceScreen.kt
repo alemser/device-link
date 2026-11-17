@@ -25,7 +25,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -46,30 +45,24 @@ import com.alemser.amplink.core.ControlGroup
 import com.alemser.amplink.core.Description
 import com.alemser.amplink.core.Feed
 import com.alemser.amplink.core.Release
-import com.alemser.amplink.core.SettingField
 import com.alemser.amplink.core.StateField
 import com.alemser.amplink.core.UpdateStep
 import com.alemser.amplink.core.WifiSetupClient
-import com.alemser.amplink.core.isIpv4
-import com.alemser.amplink.core.lcdText
 import com.alemser.amplink.core.Updater
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.booleanOrNull
-import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.contentOrNull
-import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.longOrNull
 import java.io.IOException
 
 /**
  * An api 2 device's screen, built from its description (docs/contract-v2.md): the state fields, the remote by group,
- * the settings, and the firmware. The only place that keeps this device's `/events` open.
+ * and the firmware. The only place that keeps this device's `/events` open.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -159,7 +152,6 @@ private fun DeviceBody(client: BridgeClient, description: Description, modifier:
         commands.error?.let { Hint(it, MaterialTheme.colorScheme.error) }
         val units = description.state.associate { it.id to it.unit }
         description.controls.forEach { group -> ControlSection(group, state, commands, client, units) }
-        if (description.settings.isNotEmpty()) SettingsSection(client, description.settings)
         if (description.has("update") && description.firmware != null) {
             FirmwareSection(client, description.firmware, description.bridgeVersion)
         }
@@ -297,86 +289,6 @@ private fun groupTitle(group: String): String = when (group) {
     "input" -> "Input"
     "tone" -> "Tone and balance"
     else -> group.replace('_', ' ').replaceFirstChar { it.uppercase() }
-}
-
-// ---------------------------------------------------------------- settings
-
-/** Edits wait 1 s after the last change before the PATCH: each write goes to the device's flash. */
-@Composable
-private fun SettingsSection(client: BridgeClient, fields: List<SettingField>) {
-    var values by remember(client) { mutableStateOf<JsonObject?>(null) }
-    var pending by remember(client) { mutableStateOf<Map<String, JsonElement>>(emptyMap()) }
-    var error by remember(client) { mutableStateOf<String?>(null) }
-    LaunchedEffect(client) {
-        values = runCatching { client.settings() }.onFailure { error = it.message }.getOrNull()
-    }
-    LaunchedEffect(pending) {
-        if (pending.isEmpty()) return@LaunchedEffect
-        delay(1_000)
-        try {
-            values = client.patchSettings(JsonObject(pending))
-            pending = emptyMap()
-            error = null
-        } catch (e: IOException) {
-            error = e.message
-        }
-    }
-    fun valueOf(id: String) = pending[id] ?: values?.get(id)
-    // A setting with "when" shows only while those settings have those values (the VU layout only with the VU on).
-    val shown = fields.filter { f -> f.`when`.all { (id, v) -> valueOf(id) == v } }
-    shown.groupBy { it.group ?: "Settings" }.forEach { (title, group) ->
-        Section(title) {
-            group.forEach { field ->
-                val current = valueOf(field.id)
-                val text = (current as? JsonPrimitive)?.contentOrNull.orEmpty()
-                when (field.type) {
-                    "bool" -> SwitchRow(field.label ?: field.id, (current as? JsonPrimitive)?.booleanOrNull ?: false) {
-                        pending = pending + (field.id to JsonPrimitive(it))
-                    }
-                    "enum" -> Column {
-                        field.label?.let { Text(it) }
-                        FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            field.values.forEachIndexed { i, v ->
-                                FilterChip(selected = v == text, onClick = { pending = pending + (field.id to JsonPrimitive(v)) },
-                                    label = { Text(field.labels.getOrNull(i) ?: stateWord(v)) })
-                            }
-                        }
-                    }
-                    "int" -> {
-                        val n = (current as? JsonPrimitive)?.longOrNull
-                        val step = (field.step ?: 1.0).toLong().coerceAtLeast(1)
-                        Stepper(
-                            field.label ?: field.id,
-                            n?.toString() ?: "—",
-                            n != null && (field.min == null || n - step >= field.min),
-                            n != null && (field.max == null || n + step <= field.max),
-                            onDown = { if (n != null) pending = pending + (field.id to JsonPrimitive(n - step)) },
-                            onUp = { if (n != null) pending = pending + (field.id to JsonPrimitive(n + step)) },
-                        )
-                    }
-                    "ip" -> IpField(field.label ?: field.id, text, text.isNotEmpty() && !isIpv4(text), "192.168.1.50") {
-                        pending = pending + (field.id to JsonPrimitive(it))
-                    }
-                    else -> OutlinedTextField(
-                        value = text,
-                        onValueChange = { typed ->
-                            val limit = field.max?.toInt() ?: Int.MAX_VALUE
-                            val clipped = if (field.charset == "lcd") lcdText(typed, limit) else typed.take(limit)
-                            pending = pending + (field.id to JsonPrimitive(clipped))
-                        },
-                        label = { Text(field.label ?: field.id) },
-                        placeholder = field.placeholder?.let { { Text(it) } },
-                        supportingText = field.max?.let { max -> { Text("${text.length}/${max.toInt()}") } },
-                        singleLine = true,
-                        modifier = Modifier.fillMaxWidth(),
-                    )
-                }
-                field.hint?.let { Hint(it) }
-            }
-        }
-    }
-    // Once, under the sections: the bridge's own message, which names the setting it refused.
-    error?.let { Hint(it, MaterialTheme.colorScheme.error) }
 }
 
 // ---------------------------------------------------------------- firmware

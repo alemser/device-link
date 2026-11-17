@@ -11,9 +11,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
@@ -27,7 +25,6 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontFamily
-import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -173,18 +170,4 @@ fun Stepper(label: String, value: String, canDown: Boolean, canUp: Boolean, onDo
         Text(value, Modifier.padding(horizontal = 4.dp), textAlign = TextAlign.Center)
         TextButton(onClick = onUp, enabled = canUp) { Text("+", style = MaterialTheme.typography.titleLarge) }
     }
-}
-
-@Composable
-fun IpField(label: String, value: String, isError: Boolean, placeholder: String? = null, onChange: (String) -> Unit) {
-    OutlinedTextField(
-        value = value,
-        onValueChange = { text -> onChange(text.filter { it.isDigit() || it == '.' }) },
-        label = { Text(label) },
-        placeholder = placeholder?.let { { Text(it) } },
-        isError = isError,
-        singleLine = true,
-        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
-        modifier = Modifier.fillMaxWidth(),
-    )
 }

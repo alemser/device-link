@@ -18,8 +18,7 @@ class DescriptionTest {
                    {"label": "Time", "id": "media.elapsed_s", "type": "duration"},
                    {"label": "Display", "id": "lcd", "type": "lines"}],
          "controls": [{"group": "transport", "keys": ["previous", "play", "stop"]},
-                      {"group": "modes", "keys": ["repeat", {"key": "repeat_a_b", "label": "A-B"}]}],
-         "settings": []}
+                      {"group": "modes", "keys": ["repeat", {"key": "repeat_a_b", "label": "A-B"}]}]}
     """
 
     @Test
@@ -34,7 +33,6 @@ class DescriptionTest {
         assertEquals(listOf(KeyRef("previous"), KeyRef("play"), KeyRef("stop")), d.controls[0].keys)
         // A key may carry its own label.
         assertEquals(KeyRef("repeat_a_b", "A-B"), d.controls[1].keys[1])
-        assertTrue(d.settings.isEmpty())
     }
 
     @Test
@@ -60,13 +58,6 @@ class DescriptionTest {
         assertEquals("input_id", input.state)
         assertEquals(SelectOption("tape_aux", "TAPE/AUX", "select_tape_aux"), input.options[2])
         assertEquals(listOf("loudness", "speakers"), d.controls[4].switches.map { it.target })
-        val byId = d.settings.associateBy { it.id }
-        assertEquals("lcd", byId["inputs.TUNER"]!!.charset)
-        assertEquals(16.0, byId["inputs.TUNER"]!!.max)
-        assertEquals(listOf("For a few seconds", "All the time"), byId["info.mode"]!!.labels)
-        assertEquals("int", byId["info.secs"]!!.type)
-        assertEquals(3.0, byId["info.secs"]!!.min)
-        assertEquals("ip", byId["vu.relay"]!!.type)
         assertEquals("dB", d.state.first { it.id == "balance.db" }.unit)
     }
 
