@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The app's own update, downloaded into the cache and handed to Android's installer (AppUpdateBanner.kt). -->
+<paths>
+    <cache-path name="updates" path="updates/" />
+</paths>

@@ -3,9 +3,9 @@
 
 Run from the project folder (the one with firmware/ and tools/), or pass it:
 
-    python3 ../amp-link/firmware-base/copiar.py                # copies what changed
-    python3 ../amp-link/firmware-base/copiar.py --check        # only checks; fails if anything differs
-    python3 ../amp-link/firmware-base/copiar.py --skip firmware/main.py    # leaves that file as it is
+    python3 ../device-link/firmware-base/copiar.py                # copies what changed
+    python3 ../device-link/firmware-base/copiar.py --check        # only checks; fails if anything differs
+    python3 ../device-link/firmware-base/copiar.py --skip firmware/main.py    # leaves that file as it is
 
 The files go byte for byte. A copy that differs from the base means someone changed it in the project: take the
 change to the base before copying, because the copy overwrites it. The old Portuguese flags (--conferir, --sem) still

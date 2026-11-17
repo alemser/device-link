@@ -76,6 +76,7 @@ fun DevicesScreen(
     ) {
         Text("DeviceLink", style = MaterialTheme.typography.headlineMedium, modifier = Modifier.padding(top = 16.dp))
         LinearProgressIndicator(Modifier.fillMaxWidth().alpha(if (searching) 1f else 0f))
+        AppUpdateBanner()
         if (devices.isEmpty()) {
             Text("Looking for devices on this Wi-Fi")
             Hint("The phone must be on the same Wi-Fi as the devices. A device that isn't on the Wi-Fi yet opens its own setup network.")

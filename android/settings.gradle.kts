@@ -12,5 +12,5 @@ dependencyResolutionManagement {
         mavenCentral()
     }
 }
-rootProject.name = "amp-link"
+rootProject.name = "device-link"
 include(":app")

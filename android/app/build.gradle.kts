@@ -5,6 +5,16 @@ plugins {
     alias(libs.plugins.kotlin.serialization)
 }
 
+/**
+ * The version is the number of commits in this repository: it only grows, so a newer build is always a larger
+ * versionCode, which is what the app's self-update compares (core/AppUpdate.kt, tools/publish_app.py).
+ */
+val commits: Int = try {
+    providers.exec { commandLine("git", "rev-list", "--count", "HEAD") }.standardOutput.asText.get().trim().toInt()
+} catch (e: Exception) {
+    1
+}
+
 android {
     namespace = "com.alemser.amplink"
     compileSdk = 36
@@ -13,8 +23,8 @@ android {
         applicationId = "com.alemser.amplink"
         minSdk = 26
         targetSdk = 36
-        versionCode = 1
-        versionName = "0.1"
+        versionCode = commits
+        versionName = "1.$commits"
     }
 
     compileOptions {
@@ -24,6 +34,7 @@ android {
 
     buildFeatures {
         compose = true
+        buildConfig = true
     }
 
     testOptions {

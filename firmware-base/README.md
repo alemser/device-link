@@ -28,8 +28,8 @@ MicroPython runs the copy.
 From the bridge's project folder:
 
 ```sh
-python3 ../amp-link/firmware-base/copiar.py           # copies what changed
-python3 ../amp-link/firmware-base/copiar.py --check   # only checks
+python3 ../device-link/firmware-base/copiar.py           # copies what changed
+python3 ../device-link/firmware-base/copiar.py --check   # only checks
 ```
 
 Then the project's tests, and a commit of the copies in its repository.

@@ -24,7 +24,7 @@ import com.alemser.amplink.ui.DeviceScreen
 import com.alemser.amplink.ui.DevicesScreen
 import com.alemser.amplink.ui.WifiSetupScreen
 
-private const val PREFS = "amp-link"
+private const val PREFS = "amp-link"     // the old name, kept: the saved device list lives under it
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {

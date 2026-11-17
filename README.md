@@ -1,4 +1,4 @@
-# amp-link (DeviceLink)
+# device-link (DeviceLink)
 
 What links the modified audio devices to everything else: the contract, the shared bridge firmware and the Android app,
 now called **DeviceLink**.
@@ -31,6 +31,12 @@ export JAVA_HOME=/opt/homebrew/opt/openjdk@17/libexec/openjdk.jdk/Contents/Home
 android/gradlew -p android testDebugUnitTest assembleDebug
 adb install -r android/app/build/outputs/apk/debug/app-debug.apk
 ```
+
+**Updates without a cable.** `python3 tools/publish_app.py` (after commit and push) builds the APK and publishes it as
+the release `app-<n>` of this repository, where `n` is the commit count. Every installed app below `n` shows "App update
+available" on its device list; Android asks to confirm, and the first time, to allow installs from DeviceLink. The APK
+is signed with this computer's debug key (`~/.android/debug.keystore`): keep a copy, since Android only accepts an
+update signed with the same key.
 
 The app's tests run against a fake device (MockWebServer) with the SP103's real description
 (`android/app/src/test/resources/sp103-device.json`, written by sp103-mod's `firmware/device.py`).
