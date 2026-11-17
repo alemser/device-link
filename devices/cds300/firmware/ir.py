@@ -15,7 +15,7 @@ The PIO holds the line at 0 only for a counted time. While waiting for the next 
 DMA stopped midway, the line would not stay stuck at 0 and the real remote keeps working. The DMA feeds the times by
 itself, so a pause in Python does not spoil the code being sent.
 
-The PIO and DMA come from sp103-mod's ir.py, working in the amp since 2026-11-06.
+The PIO and DMA come from the SP103's ir.py (devices/sp103), working in the amp since 2026-11-06.
 """
 
 import time

@@ -17,7 +17,7 @@ raw = json.dumps(device.describe("abcd1234", "KX393-1A2B"))
 d = json.loads(raw)
 assert d["api"] == 2 and d["kind"] == "tape_deck" and d["model"] == "Yamaha KX-393"
 assert d["name"] == "KX393-1A2B" and d["bridge_version"] == "abcd1234"
-assert d["firmware"] == "alemser/kx393-mod"
+assert d["firmware"] == "alemser/device-link/kx393"
 assert d["features"] == ["control", "update", "wifi_setup"]
 assert d["state"] == []                 # no state reader yet (docs/plan.md)
 assert [c["group"] for c in d["controls"]] == ["power", "transport", "record", "modes"]

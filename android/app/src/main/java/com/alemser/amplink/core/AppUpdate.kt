@@ -19,9 +19,12 @@ class AppUpdate(
     private val api: String = "https://api.github.com",
     private val repo: String = REPO,
 ) {
-    /** The newest app release, or null when there is none (or no APK in it). */
+    /**
+     * The newest app release, or null when there is none (or no APK in it). The devices' firmware releases live in
+     * the same repository (`<device>-<version>`), so it reads a full page and keeps only the `app-` ones.
+     */
     suspend fun latest(): AppRelease? {
-        val body = http.fetch(Request.Builder().url("$api/repos/$repo/releases?per_page=10").build())
+        val body = http.fetch(Request.Builder().url("$api/repos/$repo/releases?per_page=100").build())
         return decode<List<GithubRelease>>(body)
             .mapNotNull { r ->
                 val code = r.tagName.removePrefix(TAG_PREFIX).toIntOrNull()?.takeIf { r.tagName.startsWith(TAG_PREFIX) }

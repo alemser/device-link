@@ -112,7 +112,7 @@ size in `docs/images-originais/`, out of git):
 
 ## Step 2: multimeter
 
-With an illustrated guide page (as for the CD-S300, `cds300-mod/docs/measurement-guide.html`), built on the photos:
+With an illustrated guide page (as for the CD-S300, `devices/cds300/docs/measurement-guide.html`), built on the photos:
 
 1. **The mode table:** pins 21, 23, 24, 26, 27, 28 and 32 in stop, play, FF, REW, search, rec pause and rec. Settles
    which of the two printed tables is right (`docs/research.md`).

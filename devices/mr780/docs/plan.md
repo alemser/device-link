@@ -154,7 +154,7 @@ Decode and document in `docs/protocol.md`, with the captures in `captures/`.
 
 ## Step 4: the program (phase 1)
 
-Reuse from `sp103-mod` whatever does not depend on the display:
+Reuse from the SP103 (`devices/sp103`) whatever does not depend on the display:
 
 - Wi-Fi and updates over Wi-Fi with automatic rollback (`ota.py`, `tools/enviar.py`).
 - The state and the DeviceLink app's contract (`/state`, `/device`, `/control`: device, state and remote only), with
@@ -166,7 +166,7 @@ New: the serial VFD sniffer (PIO) and the MR 780 screen reader.
 
 **Done on 2026-11-09, without the amp: the base** (`firmware/ponte.py`). Cable-free Wi-Fi setup (`wifi.py`, the same
 setup as the SP103: network `AmpLink-MR780-XXXX`, fixed key, discovery by UDP broadcast; details in
-`sp103-mod/docs/wifi.md`), updates over Wi-Fi (`ota.py`, `main.py`, `tools/enviar.py`, which also finds the Pico
+`devices/sp103/docs/wifi.md`), updates over Wi-Fi (`ota.py`, `main.py`, `tools/enviar.py`, which also finds the Pico
 through discovery) and `/device` (15 inputs with the groove-rig ids). `/state` exists, all `null`. Still to do: the
 sniffer, the screen reader and the commands.
 

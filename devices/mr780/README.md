@@ -1,6 +1,6 @@
-# MR 780 mod
+# MR 780 (devices/mr780)
 
-The same improvements as on the SP103 (repository `sp103-mod`), now on the **Magnat MR 780** hybrid receiver: a
+The same improvements as on the SP103 (`devices/sp103`), now on the **Magnat MR 780** hybrid receiver: a
 Raspberry Pi Pico 2 W inside the amp that reads what the amp shows on its display, publishes the state on the network
 and controls the amp over Wi-Fi.
 
@@ -17,7 +17,7 @@ unplugged, the GND lines, all the buttons, VOLUME, SOURCE and the remote's signa
 
 The firmware started on 2026-11-09, without the amp: the **bridge base** (`firmware/ponte.py`), which sets up Wi-Fi
 without a cable through the `AmpLink-MR780-XXXX` network, is found by the DeviceLink app with no IP typed in, and
-updates itself over Wi-Fi. It already runs on the shared base from the `device-link` repository (see "Folders"); updates
+updates itself over Wi-Fi. It already runs on the shared base (`firmware-base/`) (see "Folders"); updates
 over Wi-Fi take no password (a contract v2 decision; `firmware/secrets.example.py` explains). The bridge is on the
 DeviceLink contract `api` 2 since 2026-11-17 (`firmware/device.py`), with no state, controls or settings yet, and
 `/state` still comes back all `null`: reading the display and
@@ -29,7 +29,7 @@ amp and get the rest over Wi-Fi.
 | On the SP103 | On the MR 780 | Notes |
 |---|---|---|
 | Custom names for the inputs ("TUNER" becomes "Rega Planar 2") | Yes | The MR 780 has 15 sources: PHONO, CD, DVD, AUX 1/2, TAPE, LINE IN, FM, DAB, OPT 1/2, COAX 1/2, USB, BT |
-| Amp state on the network (`/state`, `/device`) | Yes | The same contract as the app (repository `device-link`) |
+| Amp state on the network (`/state`, `/device`) | Yes | The same contract as the app (`docs/contract-v2.md`) |
 | Control over Wi-Fi: remote codes straight into the IR line | Yes | By wire, no Broadlink. Plus the panel buttons (DIRECT, DIM), which the remote does not have |
 | Power the amp on from standby | Yes | On the MR 780 the amp warms up the valves for ~30 s at power-on |
 | VU meter on the display while playing | Likely | 2×16 as on the SP103; depends on the VFD controller accepting custom characters |
@@ -55,9 +55,9 @@ The official manual stays in the local copy only, in `docs/manual/` (copyrighted
 
 - `firmware/`: the Pico's program (MicroPython).
   - This project's: `ponte.py` (the program) and `device.py` (`/device`).
-  - **Copies of the shared base** (repository `device-link`, folder `firmware-base/`): `wifi.py`, `web.py`, `ota.py`,
+  - **Copies of the shared base** (`firmware-base/` at the repository's root): `wifi.py`, `web.py`, `ota.py`,
     `udp.py`, `listeners.py` and `main.py`. Change them there and copy with
-    `python3 ../device-link/firmware-base/copiar.py`, never here.
+    `python3 firmware-base/copiar.py --all` from the repository's root, never here.
   - `main.py` (the update gatekeeper) only goes to the Pico by USB; everything else goes over Wi-Fi.
 - `tools/`: the tests on the computer and `enviar.py` (update over Wi-Fi). `enviar.py`, `test_wifi.py` and
   `test_listeners.py` come from the base; `test_device.py` is this project's.
@@ -68,7 +68,7 @@ The official manual stays in the local copy only, in `docs/manual/` (copyrighted
 
 ```sh
 for t in wifi listeners device; do python3 tools/test_$t.py; done
-python3 ../device-link/firmware-base/copiar.py --check    # are the base copies up to date?
+python3 ../../firmware-base/copiar.py --check    # are the base copies up to date?
 ```
 
 ## Install on the Pico (by USB, once)

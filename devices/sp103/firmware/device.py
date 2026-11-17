@@ -19,7 +19,7 @@ API = 2                         # only changes when something stops being compat
 NAME = "sp103"                  # the discovery and network name (sp103.local, AmpLink-SP103-XXXX); enviar.py reads it
 KIND = "amplifier"
 MODEL = "Acoustic Solutions SP103"
-FIRMWARE = "alemser/sp103-mod"  # the GitHub repository whose releases carry this firmware (enviar.py --publish)
+FIRMWARE = "alemser/device-link/sp103"   # its releases: alemser/device-link, tagged sp103-<version> (enviar.py --publish)
 FEATURES = ("control", "update", "wifi_setup")
 
 STATE = (

@@ -21,7 +21,7 @@ from amp_state import INPUTS   # noqa: E402
 
 d = json.loads(json.dumps(device.describe("abcd1234", "SP103-D4FE")))
 assert d["api"] == 2 and d["kind"] == "amplifier" and d["name"] == "SP103-D4FE"
-assert d["model"] == "Acoustic Solutions SP103" and d["firmware"] == "alemser/sp103-mod"
+assert d["model"] == "Acoustic Solutions SP103" and d["firmware"] == "alemser/device-link/sp103"
 assert d["bridge_version"] == "abcd1234"
 assert set(d["features"]) == {"control", "update", "wifi_setup"}, "the contract: device, state and remote only"
 assert "settings" not in d, "the display settings are the SP103's own page, not the contract"

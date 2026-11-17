@@ -1,6 +1,6 @@
-# KX-393 mod
+# KX-393 (devices/kx393)
 
-The fourth modified device, after the SP103 (`sp103-mod`), the MR 780 (`mr780-mod`) and the CD-S300 (`cds300-mod`):
+The fourth modified device, after the SP103 (`devices/sp103`), the MR 780 (`devices/mr780`) and the CD-S300 (`devices/cds300`):
 the **Yamaha KX-393** cassette deck. A Raspberry Pi Pico 2 W inside it will publish the deck's state on the network
 and control it over Wi-Fi by sending the remote's codes down a wire.
 
@@ -37,9 +37,9 @@ The manuals stay in the local copy only, in `docs/manual/` (copyrighted, not on 
 - `firmware/`: the Pico's program (MicroPython).
   - This project's: `ponte.py` (the program), `device.py` (`/device`), `ir_codes.py` (the remote codes), `ir.py`
     (the IR line), `panel.py` (STANDBY/ON on the `KEY1` line) and `control.py` (the `/control` and `/ir` routes).
-  - **Copies of the shared base** (repository `device-link`, folder `firmware-base/`): `wifi.py`, `web.py`, `ota.py`,
+  - **Copies of the shared base** (`firmware-base/` at the repository's root): `wifi.py`, `web.py`, `ota.py`,
     `udp.py`, `listeners.py` and `main.py`. Change them there and copy with
-    `python3 ../device-link/firmware-base/copiar.py`, never here.
+    `python3 firmware-base/copiar.py --all` from the repository's root, never here.
   - `main.py` (the update gatekeeper) only goes to the Pico by USB; everything else goes over Wi-Fi.
 - `tools/`: the tests on the computer, `enviar.py` (update over Wi-Fi; `--publish` makes the GitHub release the app
   updates from) and `ir_try.py` (settles the remote's address on the deck). `enviar.py`, `test_wifi.py` and
@@ -50,7 +50,7 @@ The manuals stay in the local copy only, in `docs/manual/` (copyrighted, not on 
 
 ```sh
 for t in wifi listeners device ir control; do python3 tools/test_$t.py; done
-python3 ../device-link/firmware-base/copiar.py --check    # are the base copies up to date?
+python3 ../../firmware-base/copiar.py --check    # are the base copies up to date?
 ```
 
 `test_ir.py` compares the codes with the `groove-rig` model (`~/Projects/groove-rig`).

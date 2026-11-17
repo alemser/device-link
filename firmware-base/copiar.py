@@ -1,15 +1,16 @@
 #!/usr/bin/env python3
-"""Copies the shared base into a bridge's project, or checks that the copies are up to date.
+"""Copies the shared base into the devices (devices/<name>/), or checks that the copies are up to date.
 
-Run from the project folder (the one with firmware/ and tools/), or pass it:
+From the repository's root:
 
-    python3 ../device-link/firmware-base/copiar.py                # copies what changed
-    python3 ../device-link/firmware-base/copiar.py --check        # only checks; fails if anything differs
-    python3 ../device-link/firmware-base/copiar.py --skip firmware/main.py    # leaves that file as it is
+    python3 firmware-base/copiar.py --all            # every device under devices/
+    python3 firmware-base/copiar.py --all --check    # only checks; fails if anything differs (run it before a commit)
+    python3 firmware-base/copiar.py devices/sp103    # one device
 
-The files go byte for byte. A copy that differs from the base means someone changed it in the project: take the
-change to the base before copying, because the copy overwrites it. The old Portuguese flags (--conferir, --sem) still
-work.
+The files go byte for byte, so each devices/<name>/firmware/ stays exactly what goes on its Pico. A copy that differs
+from the base means someone changed it in the device: take the change to the base before copying, because the copy
+overwrites it. A device that keeps a base file of its own is listed in KEEP (the SP103's main.py). The old Portuguese
+flags (--conferir, --sem) still work.
 """
 
 import argparse
@@ -17,7 +18,10 @@ import os
 import sys
 
 HERE = os.path.dirname(os.path.abspath(__file__))
+DEVICES = os.path.join(HERE, "..", "devices")
 FOLDERS = ("firmware", "tools")
+# Base files a device keeps on its own. The SP103's main.py imports escuta.py and shows errors on the LCD.
+KEEP = {"sp103": ("firmware/main.py",)}
 
 
 def base_files():
@@ -38,28 +42,18 @@ def read(path):
         return None
 
 
-def main():
-    ap = argparse.ArgumentParser(description=__doc__.split("\n")[0])
-    ap.add_argument("project", nargs="?", default=".", help="the project folder (default: the current one)")
-    ap.add_argument("--check", "--conferir", dest="check", action="store_true",
-                    help="don't copy: only say what differs")
-    ap.add_argument("--skip", "--sem", dest="skip", action="append", default=[], metavar="FILE",
-                    help="a file this project keeps on its own (repeatable)")
-    args = ap.parse_args()
+def devices():
+    return sorted(os.path.join(DEVICES, d) for d in os.listdir(DEVICES)
+                  if os.path.isdir(os.path.join(DEVICES, d, "firmware")))
 
-    project = os.path.abspath(args.project)
-    if not os.path.isdir(os.path.join(project, "firmware")):
-        sys.exit("%s has no firmware/ folder: run it in the bridge's project folder." % project)
-    if os.path.samefile(project, HERE):
-        sys.exit("This is the base itself. Run it in the bridge's project folder.")
-    for skipped in args.skip:
-        if skipped not in base_files():
-            sys.exit("--skip %s: the base has no such file." % skipped)
 
+def sync(project, skip, check):
+    """Copies (or checks) one device; returns how many files differed."""
+    name = os.path.basename(project)
+    skip = set(skip) | set(KEEP.get(name, ()))
     differs = 0
     for rel in base_files():
-        if rel in args.skip:
-            print("  %-28s kept by the project" % rel)
+        if rel in skip:
             continue
         want = read(os.path.join(HERE, rel))
         target = os.path.join(project, rel)
@@ -68,16 +62,39 @@ def main():
             continue
         differs += 1
         what = "missing" if have is None else "differs from the base"
-        if args.check:
-            print("  %-28s %s" % (rel, what))
+        if check:
+            print("  %s: %-28s %s" % (name, rel, what))
             continue
         os.makedirs(os.path.dirname(target), exist_ok=True)
         with open(target, "wb") as f:
             f.write(want)
-        print("  %-28s copied (%s)" % (rel, "new" if have is None else "was different"))
+        print("  %s: %-28s copied (%s)" % (name, rel, "new" if have is None else "was different"))
+    return differs
 
+
+def main():
+    ap = argparse.ArgumentParser(description=__doc__.split("\n")[0])
+    ap.add_argument("project", nargs="?", help="one device's folder (default: the current one)")
+    ap.add_argument("--all", action="store_true", help="every device under devices/")
+    ap.add_argument("--check", "--conferir", dest="check", action="store_true",
+                    help="don't copy: only say what differs")
+    ap.add_argument("--skip", "--sem", dest="skip", action="append", default=[], metavar="FILE",
+                    help="a base file to leave as it is (repeatable)")
+    args = ap.parse_args()
+
+    projects = devices() if args.all else [os.path.abspath(args.project or ".")]
+    for project in projects:
+        if not os.path.isdir(os.path.join(project, "firmware")):
+            sys.exit("%s has no firmware/ folder: pass a device's folder, or --all." % project)
+        if os.path.samefile(project, HERE):
+            sys.exit("This is the base itself. Pass a device's folder, or --all.")
+    for skipped in args.skip:
+        if skipped not in base_files():
+            sys.exit("--skip %s: the base has no such file." % skipped)
+
+    differs = sum(sync(p, args.skip, args.check) for p in projects)
     if not differs:
-        print("Up to date with the base.")
+        print("Up to date with the base: %s." % ", ".join(os.path.basename(p) for p in projects))
     elif args.check:
         sys.exit("%d file(s) out of date with the base." % differs)
 

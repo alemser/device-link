@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Sends the new program to the Pico over Wi-Fi (firmware/ota.py) and follows it until it confirms.
 
-This file belongs to the shared base (device-link, firmware-base/): change it there and copy it with copiar.py, never here.
+This file belongs to the shared base (firmware-base/): change it there and copy it with copiar.py --all, never here.
 
     python3 tools/enviar.py                    # sends what changed in firmware/, deletes from the Pico the .py
                                                # files that no longer exist, and applies
@@ -73,14 +73,28 @@ def show(st):
     print("Previous version kept: %s" % (st["previous"] or "none"))
 
 
-def publish(repo):
-    """Publishes firmware/ as a GitHub release of repo, for the DeviceLink app (docs/contract-v2.md, Updates):
-    tag = the version, assets = the program files and firmware.json {"version", "files": {name: sha256}}."""
+def release_place(firmware):
+    """device.FIRMWARE -> (repository, tag prefix). "alemser/device-link/sp103": the releases of alemser/device-link
+    tagged "sp103-<version>" (docs/contract-v2.md, Updates)."""
+    parts = firmware.split("/")
+    if len(parts) != 3 or not all(parts):
+        sys.exit("device.FIRMWARE must be owner/repository/device, like alemser/device-link/sp103: %r" % firmware)
+    return parts[0] + "/" + parts[1], parts[2] + "-"
+
+
+def publish(firmware):
+    """Publishes firmware/ as a GitHub release, for the DeviceLink app (docs/contract-v2.md, Updates): in the
+    repository and with the tag prefix device.FIRMWARE names, tag = prefix + version, assets = the program files and
+    firmware.json {"version", "files": {name: sha256}}. Never marked "latest": that one is the app's own release."""
     import subprocess
     import tempfile
+    repo, prefix = release_place(firmware)
     files = local_files(None)
     digests = {n: sha(d) for n, d in files.items()}
     ver = version(digests)
+    tag = prefix + ver
+    if subprocess.run(["gh", "release", "view", tag, "--repo", repo], capture_output=True).returncode == 0:
+        sys.exit("Release %s already exists in %s: nothing changed in firmware/." % (tag, repo))
     with tempfile.TemporaryDirectory() as tmp:
         paths = []
         for name, data in files.items():
@@ -91,10 +105,11 @@ def publish(repo):
         manifest = os.path.join(tmp, "firmware.json")
         with open(manifest, "w") as f:
             json.dump({"version": ver, "files": digests}, f, indent=1, sort_keys=True)
-        subprocess.run(["gh", "release", "create", ver, "--repo", repo, "--title", "Firmware " + ver,
+        subprocess.run(["gh", "release", "create", tag, "--repo", repo, "--latest=false",
+                        "--title", "%s firmware %s" % (NAME.upper(), ver),
                         "--notes", "Bridge firmware %s (%d files)." % (ver, len(files)), manifest] + paths,
                        check=True)
-    print("Published %s as release %s of %s." % (", ".join(sorted(files)), ver, repo))
+    print("Published %s as release %s of %s." % (", ".join(sorted(files)), tag, repo))
 
 
 def local_files(names):
@@ -216,11 +231,11 @@ def main():
                     help="go back to the previous version")
     ap.add_argument("--force", "--forcar", dest="force", action="store_true", help="send even unchanged files")
     ap.add_argument("--publish", action="store_true",
-                    help="publish firmware/ as a GitHub release (device.FIRMWARE repo), for the DeviceLink app")
+                    help="publish firmware/ as a GitHub release (where device.FIRMWARE says), for the DeviceLink app")
     args = ap.parse_args()
     if args.publish:
-        from device import FIRMWARE as repo
-        return publish(repo)
+        from device import FIRMWARE
+        return publish(FIRMWARE)
     host = args.host
 
     try:

@@ -99,7 +99,7 @@ https://claude.ai/artifact/1Gud8oKmZ5HQ2eygCHr3Kf):
 
 ## Step 2b: Wi-Fi interference
 
-Planned as on the MR 780 (`mr780-mod/docs/plano.md`, step 2b). With the Pico installed and the case closed, the home
+Planned as on the MR 780 (`devices/mr780/docs/plan.md`, step 2b). With the Pico installed and the case closed, the home
 network reads **−47 dBm** and no noise or skipping was noticed while playing.
 
 ## Step 3: logic analyzer

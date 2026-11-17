@@ -68,7 +68,7 @@ a device switched on appears without a refresh, and one switched off is greyed a
 
 ```json
 {"api": 2, "kind": "cd_player", "model": "Yamaha CD-S300", "name": "CDS300-D85E", "bridge_version": "91a64081",
- "firmware": "alemser/cds300-mod", "features": ["control", "update", "wifi_setup"],
+ "firmware": "alemser/device-link/cds300", "features": ["control", "update", "wifi_setup"],
  "state": [
    {"id": "transport", "type": "enum", "values": ["playing", "paused", "stopped", "loading", "open"]},
    {"id": "media.track", "type": "int", "label": "Track"},
@@ -90,7 +90,7 @@ a device switched on appears without a refresh, and one switched off is greyed a
 | `kind` | `amplifier`, `cd_player`, `tape_deck`, ... Picks the icon and the default layout |
 | `model`, `name` | What to show; `name` as in discovery |
 | `bridge_version` | Firmware version (the `version` of `GET /update`) |
-| `firmware` | The GitHub repository whose releases carry this bridge's firmware (see [Updates](#updates-from-the-app-update)) |
+| `firmware` | Where this bridge's firmware is released: `owner/repo/device`, the releases of `owner/repo` tagged `<device>-<version>` (see [Updates](#updates-from-the-app-update)) |
 | `features` | Optional route groups present on this bridge |
 | `state` | The state fields worth showing, in display order (below) |
 | `controls` | The remote, in groups, in display order (below) |
@@ -166,7 +166,7 @@ meaning, and the description's `state` list points into them:
 ```
 
 The amplifiers' fields are flat (`volume_db`, `input_id`, `bass_db`, ...) because groove-rig reads them too; the SP103's
-are in its `docs/api-state.md`. A bridge keeps one `/events` connection per IP and few in total (3 on the SP103): a new
+are in `devices/sp103/docs/api-state.md`. A bridge keeps one `/events` connection per IP and few in total (3 on the SP103): a new
 connection from the same IP drops the old one, and with the cap reached the oldest goes.
 
 ## Updates from the app (`update`)
@@ -176,10 +176,13 @@ files, apply them, and roll back by themselves if the new version doesn't confir
 (decided 2026-11-16): the routes are on the home LAN only, like the rest of the contract, and the rollback protects
 against a bad version. `main.py` and `secrets.py` go only by USB.
 
-1. A bridge's firmware is a GitHub release of the repository named in `/device` `firmware`, tagged with its version,
-   carrying a `firmware.json` asset (`{"version", "files": {"<name>.py": "<sha256>"}}`) and the files themselves
-   (built by the repository's `tools/enviar.py --publish`). The app reads the latest release through the GitHub API;
-   a device can therefore be updated without the app knowing it in advance.
+1. A bridge's firmware is a GitHub release where `/device` `firmware` says. Every device lives in the device-link
+   repository (`devices/<device>/`), so `firmware` is `alemser/device-link/<device>` and its releases are tagged
+   `<device>-<version>` (`sp103-c59be28d`), never marked "latest" (that one is the app's own `app-<n>`). Each carries a
+   `firmware.json` asset (`{"version", "files": {"<name>.py": "<sha256>"}}`) and the files themselves, built by the
+   device's `tools/enviar.py --publish`. The app takes the newest release with the device's prefix through the GitHub
+   API, so a device can be updated without the app knowing it in advance. A bare `owner/repo` (bridges from before
+   2026-11-17, when each device had its own repository) means that repository's latest release.
 2. The device screen shows "Version ... is available" when the release's version differs from `bridge_version`.
 3. On "Update", the app downloads the files, uploads only those whose hash differs from `GET /update` (as `enviar.py`
    does), deletes the ones the release no longer has, applies, and follows `GET /update` until the bridge confirms or
@@ -187,7 +190,7 @@ against a bad version. `main.py` and `secrets.py` go only by USB.
 
 ## Wi-Fi setup (`wifi_setup`)
 
-To set up a bridge's Wi-Fi without a cable. The bridge side's details are in sp103-mod's `docs/wifi.md`.
+To set up a bridge's Wi-Fi without a cable. The bridge side's details are in `devices/sp103/docs/wifi.md`.
 
 **The setup network.** With no saved network, or unable to connect for 2 minutes, the bridge opens its own network
 `AmpLink-<name>` (e.g. `AmpLink-SP103-D85E`), WPA2, fixed key **`amplink-setup`**, and keeps trying the home network.
@@ -226,7 +229,9 @@ with that prefix (`WifiNetworkSpecifier`) and the system shows the matching ones
 
 ## Decided (2026-11-16 and 17)
 
-- Firmware releases live in each device's own repository, named by `/device` `firmware`.
+- One repository for everything (2026-11-17): the contract, the app, the shared base and every device
+  (`devices/<device>/`). Firmware releases are tagged by device in it, named by `/device` `firmware`. The old
+  per-device repositories are archived.
 - Updates take no password.
 - The SP103 moved to `api` 2 (2026-11-17).
 - `api` 1 was removed from the bridges and the app on 2026-11-17 (the `AMPLINK?` probe, `/names`, the amplifier tabs).

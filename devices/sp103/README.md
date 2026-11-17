@@ -1,9 +1,10 @@
-# sp103-mod
+# SP103 (devices/sp103)
 
 Custom text on the front display of the **Acoustic Solutions SP103** amplifier, with a **Raspberry Pi Pico 2 W**
 sitting between the original controller (T9311) and the display (16x2 LCD, HD44780).
 
-The repository was called `sp103-display-proxy` until 2026-11-16, when it was renamed `sp103-mod`.
+This was the `sp103-mod` repository (before that `sp103-display-proxy`) until 2026-11-17, when it moved into device-link
+as `devices/sp103`, as its latest version only: the old history was left behind.
 
 - The controller and the amp's functions stay original. The Pico changes what the display shows: "TUNER" becomes
   "Rega Planar 2", and so on.
@@ -41,7 +42,7 @@ Function button ◄──(GP0 reads, GP1 pulls to 0 only)── Pico 2 W
 
 | What for | How |
 |---|---|
-| See the amp's state | the DeviceLink app (device-link repository): it finds the amp on the network and builds its screen from `/device` (contract `api` 2, since 2026-11-17) |
+| See the amp's state | the DeviceLink app (`android/` in this repository): it finds the amp on the network and builds its screen from `/device` (contract `api` 2, since 2026-11-17) |
 | Change the input names, the start screens, the VU and the info screens | the Pico's own page: open `http://<the Pico's IP>/` (or `/config`) in a browser (up to 16 characters, no accents; saved a second after you stop typing), or `PATCH /settings` (`docs/api-state.md`). Not in the DeviceLink app |
 | Control the amp | the app (power, volume, input, tone, loudness, speakers), or `curl -X POST "http://sp103.local/control?target=bass&dir=up"` (`docs/api-state.md`) |
 | See the bus | `curl http://sp103.local/status` (the counters) and `curl http://sp103.local/bus` |
@@ -70,9 +71,9 @@ Function button ◄──(GP0 reads, GP1 pulls to 0 only)── Pico 2 W
 
 - `firmware/`: the Pico's program (MicroPython). `main.py` and `secrets.py` only go over the cable; the Wi-Fi network lives in
   `wifi.json`, written through the Pico's setup network.
-  - **Copies of the shared base** (repository `device-link`, folder `firmware-base/`): `wifi.py`, `web.py`, `ota.py`, `udp.py`
+  - **Copies of the shared base** (`firmware-base/` at the repository's root): `wifi.py`, `web.py`, `ota.py`, `udp.py`
     and `listeners.py`, plus `tools/enviar.py`, `tools/test_wifi.py` and `tools/test_listeners.py`. Change them there and
-    copy with `python3 ../device-link/firmware-base/copiar.py --skip firmware/main.py`, never here. `main.py` stays this
+    copy with `python3 firmware-base/copiar.py --all` from the repository's root (it keeps this `main.py`), never here. `main.py` stays this
     project's own (it imports `escuta.py` and shows errors on the LCD).
   - `device.py` (`/device`, contract `api` 2) describes the amp to the app: the device, its state and its remote.
     `config_page.py` (the page at `/`) and `settings.py` (`/settings`) are the SP103's own display configuration,

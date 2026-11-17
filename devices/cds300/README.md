@@ -1,6 +1,6 @@
-# CD-S300 mod
+# CD-S300 (devices/cds300)
 
-The third modified device, after the SP103 (`sp103-mod`) and the MR 780 (`mr780-mod`): the **Yamaha CD-S300**
+The third modified device, after the SP103 (`devices/sp103`) and the MR 780 (`devices/mr780`): the **Yamaha CD-S300**
 CD player. A Raspberry Pi Pico 2 W inside it reads what its display shows, publishes the state on the network, and
 controls it over Wi-Fi by sending the remote's codes down a wire.
 
@@ -80,9 +80,9 @@ The service manual stays in the local copy only, in `docs/manual/` (copyrighted,
   - This project's: `ponte.py` (the program), `device.py` (`/device`), `display.py` (the PIO sniffer), `vfd.py`
     (the display parser and the player state), `ir_codes.py` (the remote codes), `ir.py` (the IR line) and
     `control.py` (the `/control` and `/ir` routes).
-  - **Copies of the shared base** (repository `device-link`, folder `firmware-base/`): `wifi.py`, `web.py`, `ota.py`,
+  - **Copies of the shared base** (`firmware-base/` at the repository's root): `wifi.py`, `web.py`, `ota.py`,
     `udp.py`, `listeners.py` and `main.py`. Change them there and copy with
-    `python3 ../device-link/firmware-base/copiar.py`, never here.
+    `python3 firmware-base/copiar.py --all` from the repository's root, never here.
   - `main.py` (the update gatekeeper) only goes to the Pico by USB; everything else goes over Wi-Fi.
 - `tools/`: the tests on the computer, `enviar.py` (update over Wi-Fi; `--publish` makes the GitHub release the app
   updates from) and `fl_decode.py` (reads logic-analyzer captures). `enviar.py`, `test_wifi.py` and
@@ -93,7 +93,7 @@ The service manual stays in the local copy only, in `docs/manual/` (copyrighted,
 
 ```sh
 for t in wifi listeners device ir control vfd fl_decode; do python3 tools/test_$t.py; done
-python3 ../device-link/firmware-base/copiar.py --conferir    # are the base copies up to date?
+python3 ../../firmware-base/copiar.py --check    # are the base copies up to date?
 ```
 
 `test_ir.py` compares the codes with the `groove-rig` model (`~/Projects/groove-rig`).

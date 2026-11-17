@@ -12,7 +12,7 @@ class DescriptionTest {
     /** What the CD-S300 bridge answered on 2026-11-16 (version 00cdd591), trimmed to one group per kind. */
     private val cd = """
         {"api": 2, "kind": "cd_player", "model": "Yamaha CD-S300", "name": "CDS300-D85E", "bridge_version": "00cdd591",
-         "firmware": "alemser/cds300-mod", "features": ["control", "update", "wifi_setup"],
+         "firmware": "alemser/device-link/cds300", "features": ["control", "update", "wifi_setup"],
          "state": [{"values": ["playing", "paused", "stopped", "loading", "open"], "id": "transport", "type": "enum"},
                    {"label": "Track", "id": "media.track", "type": "int"},
                    {"label": "Time", "id": "media.elapsed_s", "type": "duration"},
@@ -26,7 +26,7 @@ class DescriptionTest {
         val d = decode<Description>(cd)
         assertEquals(2, d.api)
         assertEquals("cd_player", d.kind)
-        assertEquals("alemser/cds300-mod", d.firmware)
+        assertEquals("alemser/device-link/cds300", d.firmware)
         assertTrue(d.has("update"))
         assertEquals(listOf("transport", "media.track", "media.elapsed_s", "lcd"), d.state.map { it.id })
         assertEquals(listOf("playing", "paused", "stopped", "loading", "open"), d.state[0].values)
@@ -44,13 +44,13 @@ class DescriptionTest {
         assertNull(parseFeed("data: not json"))
     }
 
-    /** The SP103 bridge's whole description (sp103-mod firmware/device.py, 2026-11-17), saved as a resource. */
+    /** The SP103 bridge's whole description (devices/sp103/firmware/device.py, 2026-11-17), saved as a resource. */
     @Test
     fun readsTheAmplifiersDescription() {
         val json = javaClass.classLoader!!.getResource("sp103-device.json")!!.readText()
         val d = decode<Description>(json)
         assertEquals("amplifier", d.kind)
-        assertEquals("alemser/sp103-mod", d.firmware)
+        assertEquals("alemser/device-link/sp103", d.firmware)
         assertEquals(listOf("power", "volume", "input", "tone", "modes"), d.controls.map { it.group })
         assertEquals(KeyRef("power_toggle"), d.controls[0].keys[0])
         assertEquals("volume_db", d.controls[1].steps[0].state)

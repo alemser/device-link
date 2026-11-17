@@ -15,8 +15,10 @@ import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
 
 /**
- * Firmware updates from the app (docs/contract-v2.md, "Updates from the app"). A device names its firmware's GitHub
- * repository in `/device` `firmware`; the latest release of that repository carries `firmware.json` and the files.
+ * Firmware updates from the app (docs/contract-v2.md, "Updates from the app"). A device names where its firmware is
+ * released in `/device` `firmware`: `owner/repo/device` means the newest release of `owner/repo` tagged
+ * `<device>-<version>` (alemser/device-link/sp103 → sp103-…); a bare `owner/repo` (a bridge from before 2026-11-17)
+ * means that repository's latest release. Either carries `firmware.json` and the files.
  * The bridge side is ota.py: stage the files that differ, delete the ones the release dropped, apply, and follow
  * `GET /update` until the bridge confirms the new version or rolls back by itself.
  */
@@ -35,11 +37,22 @@ class Updater(
     private val http: OkHttpClient = OkHttpClient.Builder().callTimeout(30, TimeUnit.SECONDS).build(),
     private val api: String = "https://api.github.com",
 ) {
-    /** The latest release of [repo] ("owner/name"), with the URL of each asset. */
-    suspend fun latest(repo: String): Pair<Release, Map<String, String>> {
-        val body = http.fetch(Request.Builder().url("$api/repos/$repo/releases/latest").build())
-        val assets = decode<GithubRelease>(body).assets.associate { it.name to it.browserDownloadUrl }
-        val manifest = assets["firmware.json"] ?: throw IOException("The release of $repo has no firmware.json")
+    /** The newest firmware release for [firmware] (`/device` `firmware`), with the URL of each asset. */
+    suspend fun latest(firmware: String): Pair<Release, Map<String, String>> {
+        val parts = firmware.split('/')
+        val release = when (parts.size) {
+            2 -> decode<GithubRelease>(http.fetch(Request.Builder().url("$api/repos/$firmware/releases/latest").build()))
+            3 -> {
+                val prefix = parts[2] + "-"
+                val body = http.fetch(Request.Builder().url("$api/repos/${parts[0]}/${parts[1]}/releases?per_page=100").build())
+                // GitHub lists the newest first.
+                decode<List<GithubRelease>>(body).firstOrNull { !it.draft && it.tagName.startsWith(prefix) }
+                    ?: throw IOException("No release tagged $prefix… in ${parts[0]}/${parts[1]}")
+            }
+            else -> throw IOException("Not a firmware place: $firmware")
+        }
+        val assets = release.assets.associate { it.name to it.browserDownloadUrl }
+        val manifest = assets["firmware.json"] ?: throw IOException("The release for $firmware has no firmware.json")
         return decode<Release>(http.fetch(Request.Builder().url(manifest).build())) to assets
     }
 
@@ -79,7 +92,11 @@ class Updater(
     }
 
     @Serializable
-    private data class GithubRelease(val assets: List<Asset> = emptyList())
+    private data class GithubRelease(
+        val tagName: String = "",
+        val draft: Boolean = false,
+        val assets: List<Asset> = emptyList(),
+    )
 
     @Serializable
     private data class Asset(val name: String, val browserDownloadUrl: String)

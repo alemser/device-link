@@ -1,6 +1,6 @@
 """Runs by itself every time the Pico starts (MicroPython runs main.py at boot).
 
-This file belongs to the shared base (device-link, firmware-base/): change it there and copy it with copiar.py, never here.
+This file belongs to the shared base (firmware-base/): change it there and copy it with copiar.py --all, never here.
 
 The program is the bridge (each project's ponte.py). To stop it and get back to the computer, use mpremote: it
 interrupts the program (Ctrl-C) before each command.

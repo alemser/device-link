@@ -13,7 +13,7 @@ The PIO holds the line at 0 only for a counted time. While waiting for the next 
 DMA stopped midway, the line would not stay stuck at 0 and a real remote keeps working. The DMA feeds the times by
 itself, so a pause in Python does not spoil the code being sent.
 
-The PIO and DMA come from cds300-mod's ir.py (itself from sp103-mod), working in the CD-S300 since 2026-11-16.
+The PIO and DMA come from the CD-S300's ir.py (devices/cds300, itself from the SP103's), working in the CD-S300 since 2026-11-16.
 """
 
 import time

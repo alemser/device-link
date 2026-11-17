@@ -18,7 +18,7 @@ assert d["api"] == 2
 assert d["kind"] == "amplifier"
 assert d["model"] == "Magnat MR 780" and d["name"] == "MR780-D85E"
 assert d["bridge_version"] == "abcd1234"
-assert d["firmware"] == "alemser/mr780-mod"
+assert d["firmware"] == "alemser/device-link/mr780"
 assert d["features"] == ["update", "wifi_setup"]
 assert d["state"] == [] and d["controls"] == [], "nothing is known yet: nothing to show"
 assert "settings" not in d, "the contract: device, state and remote only"

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Tests who stays on /events (firmware/listeners.py) on the computer.
 
-This file belongs to the shared base (device-link, firmware-base/): change it there and copy it with copiar.py, never here.
+This file belongs to the shared base (firmware-base/): change it there and copy it with copiar.py --all, never here.
 
     python3 tools/test_listeners.py
 """

@@ -15,7 +15,7 @@ API = 2
 NAME = "cds300"                 # the discovery and network name (cds300.local, AmpLink-CDS300-XXXX); enviar.py reads it
 KIND = "cd_player"
 MODEL = "Yamaha CD-S300"
-FIRMWARE = "alemser/cds300-mod"  # the GitHub repository whose releases carry this firmware (enviar.py --publish)
+FIRMWARE = "alemser/device-link/cds300"   # its releases: alemser/device-link, tagged cds300-<version> (enviar.py --publish)
 FEATURES = ("control", "update", "wifi_setup")
 
 STATE = (

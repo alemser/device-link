@@ -17,7 +17,7 @@ raw = json.dumps(device.describe("abcd1234", "CDS300-D85E"))
 d = json.loads(raw)
 assert d["api"] == 2 and d["kind"] == "cd_player" and d["model"] == "Yamaha CD-S300"
 assert d["name"] == "CDS300-D85E" and d["bridge_version"] == "abcd1234"
-assert d["firmware"] == "alemser/cds300-mod"
+assert d["firmware"] == "alemser/device-link/cds300"
 assert d["features"] == ["control", "update", "wifi_setup"]
 assert [s["id"] for s in d["state"]] == ["transport", "media.track", "media.elapsed_s", "disc.tracks", "disc.total_s",
                                          "lcd"]

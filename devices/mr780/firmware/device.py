@@ -14,7 +14,7 @@ API = 2                         # changes only when something stops being compat
 NAME = "mr780"                  # the name in discovery and on the network (mr780.local, AmpLink-MR780-XXXX); enviar.py reads it
 KIND = "amplifier"
 MODEL = "Magnat MR 780"         # the full name: in /device and, as "label", in discovery
-FIRMWARE = "alemser/mr780-mod"  # the GitHub repository whose releases carry this firmware (enviar.py --publish)
+FIRMWARE = "alemser/device-link/mr780"   # its releases: alemser/device-link, tagged mr780-<version> (enviar.py --publish)
 FEATURES = ("update", "wifi_setup")
 
 # The inputs in the order of the SOURCE knob and the remote, with groove-rig's ids

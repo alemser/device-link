@@ -4,7 +4,7 @@
  "model": "Acoustic Solutions SP103",
  "name": "SP103-D4FE",
  "bridge_version": "06576747",
- "firmware": "alemser/sp103-mod",
+ "firmware": "alemser/device-link/sp103",
  "features": [
   "control",
   "update",
