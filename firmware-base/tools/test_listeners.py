@@ -26,7 +26,7 @@ assert a == [(rig, "w3")], "all of the IP's old connections go"
 
 a = [(rig, "w1"), (phone, "w2"), (mac, "w3")]
 make_room(a, other)
-assert a == [(phone, "w2"), (mac, "w3")] and len(a) < MAX_LISTENERS, "cheio: sai a mais antiga"
+assert a == [(phone, "w2"), (mac, "w3")] and len(a) < MAX_LISTENERS, "full: the oldest one goes"
 
 a = [(rig, "w1")]
 make_room(a, phone)

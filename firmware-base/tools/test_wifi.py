@@ -142,7 +142,7 @@ assert wifi.validate({"ssid": "Aberta"}) == ("Aberta", "")
 for bad in ({"ssid": ""}, {"psk": "12345678"}, {"ssid": "Casa", "psk": "1234567"}, {"ssid": "x" * 33}, [1]):
     try:
         wifi.validate(bad)
-        raise AssertionError("aceitou %r" % (bad,))
+        raise AssertionError("accepted %r" % (bad,))
     except ValueError:
         pass
 
