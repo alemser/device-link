@@ -157,8 +157,9 @@ Decode and document in `docs/protocol.md`, with the captures in `captures/`.
 Reuse from `sp103-mod` whatever does not depend on the display:
 
 - Wi-Fi and updates over Wi-Fi with automatic rollback (`ota.py`, `tools/enviar.py`).
-- The state and the DeviceLink app's contract (`/state`, `/device`, `/settings`), with new fields: DAB/BT/USB source,
-  station, DAB/RDS text.
+- The state and the DeviceLink app's contract (`/state`, `/device`, `/control`: device, state and remote only), with
+  new fields: DAB/BT/USB source, station, DAB/RDS text. Anything particular to the MR 780 that a person would configure
+  goes on the bridge's own page, as the SP103's display settings do, not in the contract.
 - The tests on the Mac, using the real captures.
 
 New: the serial VFD sniffer (PIO) and the MR 780 screen reader.

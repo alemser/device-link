@@ -20,7 +20,8 @@ assert d["model"] == "Magnat MR 780" and d["name"] == "MR780-D85E"
 assert d["bridge_version"] == "abcd1234"
 assert d["firmware"] == "alemser/mr780-mod"
 assert d["features"] == ["update", "wifi_setup"]
-assert d["state"] == [] and d["controls"] == [] and d["settings"] == [], "nothing is known yet: nothing to show"
+assert d["state"] == [] and d["controls"] == [], "nothing is known yet: nothing to show"
+assert "settings" not in d, "the contract: device, state and remote only"
 assert len(device.INPUTS) == 15
 # groove-rig's input cycle order (profiles/magnat_mr780.yaml): don't change it without changing it there.
 assert [i for i, _ in device.INPUTS] == ["usb_audio", "bluetooth", "phono", "cd", "dvd", "aux1", "aux2", "tape",

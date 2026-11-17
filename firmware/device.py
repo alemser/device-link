@@ -1,8 +1,8 @@
 """GET /device: who this bridge is and what it can do, in the DeviceLink contract api 2 (device-link docs/contract-v2.md).
 
 For now (2026-11-17) the MR 780 bridge can only update itself and set up Wi-Fi: the amp's state depends on the display
-captures (docs/plan.md, step 3), and control on the IR wiring (step 4). So the description has no state fields, no
-controls and no settings yet: the app shows the device, its firmware and nothing else. Each new capability goes in
+captures (docs/plan.md, step 3), and control on the IR wiring (step 4). So the description has no state fields and no
+controls yet: the app shows the device, its firmware and nothing else. Each new capability goes in
 here once it really exists. Nothing changes while the bridge runs, so the JSON is built once and served as bytes.
 
 describe() runs the same in MicroPython (Pico) and in the computer's Python (tools/test_device.py).
@@ -30,7 +30,7 @@ _cached = None
 
 def describe(version, name):
     return {"api": API, "kind": KIND, "model": MODEL, "name": name, "bridge_version": version,
-            "firmware": FIRMWARE, "features": list(FEATURES), "state": [], "controls": [], "settings": []}
+            "firmware": FIRMWARE, "features": list(FEATURES), "state": [], "controls": []}
 
 
 async def handle(req, writer):
