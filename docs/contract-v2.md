@@ -3,7 +3,7 @@
 **Draft, 2026-11-16.** Successor of `docs/contract-v1.md` (`api` 1, the amplifier-only contract). Written for three
 devices: the Acoustic Solutions SP103 and the Magnat MR 780 (amplifiers) and the Yamaha CD-S300 (CD player). In use
 since 2026-11-16 by the CD-S300 (keys, no settings) and since 2026-11-17 by the SP103 (steps, switches, a select and 25
-settings); the MR 780 bridge is still `api` 1.
+settings); the MR 780 bridge describes itself in `api` 2 too (no state or controls yet, not installed).
 
 A **device** is a piece of equipment with a Pico inside (the **bridge**). The **app** (DeviceLink, today's Amp Link) finds
 every device on the home Wi-Fi, shows them in one list, and builds each device's screen from what the device says about
