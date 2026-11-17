@@ -1,0 +1,18 @@
+# macOS
+.DS_Store
+
+# Python
+__pycache__/
+*.pyc
+
+# Local Python environment (mpremote)
+.venv/
+
+# Yamaha's service manual: copyrighted, kept in the local copy only
+docs/manual/
+
+# Secrets (optional Wi-Fi fallback): only on the computer and the Pico, never on GitHub
+firmware/secrets.py
+
+# Full-resolution photos: the ones in the repository are reduced copies (2400 px)
+docs/images-originais/
