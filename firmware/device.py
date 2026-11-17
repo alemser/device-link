@@ -1,4 +1,4 @@
-"""GET /device: who this bridge is and what it can do, in the DeviceLink contract api 2 (amp-link docs/contract-v2.md).
+"""GET /device: who this bridge is and what it can do, in the DeviceLink contract api 2 (device-link docs/contract-v2.md).
 
 For now (2026-11-17) the MR 780 bridge can only update itself and set up Wi-Fi: the amp's state depends on the display
 captures (docs/plan.md, step 3), and control on the IR wiring (step 4). So the description has no state fields, no
