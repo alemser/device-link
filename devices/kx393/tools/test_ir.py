@@ -57,7 +57,7 @@ assert (ir_codes.ADDRESS, ir_codes.ADDRESS_CAPTURED) == (0x7F, 0x7A)
 
 for address in (ir_codes.ADDRESS, ir_codes.ADDRESS_CAPTURED):
     for command in range(256):
-        words = ir_codes.frame_command(command, address)
+        words = ir_codes.frame_command(command, address, repeats=1)
         # Pairs of line at 0 and released: the PIO always ends waiting for the next line at 0.
         assert len(words) == 2 + 64 + 2, command
         assert words[0] == 9000 and words[1] == 4500, command
@@ -67,6 +67,9 @@ for address in (ir_codes.ADDRESS, ir_codes.ADDRESS_CAPTURED):
 
 for key, command in ir_codes.COMMANDS.items():
     assert ir_codes.frame(key) == ir_codes.frame_command(command, 0x7F), key
+    # The deck ignores a single frame (2026-11-18): each key goes out as REPEATS whole frames.
+    one = ir_codes.frame_command(command, 0x7F, repeats=1)
+    assert ir_codes.REPEATS == 6 and ir_codes.frame(key) == one * 6, key
 
 if os.path.exists(MODEL):
     with open(MODEL) as f:
@@ -77,10 +80,10 @@ if os.path.exists(MODEL):
     for key in codes:
         got = decode(captured(codes[key]))
         assert got[0] in (ir_codes.ADDRESS, ir_codes.ADDRESS_CAPTURED), key
-        assert got == decode(ir_codes.frame_command(ir_codes.COMMANDS[key], got[0])), key
+        assert got == decode(ir_codes.frame_command(ir_codes.COMMANDS[key], got[0], repeats=1)), key
         addresses.add(got[0])
     if addresses != {ir_codes.ADDRESS}:
-        print("note: groove-rig's codes are at address %s, the bridge's default is %02X (settle it on the deck)"
+        print("note: groove-rig's codes are at address %s, the bridge's default is %02X (the deck answers both)"
               % ("/".join("%02X" % a for a in sorted(addresses)), ir_codes.ADDRESS))
 else:
     print("warning: no %s, didn't compare with groove-rig" % MODEL)

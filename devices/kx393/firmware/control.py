@@ -4,13 +4,14 @@
     POST /ir/send?cmd=play                 one remote key; answers with the IR line's status
     POST /ir/send?code=00&address=7A       any command byte (hex), at the given address or the default one: for
                                            settling the address (ir_codes.py) and trying other codes
+    POST /ir/hold?ms=5000                  holds the IR line at 0 (at most 10 s), to measure it with a multimeter
     GET  /ir                               the IR line's status and the list of keys
 
 The remote keys go out as IR (ir.py). power_toggle has no IR code: it presses STANDBY/ON on the KEY1 line (panel.py).
 Only the "key" target exists: the contract's other targets (volume, tone) belong to amplifiers.
 
-One request at a time: while a key is going out, the next one gets "busy". An IR key takes about 110 ms, with the
-silence at the end; power_toggle about 200 ms.
+One request at a time: while a key is going out, the next one gets "busy". An IR key takes about 650 ms (six frames, each
+with its silence); power_toggle about 200 ms.
 
 check() and parse_code() run the same in MicroPython (Pico) and in the computer's Python (tools/test_control.py).
 """
@@ -73,6 +74,14 @@ class Control:
         """Routes /control and /ir (see web.Publisher)."""
         from web import reply, reply_json
         if req.path == "/ir" and req.method == "GET":
+            return await reply_json(writer, self.remote.status())
+        if req.path == "/ir/hold" and req.method == "POST":
+            if self._busy():
+                return await reply_json(writer, {"error": "busy"}, "400 Bad Request")
+            try:
+                self.remote.hold(int(req.query.get("ms", "5000")))
+            except ValueError:
+                return await reply_json(writer, {"error": "bad ms"}, "400 Bad Request")
             return await reply_json(writer, self.remote.status())
         if req.method != "POST" or req.path not in ("/control", "/ir/send"):
             return await reply(writer, "404 Not Found", "text/plain", b"not found\n")

@@ -6,8 +6,12 @@ Wiring (planned, not yet soldered; docs/plan.md):
     remote sensor U1 (SPS-421-1) drives REM straight into the microcontroller's REMOCON input (IC12 pin 22), with no
     gate in between, as on the SP103. Idle at 4.8 V (schematic); the RP2350's pins tolerate it while powered.
 
-SAFETY RULE (the SP103's): GP6 is NEVER driven to 1. Its output value stays 0 and only the direction changes, at the
-lowest drive strength (2 mA). The line rises through the sensor's own output.
+SAFETY RULE (the SP103's): GP6 is NEVER driven to 1. Its output value stays 0 and only the direction changes. The
+line rises through the sensor's own output.
+
+Drive strength 12 mA (2026-11-18): at 2 mA the deck answered no address (7F, 7A, FE, 5E), though the Pico read its
+own pin as 0; a stronger pull settles whether the line came down far enough for the deck's 5 V microcontroller.
+Pulling low only, so the strength can't push anything into the deck. hold() keeps the line at 0 for the multimeter.
 
 The PIO holds the line at 0 only for a counted time. While waiting for the next time, the line is released: if the
 DMA stopped midway, the line would not stay stuck at 0 and a real remote keeps working. The DMA feeds the times by
@@ -27,6 +31,8 @@ import ir_codes
 IR_PIN = 6
 _PADS_BANK0 = 0x40038000
 _DRIVE_MASK = 0x3 << 4
+_DRIVE_12MA = 0x3 << 4
+HOLD_MAX_MS = 10_000
 _PIO_BASE = (0x50200000, 0x50300000, 0x50400000)
 _TXF0 = 0x010                   # TX FIFO of state machine 0; the others follow every 4 bytes
 _DREQ_PIO_TX0 = (0, 8, 16)      # DMA request "TX FIFO has room"
@@ -54,7 +60,7 @@ class Remote:
         self.sm.exec("set(pins, 0)")
         self.sm.exec("set(pindirs, 0)")
         pad = _PADS_BANK0 + 4 + 4 * IR_PIN
-        mem32[pad] = mem32[pad] & ~_DRIVE_MASK & ~1     # 2 mA, slow edge
+        mem32[pad] = (mem32[pad] & ~_DRIVE_MASK & ~1) | _DRIVE_12MA     # 12 mA, slow edge
         self.sm.active(1)
         pio, sm = divmod(sm_id, 4)
         self._fifo = _PIO_BASE[pio] + _TXF0 + 4 * sm
@@ -74,12 +80,19 @@ class Remote:
 
     def send_command(self, command, address=ir_codes.ADDRESS):
         """Any command byte, at the deck's address or another: how the address is settled (ir_codes.py)."""
-        words = ir_codes.frame_command(command, address)
+        self._send_words(ir_codes.frame_command(command, address), "%02X/%02X" % (address, command))
+
+    def _send_words(self, words, label):
         self._words = array("I", words)
         self._until = time.ticks_add(time.ticks_ms(), sum(words) // 1000 + 10)
         self.dma.config(read=self._words, write=self._fifo, count=len(words), ctrl=self._ctrl, trigger=True)
         self.sent += 1
-        self.last = "%02X/%02X" % (address, command)
+        self.last = label
+
+    def hold(self, ms):
+        """The line at 0 for ms (at most HOLD_MAX_MS), then released: to measure how low it gets."""
+        ms = max(1, min(int(ms), HOLD_MAX_MS))
+        self._send_words([ms * 1000, 1000], "hold %d ms" % ms)
 
     def status(self):
         return {"commands": list(ir_codes.KEYS), "sending": self.sending(), "sent": self.sent,
