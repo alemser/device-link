@@ -33,6 +33,7 @@ class State:
 state = State()
 net = Wifi(model=device.NAME, hostname=device.NAME, prefix=device.NAME.upper(),
            label=device.MODEL, kind=device.KIND, api=device.API)
+device.net = net
 # Early: until then GP6 and GP7 have the RP2350's pull-down, which loads the IR and KEY1 lines.
 control = Control(state, Remote(), Panel())
 pub = None

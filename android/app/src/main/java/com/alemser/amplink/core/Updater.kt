@@ -25,6 +25,9 @@ import kotlin.coroutines.resumeWithException
 @Serializable
 data class Release(val version: String, val files: Map<String, String>)
 
+/** The firmware place has no release for this device: not a failure, just nothing to offer. */
+class NoRelease(message: String) : IOException(message)
+
 /** Where an update stands, for the screen. */
 sealed interface UpdateStep {
     data class Sending(val file: String, val done: Int, val total: Int) : UpdateStep
@@ -42,18 +45,26 @@ class Updater(
         val parts = firmware.split('/')
         val release = when (parts.size) {
             2 -> decode<GithubRelease>(http.fetch(Request.Builder().url("$api/repos/$firmware/releases/latest").build()))
-            3 -> {
-                val prefix = parts[2] + "-"
-                val body = http.fetch(Request.Builder().url("$api/repos/${parts[0]}/${parts[1]}/releases?per_page=100").build())
-                // GitHub lists the newest first.
-                decode<List<GithubRelease>>(body).firstOrNull { !it.draft && it.tagName.startsWith(prefix) }
-                    ?: throw IOException("No release tagged $prefix… in ${parts[0]}/${parts[1]}")
-            }
+            3 -> newest(parts[0] + "/" + parts[1], parts[2] + "-")
             else -> throw IOException("Not a firmware place: $firmware")
         }
         val assets = release.assets.associate { it.name to it.browserDownloadUrl }
         val manifest = assets["firmware.json"] ?: throw IOException("The release for $firmware has no firmware.json")
         return decode<Release>(http.fetch(Request.Builder().url(manifest).build())) to assets
+    }
+
+    /**
+     * The newest release of [repo] tagged [prefix]…, page by page: GitHub lists the newest first, and the app's own
+     * `app-<n>` releases and the other devices' share the list, so one device's newest may be past the first page.
+     */
+    private suspend fun newest(repo: String, prefix: String): GithubRelease {
+        for (page in 1..MAX_PAGES) {
+            val body = http.fetch(Request.Builder().url("$api/repos/$repo/releases?per_page=100&page=$page").build())
+            val releases = decode<List<GithubRelease>>(body)
+            releases.firstOrNull { !it.draft && it.tagName.startsWith(prefix) }?.let { return it }
+            if (releases.size < 100) break
+        }
+        throw NoRelease("No release tagged $prefix… in $repo")
     }
 
     /** Sends [release] to the device at [client], reporting each step; returns the outcome. */
@@ -108,6 +119,9 @@ class Updater(
         /** Chosen: the bridge's trial is 180 s (main.py TRIAL_S), plus its restart and Wi-Fi. */
         const val WAIT_S = 270
         const val POLL_S = 2
+
+        /** Chosen: 1000 releases back; GitHub's unauthenticated limit is 60 requests an hour. */
+        const val MAX_PAGES = 10
     }
 }
 

@@ -60,7 +60,7 @@ class BridgeClient(val host: String) {
 
     /** One key of the device's remote, by name. */
     suspend fun press(key: String) {
-        post("/control?target=key&name=${java.net.URLEncoder.encode(key, "UTF-8")}")
+        post("/control?target=key&name=${encode(key)}")
     }
 
     /** The running firmware (`GET /update`). */
@@ -109,13 +109,16 @@ class BridgeClient(val host: String) {
 
     /** One step (`dir=up/down`) of a control's target, such as `volume`. The bridge does the clicks and waits. */
     suspend fun step(target: String, up: Boolean) {
-        post("/control?target=$target&dir=${if (up) "up" else "down"}")
+        post("/control?target=${encode(target)}&dir=${if (up) "up" else "down"}")
     }
 
     /** A switch (`on=1/0`), such as `loudness`. */
     suspend fun switch(target: String, on: Boolean) {
-        post("/control?target=$target&on=${if (on) 1 else 0}")
+        post("/control?target=${encode(target)}&on=${if (on) 1 else 0}")
     }
+
+    /** A name from the description, safe in a query (the bridge doesn't decode, so names stay snake_case). */
+    private fun encode(name: String) = java.net.URLEncoder.encode(name, "UTF-8")
 
     private suspend fun post(path: String) {
         send(request(path).newBuilder().post(ByteArray(0).toRequestBody()).build())

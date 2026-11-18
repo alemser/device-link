@@ -14,8 +14,8 @@ a `curl`.
 | [firmware-base/](firmware-base/README.md) | What every bridge has (Wi-Fi, discovery, server, updates), copied into each device |
 | [devices/sp103/](devices/sp103/README.md) | Acoustic Solutions SP103 amplifier: display, VU meter, IR control (installed) |
 | [devices/cds300/](devices/cds300/README.md) | Yamaha CD-S300 CD player: state and IR remote (installed) |
-| [devices/mr780/](devices/mr780/README.md) | Magnat MR 780 hybrid receiver (not installed yet) |
-| [devices/kx393/](devices/kx393/README.md) | Yamaha KX-393 tape deck (no hardware yet) |
+| [devices/mr780/](devices/mr780/README.md) | Magnat MR 780 hybrid receiver: power, warm-up and IR control, input select (installed, read-only phase) |
+| [devices/kx393/](devices/kx393/README.md) | Yamaha KX-393 tape deck: power and IR control, no state yet (on the deck since 2026-11-18) |
 
 The app lists every device on the Wi-Fi by itself, marks a new one, and opens each one's screen, built from the
 device's own description. It sets up a new device's Wi-Fi through the `AmpLink-…` network the device opens, and updates

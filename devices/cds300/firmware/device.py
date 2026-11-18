@@ -35,6 +35,7 @@ CONTROLS = (
     ("source", ("cd_usb", "pure_direct", "folder_down", "folder_up")),
 )
 
+net = None                      # ponte.py sets it: the discovery name comes from the chip ("CDS300-D85E")
 _cached = None
 
 
@@ -58,6 +59,5 @@ async def handle(req, writer):
     if req.path != "/device":
         return await not_found(writer)
     if _cached is None:
-        from ponte import net
-        _cached = json.dumps(describe(await ota.current_version(), net.name)).encode()
+        _cached = json.dumps(describe(await ota.current_version(), net.name if net else NAME)).encode()
     await reply(writer, "200 OK", "application/json", _cached)

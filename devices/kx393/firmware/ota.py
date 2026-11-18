@@ -120,26 +120,35 @@ def version(files):
     return hexlify(h.digest()).decode()[:8]
 
 
-_current = None                 # the program only changes by restarting: computed once
+_running = None                 # the running files' sha256: the program only changes by restarting, computed once
+
+
+async def _hashes(folder=""):
+    """_files(), without stalling the bridge: reading every file in one go takes about 0.6 s."""
+    files = {}
+    for name in _program(folder):
+        files[name] = _sha(_path(folder, name))
+        await asyncio.sleep(0)
+    return files
+
+
+async def _running_files():
+    global _running
+    if _running is None:
+        _running = await _hashes()
+    return _running
 
 
 async def current_version():
-    """status()'s version, without stalling the bridge: reading every file in one go takes about 0.6 s."""
-    global _current
-    if _current is None:
-        files = {}
-        for name in _program():
-            files[name] = _sha(name)
-            await asyncio.sleep(0)
-        _current = version(files)
-    return _current
+    return version(await _running_files())
 
 
-def status():
+async def status():
     m = _marker()
-    files = _files()
+    files = await _running_files()
+    previous = await _hashes(OLD) if _ls(OLD) else None
     return {"version": version(files), "state": m.get("state", "ok"), "why": m.get("why"),
-            "previous": version(_files(OLD)) if _ls(OLD) else None, "files": files,
+            "previous": version(previous) if previous else None, "files": dict(files),
             "staged": _ls(NEW), "enabled": True, "can_delete": True}
 
 
@@ -235,7 +244,7 @@ async def _reset_soon():
 async def handle(req, writer):
     """Route /update (see web.Publisher)."""
     if req.method == "GET" and req.path == "/update":
-        return await reply_json(writer, status())
+        return await reply_json(writer, await status())
     # No password (contract v2, decided 2026-11-16): home LAN only, and a bad version rolls itself back.
     action = req.path[len("/update/"):]
     try:

@@ -44,6 +44,7 @@ import com.alemser.amplink.core.BridgeClient
 import com.alemser.amplink.core.ControlGroup
 import com.alemser.amplink.core.Description
 import com.alemser.amplink.core.Feed
+import com.alemser.amplink.core.NoRelease
 import com.alemser.amplink.core.Release
 import com.alemser.amplink.core.StateField
 import com.alemser.amplink.core.UpdateStep
@@ -301,14 +302,25 @@ private fun FirmwareSection(client: BridgeClient, repo: String, running: String?
     var step by remember(client) { mutableStateOf<UpdateStep?>(null) }
     var error by remember(client) { mutableStateOf<String?>(null) }
     var busy by remember(client) { mutableStateOf(false) }
-    LaunchedEffect(repo) { latest = runCatching { updater.latest(repo) }.getOrNull() }
+    var lookup by remember(client) { mutableStateOf<String?>("Looking for updates…") }
+    LaunchedEffect(repo) {
+        lookup = try {
+            latest = updater.latest(repo)
+            null
+        } catch (e: NoRelease) {
+            "No release found for $repo"
+        } catch (e: IOException) {
+            // Offline, or GitHub's hourly limit: say so, rather than "no release".
+            "Couldn't look for updates: ${e.message ?: "no answer"}"
+        }
+    }
 
     Section("Firmware") {
         Text("Version ${running ?: "?"}")
         Hint("At ${client.host}")
         val release = latest?.first
         when {
-            release == null -> Hint("No release found for $repo")
+            release == null -> lookup?.let { Hint(it) }
             release.version == running && step == null -> Hint("Up to date")
             else -> {
                 if (step == null) Hint("Version ${release.version} is available")

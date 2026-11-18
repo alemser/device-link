@@ -44,6 +44,7 @@ class State:
 state = State()
 net = Wifi(model=device.NAME, hostname=device.NAME, prefix=device.NAME.upper(),
            label=device.MODEL, kind=device.KIND, api=device.API)
+device.net = net
 control = Control(state, Remote())      # early: until then GP6 has the RP2350's pull-down, which loads the IR line
 pub = None
 wifi_ok = False

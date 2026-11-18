@@ -2,8 +2,8 @@
 
 **2026-11-17.** The one contract between the bridges and the DeviceLink app. It replaced `api` 1 (the amplifier-only
 contract, removed on 2026-11-17; it is in the git history). Spoken by the Yamaha CD-S300 (keys, since 2026-11-16), the
-Acoustic Solutions SP103 (steps, switches and a select, since 2026-11-17), the Magnat MR 780 bridge (keys since
-2026-11-18, no state yet, not installed) and the Yamaha KX-393 bridge (no hardware yet).
+Acoustic Solutions SP103 (steps, switches and a select, since 2026-11-17), the Magnat MR 780 (keys, a select and power
+with its warm-up, installed 2026-11-18) and the Yamaha KX-393 (keys, no state yet, installed 2026-11-18).
 
 A **device** is a piece of equipment with a Pico inside (the **bridge**). The **app** (DeviceLink) finds every device on
 the home Wi-Fi, shows them in one list, and builds each device's screen from what the device says about itself: **what
@@ -47,7 +47,8 @@ A bridge may have routes of its own, outside the contract: for diagnosis with cu
   open) and, where a device has extras, [its own page](#a-devices-own-page).
 - Every answer closes the connection (`Connection: close`), except `/events`.
 - JSON answers, with `Cache-Control: no-store` and `Access-Control-Allow-Origin: *`.
-- Errors: `400` (or `403`, `404`) with `{"error": "text"}`, in English, ready to show as they are.
+- Errors: `400` (or `403`, `404`) with `{"error": "text"}`, in English, ready to show as they are (`web.not_found`
+  for a 404).
 
 ## Discovery
 
@@ -75,9 +76,9 @@ a device switched on appears without a refresh, and one switched off is greyed a
    {"id": "media.elapsed_s", "type": "duration", "label": "Time"},
    {"id": "disc.tracks", "type": "int", "label": "Tracks"},
    {"id": "disc.total_s", "type": "duration", "label": "Total"},
-   {"id": "lcd", "type": "lines", "label": "Display"}],
+   {"id": "lcd", "type": "lines", "label": "Display", "columns": 12}],
  "controls": [
-   {"group": "transport", "keys": ["previous", "play", "pause", "stop", "next", "eject"]},
+   {"group": "transport", "keys": ["previous", "rewind", "play", "pause", "stop", "fast_forward", "next", "eject"]},
    {"group": "modes", "keys": ["repeat", "shuffle", "repeat_a_b", "program", "display", "dimmer"]},
    {"group": "numbers", "keys": ["digit_1", "digit_2", "digit_3", "digit_4", "digit_5", "digit_6", "digit_7",
                                  "digit_8", "digit_9", "digit_0", "enter", "clear"]},
