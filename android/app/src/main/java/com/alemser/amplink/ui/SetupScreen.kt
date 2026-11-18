@@ -46,6 +46,7 @@ import com.alemser.amplink.core.LocalNetwork
 import com.alemser.amplink.core.SETUP_HOST
 import com.alemser.amplink.core.SETUP_KEY
 import com.alemser.amplink.core.SETUP_PREFIX
+import com.alemser.amplink.core.UNKNOWN
 import com.alemser.amplink.core.WifiNetwork
 import com.alemser.amplink.core.WifiSetupClient
 import com.alemser.amplink.core.bridgeName
@@ -130,6 +131,18 @@ fun WifiSetupScreen(local: LocalNetwork, onDone: (String) -> Unit, onCancel: () 
                 setup.awaitOutcome()
             } catch (e: IOException) {
                 pick(setup, e.message)
+                return@launch
+            }
+            if (outcome.state == UNKNOWN) {
+                // The phone lost the setup network when the bridge's radio changed channel: the bridge may well
+                // be on the home network already. Look for it there by name before calling it a failure.
+                step = Step.Waiting("Lost the amp's setup network. Looking for it on your Wi-Fi…")
+                local.leaveSetup()
+                val ip = findOnHome("", name, local)
+                if (ip != null) onDone(ip) else step = Step.Failed(
+                    "Lost the amp's setup network while it joined ${network.ssid}, and it isn't on this phone's " +
+                        "Wi-Fi. If the password was wrong, the amp opens its setup network again in a moment.",
+                )
                 return@launch
             }
             if (outcome.state != "connected" || outcome.ip.isEmpty()) {
@@ -244,16 +257,17 @@ private fun NetworkRow(network: WifiNetwork, onClick: () -> Unit) {
 }
 
 /**
- * The bridge on the home network, once the phone is back on it: first at the IP it reported, then by discovery
- * (by name), for up to [waitMs].
+ * The bridge on the home network, once the phone is back on it: first at the IP it reported (if any), then by
+ * discovery (by name), for up to [waitMs].
  */
 private suspend fun findOnHome(ip: String, name: String, local: LocalNetwork, waitMs: Long = 30_000): String? {
-    val bridge = BridgeClient(ip)
+    val bridge = ip.takeIf { it.isNotEmpty() }?.let(::BridgeClient)
     var waited = 0L
     while (waited < waitMs) {
-        if (runCatching { bridge.description() }.isSuccess) return ip
+        if (bridge != null && runCatching { bridge.description() }.isSuccess) return ip
         val found = runCatching { discover(open = local::wifiSocket) }.getOrDefault(emptyList())
-        found.firstOrNull { it.name == name || it.ip == ip }?.let { return it.ip }
+        found.firstOrNull { (name.isNotEmpty() && it.name == name) || (ip.isNotEmpty() && it.ip == ip) }
+            ?.let { return it.ip }
         delay(2_000)
         waited += 2_000 + 2_100
     }

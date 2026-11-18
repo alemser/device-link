@@ -28,6 +28,8 @@ const val SETUP_PREFIX = "AmpLink-"
 const val SETUP_KEY = "amplink-setup"
 const val SETUP_HOST = "192.168.4.1"
 const val DISCOVERY_PORT = 47800
+/** [WifiSetupClient.awaitOutcome]'s state when the bridge's answers stopped coming before the end. */
+const val UNKNOWN = "unknown"
 /** What the app broadcasts to find the devices (docs/contract-v2.md, Discovery). */
 private val PROBE = "DEVICELINK?".toByteArray()
 
@@ -92,7 +94,8 @@ class WifiSetupClient(private val host: String, http: OkHttpClient = OkHttpClien
 
     /**
      * Asks `/wifi` until the join ends. A few lost answers are expected: the bridge's radio moves to the home
-     * network's channel while joining, and the setup network moves with it.
+     * network's channel while joining, and the setup network moves with it. Often the phone doesn't follow it
+     * and never hears the end: then the state is [UNKNOWN], and the bridge is to be looked for on the home network.
      */
     suspend fun awaitOutcome(timeoutMs: Long = OUTCOME_TIMEOUT_MS, everyMs: Long = 1_000): WifiStatus {
         var waited = 0L
@@ -103,7 +106,7 @@ class WifiSetupClient(private val host: String, http: OkHttpClient = OkHttpClien
             last = runCatching { status() }.getOrNull() ?: last
             if (last?.finished == true) return last
         }
-        return WifiStatus("failed", "The bridge didn't say whether it joined")
+        return WifiStatus(UNKNOWN, "The bridge didn't say whether it joined")
     }
 
     private fun request(path: String) = Request.Builder().url("http://$host$path")
