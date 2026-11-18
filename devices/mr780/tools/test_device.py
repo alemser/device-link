@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Tests the bridge's description (firmware/device.py) on the computer.
+"""Checks the bridge's description (firmware/device.py) against the DeviceLink contract api 2.
 
     python3 tools/test_device.py
 """
@@ -13,17 +13,28 @@ sys.path.insert(0, os.path.join(HERE, "..", "firmware"))
 
 import device   # noqa: E402
 
-d = json.loads(json.dumps(device.describe("abcd1234", "MR780-D85E")))
+raw = json.dumps(device.describe("abcd1234", "MR780-D85E"))
+d = json.loads(raw)
 assert d["api"] == 2
 assert d["kind"] == "amplifier"
 assert d["model"] == "Magnat MR 780" and d["name"] == "MR780-D85E"
 assert d["bridge_version"] == "abcd1234"
 assert d["firmware"] == "alemser/device-link/mr780"
-assert d["features"] == ["update", "wifi_setup"]
-assert d["state"] == [] and d["controls"] == [], "nothing is known yet: nothing to show"
+assert d["features"] == ["control", "update", "wifi_setup"]
+assert d["state"] == [], "no state reader yet (docs/plan.md): nothing to show"
+assert d["controls"] == [{"group": "power", "keys": ["power_toggle"]},
+                         {"group": "volume", "keys": ["volume_down", "volume_up", "mute"]},
+                         {"group": "input", "keys": ["prev_input", "next_input"]},
+                         {"group": "transport", "keys": ["previous", "next"]},
+                         {"group": "tuner", "keys": ["tune_down", "tune_up"]}]
 assert "settings" not in d, "the contract: device, state and remote only"
+# The remote holds exactly the keys the IR sender can send: none missing, none unknown.
+assert device.check() == ([], []), device.check()
+# Small enough to serve from a Pico in one go (contract: under 1.5 KB).
+assert len(raw) < 1500, len(raw)
+assert device.NAME == "mr780"       # tools/send.py and discovery use this name
 assert len(device.INPUTS) == 15
 # groove-rig's input cycle order (profiles/magnat_mr780.yaml): don't change it without changing it there.
 assert [i for i, _ in device.INPUTS] == ["usb_audio", "bluetooth", "phono", "cd", "dvd", "aux1", "aux2", "tape",
                                          "line_in", "fm", "dab", "opt1", "opt2", "coax1", "coax2"]
-print("all good")
+print("all good (%d bytes)" % len(raw))

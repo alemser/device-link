@@ -68,15 +68,40 @@ wire and the panel buttons).
 ~~**Phase 3: Pi Zero 2 WH inside the amp**~~: **dropped** on 2026-11-08 (see "No Pi Zero inside the amp"). The
 project ends at phase 2, with the Pico only.
 
+### The read-only phase (owner, 2026-11-18)
+
+The extensions and flats arrived and passed the bench test, but soldering wires on the extension's 1.0 mm legs is not
+feasible for the owner, and three rules hold from now on:
+
+- **Nothing more is bought** (an FFC-to-2.54 mm adapter was considered and turned down).
+- **Nothing on the amp is ever desoldered or cut.**
+- **No soldering at 1.0 mm pitch.**
+
+So the bridge does what the CD-S300 and the KX-393 do, strictly on the DeviceLink contract: **the device, its state
+and its remote (IR by wire)**. Phase 2 (writing to the display) is **parked**: without cutting the data lines there is
+nowhere to put the Pico in between them. The owner will think about a clean way, maybe a part made to order to act as
+the bridge.
+
+The Pico's wires go on **existing through-hole joints** (a wire added to a joint, nothing removed): the IR receiver's
+signal leg for the remote, and the points on the display board's back that the continuity map ties to each flat line.
+That map (amp unplugged, flat pin to joint) comes first, then the voltages are measured on those joints.
+
+Firmware since 2026-11-18: the IR sender, `/control` and `/ir/send` (from the KX-393), with the ten keys learned on
+the oceano-0003 board (groove-rig's codebook, NEC 40/BF): power, volume down and up, mute, inputs back and forward,
+◄◄ ►► and tuning down and up (`firmware/ir_codes.py`). Any other remote key can be tried with `tools/ir_try.py`.
+
 ## The flat cable (measured on 2026-10-30)
 
 - 21 lines, 1.0 mm pitch, ~22 mm wide.
-- **Bought on 2026-11-08** (on the way): the extension and the flat.
+- **Bought on 2026-11-08, arrived on 2026-11-18**: two extensions (YDFPC22PIN-1.0: P1 and P2 on the same face,
+  silkscreen "1" and "22", the ZIF wants the flat's contacts facing down) and the flats. Bench test flat → extension →
+  flat passed: 1:1, position 22 empty. Soldering on the legs turned out not feasible: see "The read-only phase".
 - Chosen parts: a **22P 1.0 mm FFC extension** (available ready-made), with the 21-way flat pushed against pin 1 and
   the gap at pin 22 packed with plastic or Kapton. **Test continuity line by line before powering up.** Flats: 21P,
   1.0 mm, ~10 cm, of both types (A and B), because you cannot see which side the contacts are on.
-- For phase 2: two extensions, with the Pico between them.
-- The Pico's wires are soldered to the extension, never to the Magnat's board.
+- ~~For phase 2: two extensions, with the Pico between them.~~ Phase 2 is parked (2026-11-18).
+- ~~The Pico's wires are soldered to the extension, never to the Magnat's board.~~ Replaced on 2026-11-18: wires
+  added to existing through-hole joints, nothing removed (see "The read-only phase").
 
 ## Step 1: photos
 
@@ -144,11 +169,10 @@ more, which makes interference and stability worse.
 The same Pico with the LogicAnalyzer used on the SP103, on the logic lines:
 
 - Screens: power-on (the warm-up countdown), volume, each input, DIM, DIRECT, INFO on DAB and FM, Bluetooth.
-- The remote: only what is missing. `groove-rig` already has MR 780 codes
-  (`internal/catalog/profiles/magnat_mr780.yaml`): **NEC, address 40/BF**, with `next_input` (cmd 1A), `prev_input`
-  (1E) and `volume_down` (1F), in Broadlink format. Missing there are power and volume up (never captured cleanly;
-  they may be learned only on the oceano board) and ◄◄ and ►► (previous and next on Bluetooth), plus whatever else
-  the remote has. Since the remote does not need the amp, it can be captured on the bench, with a 38 kHz IR receiver.
+- The remote: **done on 2026-11-18** without capturing. The oceano-0003 board's groove-rig codebook has ten learned
+  MR 780 keys, all **NEC 40/BF**: power 12, volume down 1F and up 1B, mute 0D, inputs back 1E and forward 1A, ◄◄ 13,
+  ►► 58, tuning down 11 and up 5A (`firmware/ir_codes.py`). Anything else on the remote can be tried with
+  `tools/ir_try.py`, or captured on the bench with a 38 kHz IR receiver.
 
 Decode and document in `docs/protocol.md`, with the captures in `captures/`.
 

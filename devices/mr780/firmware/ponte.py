@@ -1,9 +1,8 @@
 """The MR 780 bridge: the program main.py imports when the Pico starts.
 
-Today (2026-11-09), without the amp: cable-free Wi-Fi setup (wifi.py), updates over Wi-Fi (ota.py) and /device.
-/state exists, but with everything unknown (null): reading the display and controlling the amp come after the
-measurements and the captures (docs/plan.md). Even so, the Pico can already go inside the amp and get the rest over
-Wi-Fi.
+Wi-Fi without a cable (wifi.py), updates over Wi-Fi (ota.py), /device and, since 2026-11-18, the remote-control keys
+by wire (control.py, ir.py). /state exists, but with everything unknown (null): reading the display comes after the
+measurements and the captures (docs/plan.md). The read-only phase: nothing is ever written to the display.
 
 Run from the computer:  .venv/bin/mpremote run firmware/ponte.py   (or install and reset: see the README)
 """
@@ -13,6 +12,8 @@ import asyncio
 
 import device
 import ota
+from control import Control
+from ir import Remote
 from web import Publisher
 from wifi import Wifi
 
@@ -32,6 +33,7 @@ state = State()
 net = Wifi(model=device.NAME, hostname=device.NAME, prefix=device.NAME.upper(),
            label=device.MODEL, kind=device.KIND, api=device.API)
 device.net = net
+control = Control(state, Remote())      # early: until then GP6 has the RP2350's pull-down, which loads the IR line
 pub = None
 wifi_ok = False
 
@@ -62,6 +64,7 @@ async def confirm_update():
 async def main():
     global pub
     pub = Publisher(state, routes={"/update": ota.handle, "/device": device.handle,
+                                   "/control": control.handle, "/ir": control.handle,
                                    "/wifi": net.handle, "/": net.page})
     asyncio.create_task(net.task(wifi_result))
     await asyncio.sleep(0.1)            # Wi-Fi comes up before the server opens its socket

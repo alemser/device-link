@@ -2,8 +2,8 @@
 
 **2026-11-17.** The one contract between the bridges and the DeviceLink app. It replaced `api` 1 (the amplifier-only
 contract, removed on 2026-11-17; it is in the git history). Spoken by the Yamaha CD-S300 (keys, since 2026-11-16), the
-Acoustic Solutions SP103 (steps, switches and a select, since 2026-11-17), the Magnat MR 780 bridge (no state or
-controls yet, not installed) and the Yamaha KX-393 bridge (no hardware yet).
+Acoustic Solutions SP103 (steps, switches and a select, since 2026-11-17), the Magnat MR 780 bridge (keys since
+2026-11-18, no state yet, not installed) and the Yamaha KX-393 bridge (no hardware yet).
 
 A **device** is a piece of equipment with a Pico inside (the **bridge**). The **app** (DeviceLink) finds every device on
 the home Wi-Fi, shows them in one list, and builds each device's screen from what the device says about itself: **what

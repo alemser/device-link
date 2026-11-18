@@ -7,9 +7,14 @@ and controls the amp over Wi-Fi.
 The name is no longer "display proxy" because the project does much more than swap texts on the display: state,
 commands, VU meter and information screens.
 
-## Status (2026-11-16)
+## Status (2026-11-18)
 
-Still in **phase 1: read the state only** (what goes to the display, on or standby), without cutting anything. The
+**The read-only phase** (owner, 2026-11-18): as on the CD-S300 and the KX-393, the bridge gives the device, its state
+and its remote (IR by wire), on the DeviceLink contract and nothing beyond it. Nothing is written to the display, and
+nothing on the amp is cut or desoldered: the Pico's wires go on existing joints (`docs/plan.md`, "The read-only
+phase"). The remote has the ten keys learned on the oceano-0003 board: power, volume, mute, inputs, ◄◄ ►► and tuning.
+
+Before that, **phase 1: read the state only** (what goes to the display, on or standby), without cutting anything. The
 display is a **dot-matrix VFD, 2 lines × 16 characters**, with its controller inside the glass, connected to the main
 board by a 21-way flat cable with 1.0 mm pitch (`docs/research.md`). On 2026-11-07, with the multimeter and the amp
 unplugged, the GND lines, all the buttons, VOLUME, SOURCE and the remote's signal were mapped on the flat
@@ -54,20 +59,22 @@ The official manual stays in the local copy only, in `docs/manual/` (copyrighted
 ## Folders
 
 - `firmware/`: the Pico's program (MicroPython).
-  - This project's: `ponte.py` (the program) and `device.py` (`/device`).
+  - This project's: `ponte.py` (the program), `device.py` (`/device`), `control.py` (`/control`, `/ir`), `ir.py`
+    (the IR sender, by wire, from the KX-393) and `ir_codes.py` (the known codes).
   - **Copies of the shared base** (`firmware-base/` at the repository's root): `wifi.py`, `web.py`, `ota.py`,
     `udp.py`, `listeners.py` and `main.py`. Change them there and copy with
     `python3 firmware-base/copy_base.py --all` from the repository's root, never here.
   - `main.py` (the update gatekeeper) only goes to the Pico by USB; everything else goes over Wi-Fi.
 - `tools/`: the tests on the computer and `send.py` (update over Wi-Fi). `send.py`, `test_wifi.py` and
-  `test_listeners.py` come from the base; `test_device.py` is this project's.
+  `test_listeners.py` come from the base; `test_device.py`, `test_control.py`, `test_ir.py` and `ir_try.py` (trying
+  remote keys not learned yet) are this project's.
 - `captures/`: logic-analyzer captures.
 - `docs/img/`: photos of the boards.
 
 ## Test on the computer
 
 ```sh
-for t in wifi listeners device; do python3 tools/test_$t.py; done
+for t in wifi listeners device control ir; do python3 tools/test_$t.py; done
 python3 ../../firmware-base/copy_base.py --check    # are the base copies up to date?
 ```
 
