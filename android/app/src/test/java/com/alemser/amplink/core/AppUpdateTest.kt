@@ -87,20 +87,20 @@ class FirmwareReleaseTest {
         val (release, assets) = updater.latest("alemser/device-link/sp103")
         assertEquals("c59be28d", release.version)
         assertEquals("w", assets["web.py"])
-        assertEquals("/repos/alemser/device-link/releases?per_page=100&page=1", server.takeRequest().path)
+        assertEquals("/repos/alemser/device-link/releases?per_page=10&page=1", server.takeRequest().path)
         assertEquals("/sp103-firmware.json", server.takeRequest().path)
     }
 
     @Test
     fun aDeviceReleasePastTheFirstPageIsFound() = runBlocking {
         val manifest = server.url("/kx.json").toString()
-        val apps = (1..100).joinToString(",") { """{"tag_name": "app-$it", "assets": []}""" }
+        val apps = (1..10).joinToString(",") { """{"tag_name": "app-$it", "assets": []}""" }
         server.enqueue(MockResponse().setBody("[$apps]"))
         server.enqueue(MockResponse().setBody("""[{"tag_name": "kx393-1234abcd", "assets": [{"name": "firmware.json", "browser_download_url": "$manifest"}]}]"""))
         server.enqueue(MockResponse().setBody("""{"version": "1234abcd", "files": {}}"""))
         assertEquals("1234abcd", updater.latest("alemser/device-link/kx393").first.version)
-        assertEquals("/repos/alemser/device-link/releases?per_page=100&page=1", server.takeRequest().path)
-        assertEquals("/repos/alemser/device-link/releases?per_page=100&page=2", server.takeRequest().path)
+        assertEquals("/repos/alemser/device-link/releases?per_page=10&page=1", server.takeRequest().path)
+        assertEquals("/repos/alemser/device-link/releases?per_page=10&page=2", server.takeRequest().path)
     }
 
     @Test

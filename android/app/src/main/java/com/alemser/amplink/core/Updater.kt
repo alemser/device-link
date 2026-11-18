@@ -54,15 +54,15 @@ class Updater(
     }
 
     /**
-     * The newest release of [repo] tagged [prefix]…, page by page: GitHub lists the newest first, and the app's own
-     * `app-<n>` releases and the other devices' share the list, so one device's newest may be past the first page.
+     * The newest release of [repo] tagged [prefix]…: GitHub lists the newest first and can't filter by tag, so page by
+     * page until one matches (the app's own `app-<n>` and the other devices' releases share the list).
      */
     private suspend fun newest(repo: String, prefix: String): GithubRelease {
         for (page in 1..MAX_PAGES) {
-            val body = http.fetch(Request.Builder().url("$api/repos/$repo/releases?per_page=100&page=$page").build())
+            val body = http.fetch(Request.Builder().url("$api/repos/$repo/releases?per_page=$PAGE&page=$page").build())
             val releases = decode<List<GithubRelease>>(body)
             releases.firstOrNull { !it.draft && it.tagName.startsWith(prefix) }?.let { return it }
-            if (releases.size < 100) break
+            if (releases.size < PAGE) break
         }
         throw NoRelease("No release tagged $prefix… in $repo")
     }
@@ -120,8 +120,12 @@ class Updater(
         const val WAIT_S = 270
         const val POLL_S = 2
 
-        /** Chosen: 1000 releases back; GitHub's unauthenticated limit is 60 requests an hour. */
-        const val MAX_PAGES = 10
+        /**
+         * Chosen: the newest come first, so the device's is almost always on the first page; a small page keeps that
+         * one request light (a release with its assets is a few KB). 200 releases back at most.
+         */
+        const val PAGE = 10
+        const val MAX_PAGES = 20
     }
 }
 
