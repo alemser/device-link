@@ -91,7 +91,8 @@ class WifiSetupTest {
     fun awaitOutcomeGivesUp() = runTest {
         repeat(5) { server.enqueue(json("""{"state": "connecting"}""")) }
         val outcome = client.awaitOutcome(timeoutMs = 3, everyMs = 1)
-        assertEquals("failed", outcome.state)
+        assertEquals(UNKNOWN, outcome.state)
+        assertFalse(outcome.finished)
     }
 
     @Test
