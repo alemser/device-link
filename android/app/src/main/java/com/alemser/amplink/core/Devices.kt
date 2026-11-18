@@ -16,7 +16,8 @@ class KnownDevices(private val prefs: SharedPreferences) {
     private val serializer = ListSerializer(FoundBridge.serializer())
     private var known: Map<String, FoundBridge> = load()
     private val missed = mutableMapOf<String, Int>()
-    private val fresh = mutableSetOf<String>()
+    /** Never opened yet: kept across runs, so a device found while the app was closed still shows as new. */
+    private val fresh = prefs.getStringSet(NEW_KEY, null).orEmpty().toMutableSet()
 
     /** Folds in one discovery round and gives the list to show: online first, then by name. */
     fun update(found: List<FoundBridge>): List<ListedDevice> {
@@ -38,7 +39,7 @@ class KnownDevices(private val prefs: SharedPreferences) {
 
     /** Opening a device clears its "new" mark. */
     fun seen(name: String) {
-        fresh -= name
+        if (fresh.remove(name)) save()
     }
 
     fun forget(name: String) {
@@ -55,10 +56,14 @@ class KnownDevices(private val prefs: SharedPreferences) {
         emptyMap()
     }
 
-    private fun save() = prefs.edit { putString(KEY, Wire.encodeToString(serializer, known.values.toList())) }
+    private fun save() = prefs.edit {
+        putString(KEY, Wire.encodeToString(serializer, known.values.toList()))
+        putStringSet(NEW_KEY, fresh.toSet())
+    }
 
     private companion object {
         const val KEY = "devices"
+        const val NEW_KEY = "devices_new"
 
         /** Chosen: discovery runs every 5 s, and a probe is sometimes lost; 3 missed rounds is 15 s of silence. */
         const val MISSED_OFFLINE = 3

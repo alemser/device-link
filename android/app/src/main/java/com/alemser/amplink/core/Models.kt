@@ -79,4 +79,6 @@ data class UpdateStatus(
     val previous: String? = null,
     val files: Map<String, String> = emptyMap(),
     val staged: List<String> = emptyList(),
+    /** The version the last update applied, kept after a rollback: tells this update's outcome from an older one. */
+    val tried: String? = null,
 )

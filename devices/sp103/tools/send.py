@@ -89,6 +89,7 @@ def publish(firmware):
     import subprocess
     import tempfile
     repo, prefix = release_place(firmware)
+    ready_to_publish()
     files = local_files(None)
     digests = {n: sha(d) for n, d in files.items()}
     ver = version(digests)
@@ -110,6 +111,23 @@ def publish(firmware):
                         "--notes", "Bridge firmware %s (%d files)." % (ver, len(files)), manifest] + paths,
                        check=True)
     print("Published %s as release %s of %s." % (", ".join(sorted(files)), tag, repo))
+
+
+def ready_to_publish():
+    """A release is what the app installs: only from committed, pushed code, with the base copies up to date."""
+    import subprocess
+    root = os.path.normpath(os.path.join(HERE, "..", "..", ".."))
+
+    def git(*args):
+        return subprocess.run(["git", "-C", root] + list(args), capture_output=True, text=True).stdout.strip()
+    if git("status", "--porcelain", "--", os.path.normpath(FIRMWARE)):
+        sys.exit("firmware/ has uncommitted changes: commit them first, so the release matches the repository.")
+    if git("rev-list", "--count", "@{upstream}..HEAD") not in ("0", ""):
+        sys.exit("There are commits not pushed yet: push first, so the release matches GitHub.")
+    copier = os.path.join(root, "firmware-base", "copy_base.py")
+    if os.path.exists(copier) and subprocess.run([sys.executable, copier, "--all", "--check"],
+                                                 capture_output=True).returncode != 0:
+        sys.exit("The base copies are out of date: python3 firmware-base/copy_base.py --all, then commit.")
 
 
 def local_files(names):
@@ -172,7 +190,8 @@ def wait(host, expected, expected_files, started):
                 print("\nDone: version %s confirmed. The previous one (%s) is kept on the Pico." % (
                     expected, st["previous"]))
                 return True
-            if st["state"] == "rolled_back":
+            # "tried": the version that rolled back; a bridge from before 2026-11-18 doesn't say, so trust it.
+            if st["state"] == "rolled_back" and st.get("tried", expected) == expected:
                 print("\nThe new version FAILED and the Pico went back to the previous one (%s): %s." % (
                     st["version"], st["why"]))
                 print("See the error over USB: .venv/bin/mpremote (the Pico shows it at boot).")

@@ -13,7 +13,6 @@ lines (docs/plan.md, step 3), and each field goes in here once the bridge really
 describe() runs the same in MicroPython (Pico) and in the computer's Python (tools/test_device.py).
 """
 
-import json
 
 import ir_codes
 
@@ -46,7 +45,6 @@ INPUTS = (("usb_audio", "USB"), ("bluetooth", "BT"), ("phono", "PHONO"), ("cd", 
           ("dab", "DAB"), ("opt1", "OPT 1"), ("opt2", "OPT 2"), ("coax1", "COAX 1"), ("coax2", "COAX 2"))
 
 net = None                      # ponte.py sets it: the discovery name comes from the chip ("MR780-D85E")
-_cached = None
 
 
 def _select():
@@ -70,12 +68,6 @@ def check():
 
 
 async def handle(req, writer):
-    """The /device route (see web.Publisher)."""
-    global _cached
-    import ota
-    from web import reply, not_found
-    if req.path != "/device":
-        return await not_found(writer)
-    if _cached is None:
-        _cached = json.dumps(describe(await ota.current_version(), net.name if net else NAME)).encode()
-    await reply(writer, "200 OK", "application/json", _cached)
+    """Route /device (see web.Publisher): built once by the base and served as stored bytes."""
+    from web import serve_description
+    await serve_description(req, writer, lambda version: describe(version, net.name if net else NAME))

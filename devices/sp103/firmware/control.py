@@ -17,24 +17,16 @@ Runs the same in MicroPython (Pico) and in the computer's Python (tools/test_con
 import asyncio
 
 import ir_codes
+from waits import until
 
 MENUS = ("bass", "treble", "balance", "loudness", "speakers")
 STEPPED = ("volume", "bass", "treble", "balance")
 SWITCHES = ("loudness", "speakers")
 KEYS = {"up": "volume_up", "down": "volume_down"}
-POLL_MS = 20
 SCREEN_MS = 900                 # the amp redraws the screen well before this
 SETTLE_MS = 300                 # the same as the groove-rig profile
 MENU_END_MS = 7500              # a menu closes by itself in about 6 s
 MAX_PRESSES = 12                # two laps around the menu
-
-
-async def _until(ready, ms):
-    for _ in range(ms // POLL_MS):
-        if ready():
-            return True
-        await asyncio.sleep_ms(POLL_MS)
-    return ready()
 
 
 class Control:
@@ -57,7 +49,7 @@ class Control:
         return st.loudness if target == "loudness" else st.speakers
 
     async def _ir(self, command):
-        await _until(lambda: not self.remote.sending(), SCREEN_MS)
+        await until(lambda: not self.remote.sending(), SCREEN_MS)
         self.remote.send(command)
 
     async def _goto(self, target):
@@ -70,22 +62,22 @@ class Control:
                 return
             before = st.screen
             self.panel.press()
-            await _until(lambda: st.screen != before or st.input_id != wanted, SCREEN_MS)
+            await until(lambda: st.screen != before or st.input_id != wanted, SCREEN_MS)
             if wanted and st.input_id != wanted:
                 await self._ir("select_" + wanted)
-                await _until(lambda: st.input_id == wanted, SCREEN_MS)
+                await until(lambda: st.input_id == wanted, SCREEN_MS)
         raise ValueError("The amp didn't open " + target)
 
     async def _open(self, target):
         st = self.state
         if target == "volume":
-            if not await _until(lambda: st.screen not in MENUS, MENU_END_MS):
+            if not await until(lambda: st.screen not in MENUS, MENU_END_MS):
                 raise ValueError("The amp is still in a menu")
         elif target == "balance":
             await self._goto(target)
         elif st.screen != target:
             await self._ir(target)
-            await _until(lambda: st.screen == target, SCREEN_MS)
+            await until(lambda: st.screen == target, SCREEN_MS)
             await asyncio.sleep_ms(SETTLE_MS)
 
     async def adjust(self, target, direction):
@@ -93,14 +85,14 @@ class Control:
         old = self._value(target)
         for _ in range(2):
             await self._ir(KEYS[direction])
-            if await _until(lambda: self._value(target) != old, SCREEN_MS):
+            if await until(lambda: self._value(target) != old, SCREEN_MS):
                 return
 
     async def switch(self, target, on):
         await self._goto(target)
         if self._value(target) != on:
             await self._ir(KEYS["up" if on else "down"])
-            if not await _until(lambda: self._value(target) == on, SCREEN_MS):
+            if not await until(lambda: self._value(target) == on, SCREEN_MS):
                 raise ValueError("The amp didn't change " + target)
 
     async def run(self, query):

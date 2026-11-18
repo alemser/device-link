@@ -39,7 +39,7 @@ class AppUpdateTest {
         val latest = updates.latest()!!
         assertEquals(31, latest.versionCode)
         assertEquals("Faster", latest.notes)
-        assertEquals("/repos/alemser/device-link/releases?per_page=100", server.takeRequest().path)
+        assertEquals("/repos/alemser/device-link/releases?per_page=10&page=1", server.takeRequest().path)
 
         server.enqueue(MockResponse().setBody("APK BYTES"))
         val dir = Files.createTempDirectory("updates").toFile()
@@ -117,5 +117,39 @@ class FirmwareReleaseTest {
         server.enqueue(MockResponse().setBody("""{"version": "06576747", "files": {}}"""))
         assertEquals("06576747", updater.latest("alemser/sp103-mod").first.version)
         assertEquals("/repos/alemser/sp103-mod/releases/latest", server.takeRequest().path)
+    }
+}
+
+/** Installing on a bridge: an older rollback still on the bridge is not this update's outcome. */
+class InstallTest {
+    private lateinit var server: MockWebServer
+
+    @Before
+    fun start() {
+        server = MockWebServer()
+        server.start()
+    }
+
+    @After
+    fun stop() = server.shutdown()
+
+    @Test
+    fun anOlderRollbackIsNotThisUpdatesOutcome() = runBlocking {
+        val code = sha256("x = 1\n".toByteArray())
+        var polls = 0
+        server.dispatcher = object : okhttp3.mockwebserver.Dispatcher() {
+            override fun dispatch(request: okhttp3.mockwebserver.RecordedRequest): MockResponse = when {
+                request.path == "/update" && request.method == "GET" -> MockResponse().setBody(
+                    if (polls++ < 2) """{"version": "old", "state": "rolled_back", "why": "an older one", "tried": "older", "files": {}}"""
+                    else """{"version": "new", "state": "ok", "tried": "new", "files": {"a.py": "$code"}}""",
+                )
+                request.path == "/a.py" -> MockResponse().setBody("x = 1\n")
+                request.path == "/update/a.py" -> MockResponse().setBody("""{"file": "a.py", "sha256": "$code"}""")
+                else -> MockResponse().setBody("{}")
+            }
+        }
+        val client = BridgeClient("${server.hostName}:${server.port}")
+        val outcome = Updater().install(client, Release("new", mapOf("a.py" to code)), mapOf("a.py" to server.url("/a.py").toString())) {}
+        assertEquals(UpdateStep.Done("new"), outcome)
     }
 }

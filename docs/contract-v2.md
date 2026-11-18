@@ -48,7 +48,9 @@ A bridge may have routes of its own, outside the contract: for diagnosis with cu
 - Every answer closes the connection (`Connection: close`), except `/events`.
 - JSON answers, with `Cache-Control: no-store` and `Access-Control-Allow-Origin: *`.
 - Errors: `400` (or `403`, `404`) with `{"error": "text"}`, in English, ready to show as they are (`web.not_found`
-  for a 404).
+  for a 404). A request the bridge can't read (a bad request line or `Content-Length`) gets `400` too.
+- Query values are percent-encoded (`URLEncoder`); the bridge decodes them. Ids and key names are `snake_case`, so
+  they never need it in practice.
 
 ## Discovery
 
@@ -88,7 +90,7 @@ a device switched on appears without a refresh, and one switched off is greyed a
 | Field | Meaning |
 |---|---|
 | `api` | Contract version. Changes only when something stops being compatible |
-| `kind` | `amplifier`, `cd_player`, `tape_deck`, ... Picks the icon and the default layout |
+| `kind` | One of `amplifier`, `cd_player`, `tape_deck`, `tuner`, `turntable`, `streamer`, `dac`, or `other`. Picks the icon and the word in the list; an app that doesn't know a value shows a generic icon and the value with `_` as spaces |
 | `model`, `name` | What to show; `name` as in discovery |
 | `bridge_version` | Firmware version (the `version` of `GET /update`) |
 | `firmware` | Where this bridge's firmware is released: `owner/repo/device`, the releases of `owner/repo` tagged `<device>-<version>` (see [Updates](#updates-from-the-app-update)) |
@@ -172,7 +174,9 @@ connection from the same IP drops the old one, and with the cap reached the olde
 
 ## Updates from the app (`update`)
 
-The bridge side is `ota.py`: `GET /update` gives the running version and each file's hash; the upload routes take
+The bridge side is `ota.py`: `GET /update` gives the running version, each file's hash, the `state` (`ok`,
+`trial`, `rolled_back`) and `tried`, the version the last update applied (kept after a rollback, so a client tells
+its own update's outcome from an older one); the upload routes take
 files, apply them, and roll back by themselves if the new version doesn't confirm within 3 minutes. **No password**
 (decided 2026-11-16): the routes are on the home LAN only, like the rest of the contract, and the rollback protects
 against a bad version. `main.py` and `secrets.py` go only by USB.
@@ -241,6 +245,10 @@ with that prefix (`WifiNetworkSpecifier`) and the system shows the matching ones
   page](#a-devices-own-page). `api` stays 2: an older app shows no settings for a bridge that sends none, and this app
   ignores `settings` from an older bridge.
 
+- **`kind` values (2026-11-18):** `amplifier`, `cd_player`, `tape_deck`, `tuner`, `turntable`, `streamer`, `dac`,
+  `other`. A new kind of device adds its value here and an icon in the app; until then the app shows it generically.
+- **`GET /update` says `tried` (2026-11-18).** A bridge from before doesn't; a client then takes `rolled_back` as is.
+
 ## Open
 
-- The `kind` values beyond the devices built so far.
+Nothing.

@@ -80,11 +80,6 @@ assert control.check("play", True) == "busy"
 assert control.check("pause", False) == "unknown key"    # the KX-393 has no pause key: REC/PAUSE is "record"
 assert control.check(None, False) == "unknown key"
 
-assert control.parse_code("05") == 0x05
-assert control.parse_code("0x7A") == 0x7A
-assert control.parse_code("ff") == 0xFF
-for bad in (None, "", "100", "0x", "zz", "-1"):
-    assert control.parse_code(bad) is None, bad
 
 remote, panel = FakeRemote(), FakePanel()
 ctl = control.Control(FakeState(), remote, panel)

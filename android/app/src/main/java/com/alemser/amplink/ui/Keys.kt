@@ -16,6 +16,10 @@ import androidx.compose.material.icons.outlined.SkipPrevious
 import androidx.compose.material.icons.outlined.SpeakerGroup
 import androidx.compose.material.icons.outlined.Stop
 import androidx.compose.material.icons.outlined.DevicesOther
+import androidx.compose.material.icons.outlined.Adjust
+import androidx.compose.material.icons.outlined.Cast
+import androidx.compose.material.icons.outlined.GraphicEq
+import androidx.compose.material.icons.outlined.Voicemail
 import androidx.compose.ui.graphics.vector.ImageVector
 import com.alemser.amplink.core.KeyRef
 
@@ -57,6 +61,10 @@ fun kindIcon(kind: String): ImageVector = when (kind) {
     "cd_player" -> Icons.Outlined.Album
     "amplifier" -> Icons.Outlined.SpeakerGroup
     "tuner" -> Icons.Outlined.Radio
+    "tape_deck" -> Icons.Outlined.Voicemail          // the closest to a cassette: two reels
+    "turntable" -> Icons.Outlined.Adjust              // a record and its spindle
+    "streamer" -> Icons.Outlined.Cast
+    "dac" -> Icons.Outlined.GraphicEq
     else -> Icons.Outlined.DevicesOther
 }
 
@@ -65,6 +73,10 @@ fun kindLabel(kind: String): String = when (kind) {
     "cd_player" -> "CD player"
     "amplifier" -> "Amplifier"
     "tape_deck" -> "Cassette deck"
+    "tuner" -> "Tuner"
+    "turntable" -> "Turntable"
+    "streamer" -> "Streamer"
+    "dac" -> "DAC"
     "" -> "Device"
     else -> kind.replace('_', ' ').replaceFirstChar { it.uppercase() }
 }

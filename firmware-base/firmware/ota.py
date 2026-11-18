@@ -5,7 +5,7 @@ This file belongs to the shared base (firmware-base/): change it there and copy 
 Used by tools/send.py on the computer and by the DeviceLink app (docs/contract-v2.md). No password: the routes are on
 the home LAN only, and a bad version rolls itself back.
 
-    GET    /update            state: version, files (sha256), staged files
+    GET    /update            state: version, files (sha256), staged files, tried (the last update's version)
     PUT    /update/<name>.py  receives a file into new/ (checks its syntax)
     DELETE /update/<name>.py  marks a file for deletion at the next apply
     POST   /update/cancel     drops what was received and not applied
@@ -25,7 +25,7 @@ import asyncio
 import machine
 from binascii import hexlify
 
-from web import reply_json
+from web import reply_json, discard
 
 MARKER = "update.json"          # the same names as main.py
 OLD = "old"
@@ -149,7 +149,8 @@ async def status():
     previous = await _hashes(OLD) if _ls(OLD) else None
     return {"version": version(files), "state": m.get("state", "ok"), "why": m.get("why"),
             "previous": version(previous) if previous else None, "files": dict(files),
-            "staged": _ls(NEW), "enabled": True, "can_delete": True}
+            "staged": _ls(NEW), "enabled": True, "can_delete": True,
+            "tried": m.get("version")}           # the version the last update applied, kept after a rollback too
 
 
 def _valid_name(name):
@@ -158,21 +159,10 @@ def _valid_name(name):
             and all(c.isalpha() or c.isdigit() or c == "_" for c in base))
 
 
-async def _discard(req):
-    """Reads and drops the request body: answering without reading it drops the connection and the client never
-    sees the error message."""
-    left = req.length
-    while left > 0:
-        chunk = await req.reader.read(min(1024, left))
-        if not chunk:
-            break
-        left -= len(chunk)
-
-
 async def _stage(req, name):
     """Receives a file into new/ and checks that MicroPython can read the code."""
     if not _valid_name(name):
-        await _discard(req)
+        await discard(req)
         raise ValueError("%s cannot be updated over Wi-Fi" % name)
     if NEW not in os.listdir():
         os.mkdir(NEW)

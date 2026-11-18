@@ -1,6 +1,5 @@
 package com.alemser.amplink.core
 
-import kotlinx.serialization.Serializable
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import java.io.File
@@ -21,17 +20,15 @@ class AppUpdate(
 ) {
     /**
      * The newest app release, or null when there is none (or no APK in it). The devices' firmware releases live in
-     * the same repository (`<device>-<version>`), so it reads a full page and keeps only the `app-` ones.
+     * the same repository (`<device>-<version>`), so only the `app-` ones count.
      */
-    suspend fun latest(): AppRelease? {
-        val body = http.fetch(Request.Builder().url("$api/repos/$repo/releases?per_page=100").build())
-        return decode<List<GithubRelease>>(body)
-            .mapNotNull { r ->
-                val code = r.tagName.removePrefix(TAG_PREFIX).toIntOrNull()?.takeIf { r.tagName.startsWith(TAG_PREFIX) }
-                val apk = r.assets.firstOrNull { it.name.endsWith(".apk") }
-                if (code != null && apk != null && !r.draft) AppRelease(code, apk.browserDownloadUrl, r.body.orEmpty()) else null
-            }
-            .maxByOrNull { it.versionCode }
+    suspend fun latest(): AppRelease? =
+        http.newestReleases(api, repo) { appRelease(it) != null }.mapNotNull(::appRelease).maxByOrNull { it.versionCode }
+
+    private fun appRelease(r: GithubRelease): AppRelease? {
+        val code = r.tagName.removePrefix(TAG_PREFIX).toIntOrNull()?.takeIf { r.tagName.startsWith(TAG_PREFIX) }
+        val apk = r.assets.firstOrNull { it.name.endsWith(".apk") }
+        return if (code != null && apk != null) AppRelease(code, apk.browserDownloadUrl, r.body.orEmpty()) else null
     }
 
     /** Downloads [release]'s APK into [dir] (the app's cache), replacing an older download. */
@@ -41,17 +38,6 @@ class AppUpdate(
         dir.listFiles()?.forEach { it.delete() }
         return File(dir, "devicelink-${release.versionCode}.apk").apply { writeBytes(data) }
     }
-
-    @Serializable
-    private data class GithubRelease(
-        val tagName: String,
-        val draft: Boolean = false,
-        val body: String? = null,
-        val assets: List<Asset> = emptyList(),
-    )
-
-    @Serializable
-    private data class Asset(val name: String, val browserDownloadUrl: String)
 
     companion object {
         const val REPO = "alemser/device-link"

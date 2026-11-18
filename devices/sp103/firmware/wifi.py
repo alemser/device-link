@@ -284,10 +284,13 @@ class Wifi:
 
     async def handle(self, req, writer):
         """Routes /wifi (see web.Publisher)."""
-        from web import reply_json
+        from web import reply_json, not_found, discard, MAX_BODY
         path, method = req.path.rstrip("/"), req.method
         # The body is always read before answering: closing the connection with unread bytes makes lwIP send a
-        # reset, and the client loses the answer (seen with PUT's 403).
+        # reset, and the client loses the answer (seen with PUT's 403). A body too big for the Pico is dropped unread.
+        if req.length > MAX_BODY:
+            await discard(req)
+            return await reply_json(writer, {"error": "request too large"}, "400 Bad Request")
         body = await req.reader.readexactly(req.length) if req.length else b""
         if path == "/wifi" and method == "GET":
             return await reply_json(writer, self.describe())
@@ -296,7 +299,7 @@ class Wifi:
         if path == "/wifi/setup" and method == "POST":
             self.open_setup(SETUP_WINDOW_S)
             return await reply_json(writer, self.describe())
-        if path == "/wifi" and method in ("PUT", "POST", "DELETE"):
+        if path == "/wifi" and method in ("PUT", "DELETE"):
             if not self.setup_open():
                 return await reply_json(writer, {"error": "open the setup network first: POST /wifi/setup"},
                                         "403 Forbidden")
@@ -309,7 +312,7 @@ class Wifi:
                 return await reply_json(writer, {"error": str(e)}, "400 Bad Request")
             return await reply_json(writer, {"state": "connecting", "detail": self.pending[0], "ip": ""},
                                     "202 Accepted")
-        return await reply_json(writer, {"error": "not found"}, "404 Not Found")
+        return await not_found(writer)
 
     async def page(self, req, writer):
         """GET /: the setup page, only with the setup network open (the Pico has no web page otherwise)."""

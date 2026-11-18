@@ -10,7 +10,6 @@ the bench (docs/plan.md). The planned fields are power, transport, the tape type
 describe() runs the same in MicroPython (Pico) and CPython (tools/test_device.py).
 """
 
-import json
 
 import ir_codes
 
@@ -32,7 +31,6 @@ CONTROLS = (
 )
 
 net = None                      # ponte.py sets it: the discovery name comes from the chip ("KX393-D85E")
-_cached = None
 
 
 def describe(version, name):
@@ -49,12 +47,6 @@ def check():
 
 
 async def handle(req, writer):
-    """Route /device (see web.Publisher)."""
-    global _cached
-    import ota
-    from web import reply, not_found
-    if req.path != "/device":
-        return await not_found(writer)
-    if _cached is None:
-        _cached = json.dumps(describe(await ota.current_version(), net.name if net else NAME)).encode()
-    await reply(writer, "200 OK", "application/json", _cached)
+    """Route /device (see web.Publisher): built once by the base and served as stored bytes."""
+    from web import serve_description
+    await serve_description(req, writer, lambda version: describe(version, net.name if net else NAME))

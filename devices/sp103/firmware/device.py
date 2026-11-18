@@ -11,7 +11,6 @@ the names the person chose on that page).
 describe() runs the same in MicroPython (Pico) and in the computer's Python (tools/test_device.py).
 """
 
-import json
 
 from amp_state import INPUTS, INPUT_IDS
 
@@ -47,13 +46,12 @@ CONTROLS = (
 
 net = None                      # proxy.py sets it: the discovery name comes from the chip ("SP103-D4FE")
 input_names = None              # proxy.py sets it: () -> names.json "inputs" ({"TUNER": "Rega Planar 2"})
-_cached = None
 
 
 def forget():
     """The input names changed (proxy.set_texts, from the SP103's page): the next GET /device rebuilds the description."""
-    global _cached
-    _cached = None
+    import web
+    web.forget_description()
 
 
 def describe(version, name, custom=None):
@@ -78,13 +76,7 @@ def keys():
 
 
 async def handle(req, writer):
-    """Route /device (see web.Publisher)."""
-    global _cached
-    import ota
-    from web import reply, not_found
-    if req.path != "/device":
-        return await not_found(writer)
-    if _cached is None:
-        custom = input_names() if input_names else None
-        _cached = json.dumps(describe(await ota.current_version(), net.name if net else NAME, custom)).encode()
-    await reply(writer, "200 OK", "application/json", _cached)
+    """Route /device (see web.Publisher): built once by the base, with the input names chosen on the SP103's page."""
+    from web import serve_description
+    await serve_description(req, writer, lambda version: describe(
+        version, net.name if net else NAME, input_names() if input_names else None))

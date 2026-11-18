@@ -53,19 +53,10 @@ class Updater(
         return decode<Release>(http.fetch(Request.Builder().url(manifest).build())) to assets
     }
 
-    /**
-     * The newest release of [repo] tagged [prefix]…: GitHub lists the newest first and can't filter by tag, so page by
-     * page until one matches (the app's own `app-<n>` and the other devices' releases share the list).
-     */
-    private suspend fun newest(repo: String, prefix: String): GithubRelease {
-        for (page in 1..MAX_PAGES) {
-            val body = http.fetch(Request.Builder().url("$api/repos/$repo/releases?per_page=$PAGE&page=$page").build())
-            val releases = decode<List<GithubRelease>>(body)
-            releases.firstOrNull { !it.draft && it.tagName.startsWith(prefix) }?.let { return it }
-            if (releases.size < PAGE) break
-        }
-        throw NoRelease("No release tagged $prefix… in $repo")
-    }
+    /** The newest release of [repo] tagged [prefix]… (the app's own and the other devices' share the list). */
+    private suspend fun newest(repo: String, prefix: String): GithubRelease =
+        http.newestReleases(api, repo) { it.tagName.startsWith(prefix) }.firstOrNull()
+            ?: throw NoRelease("No release tagged $prefix… in $repo")
 
     /** Sends [release] to the device at [client], reporting each step; returns the outcome. */
     suspend fun install(
@@ -88,7 +79,14 @@ class Updater(
         }
         drop.forEach { client.stageDelete(it) }
         progress(UpdateStep.Restarting)
-        runCatching { client.updateAction("apply") }       // the answer may be lost as the bridge restarts
+        val applied = runCatching { client.updateAction("apply") }   // the answer may be lost as the bridge restarts
+        if (applied.isFailure) {
+            // Lost, or refused? A bridge that applied is on trial or restarting; one that didn't still has the files.
+            val st = runCatching { client.updateStatus() }.getOrNull()
+            if (st != null && st.state != "trial" && st.staged.isNotEmpty()) {
+                throw IOException("The device didn't apply the update: ${applied.exceptionOrNull()?.message}")
+            }
+        }
         return await(client, release.version).also(progress)
     }
 
@@ -97,20 +95,13 @@ class Updater(
             delay(POLL_S * 1000L)
             val st = runCatching { client.updateStatus() }.getOrNull() ?: return@repeat
             if (st.state == "ok" && st.version == version) return UpdateStep.Done(version)
-            if (st.state == "rolled_back") return UpdateStep.RolledBack(st.why ?: "the new version failed")
+            // `tried` tells this update's rollback from an older one (a bridge from before 2026-11-18 doesn't say).
+            if (st.state == "rolled_back" && (st.tried == null || st.tried == version)) {
+                return UpdateStep.RolledBack(st.why ?: "the new version failed")
+            }
         }
         return UpdateStep.RolledBack("the device didn't confirm in time; it goes back to the previous version by itself")
     }
-
-    @Serializable
-    private data class GithubRelease(
-        val tagName: String = "",
-        val draft: Boolean = false,
-        val assets: List<Asset> = emptyList(),
-    )
-
-    @Serializable
-    private data class Asset(val name: String, val browserDownloadUrl: String)
 
     private companion object {
         /** Only over USB: the gatekeeper and the bridge's own secrets (ota.py LOCKED). */
@@ -120,12 +111,7 @@ class Updater(
         const val WAIT_S = 270
         const val POLL_S = 2
 
-        /**
-         * Chosen: the newest come first, so the device's is almost always on the first page; a small page keeps that
-         * one request light (a release with its assets is a few KB). 200 releases back at most.
-         */
-        const val PAGE = 10
-        const val MAX_PAGES = 20
+
     }
 }
 

@@ -12,9 +12,8 @@ silence at the end.
 check() runs the same in MicroPython (Pico) and in the computer's Python (tools/test_control.py).
 """
 
-import asyncio
-
 import ir_codes
+from waits import until
 
 # /control answers once the key is out: a key takes about 110 ms. A cap, in case the line never goes quiet.
 DONE_MAX_MS = 2000
@@ -43,10 +42,7 @@ class Control:
     async def _done(self):
         """Waits for the IR line to go quiet: /control answers when the device has done it (docs/contract-v2.md,
         Controls), so the app's next tap doesn't get "busy". /ir/send too, so its status shows the key sent."""
-        for _ in range(DONE_MAX_MS // 10):
-            if not self.remote.sending():
-                return
-            await asyncio.sleep(0.01)
+        await until(lambda: not self.remote.sending(), DONE_MAX_MS)
 
     async def handle(self, req, writer):
         """Routes /control and /ir (see web.Publisher)."""

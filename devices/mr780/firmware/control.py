@@ -13,12 +13,12 @@ Only the "key" target: volume is a pair of keys, not a step, until the bridge ca
 One request at a time: while a key is going out, the next one gets "busy". A key takes about 110 ms, with the
 silence at the end.
 
-check() and parse_code() run the same in MicroPython (Pico) and in the computer's Python (tools/test_control.py).
+check() runs the same in MicroPython (Pico) and in the computer's Python (tools/test_control.py).
 """
 
-import asyncio
-
 import ir_codes
+from waits import until
+from web import hex_byte
 
 # /control answers once the key is out: a key takes about 110 ms. A cap, in case the line never goes quiet.
 DONE_MAX_MS = 2000
@@ -31,17 +31,6 @@ def check(key, sending):
     if sending:
         return "busy"
     return None
-
-
-def parse_code(text):
-    """A byte from its hex text ("1A", "0x40"), or None if it isn't one."""
-    if not text:
-        return None
-    if text[:2] in ("0x", "0X"):
-        text = text[2:]
-    if not 1 <= len(text) <= 2 or any(c not in "0123456789abcdefABCDEF" for c in text):
-        return None
-    return int(text, 16)
 
 
 class Control:
@@ -66,8 +55,8 @@ class Control:
         return self._press(key)
 
     def _press_code(self, query):
-        command = parse_code(query.get("code"))
-        address = parse_code(query["address"]) if "address" in query else ir_codes.ADDRESS
+        command = hex_byte(query.get("code"))
+        address = hex_byte(query["address"]) if "address" in query else ir_codes.ADDRESS
         if command is None or address is None:
             return "bad code"
         if self.remote.sending():
@@ -78,10 +67,7 @@ class Control:
     async def _done(self):
         """Waits for the IR line to go quiet: /control answers when the device has done it (docs/contract-v2.md,
         Controls), so the app's next tap doesn't get "busy". /ir/send too, so its status shows the key sent."""
-        for _ in range(DONE_MAX_MS // 10):
-            if not self.remote.sending():
-                return
-            await asyncio.sleep(0.01)
+        await until(lambda: not self.remote.sending(), DONE_MAX_MS)
 
     async def handle(self, req, writer):
         """Routes /control and /ir (see web.Publisher)."""

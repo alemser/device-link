@@ -71,11 +71,6 @@ assert control.check("power_toggle", False) is None              # an IR key on 
 assert control.check("direct", False) == "unknown key"           # a panel button, not on the remote
 assert control.check(None, False) == "unknown key"
 
-assert control.parse_code("1A") == 0x1A
-assert control.parse_code("0x40") == 0x40
-assert control.parse_code("ff") == 0xFF
-for bad in (None, "", "100", "0x", "zz", "-1"):
-    assert control.parse_code(bad) is None, bad
 
 remote = FakeRemote()
 ctl = control.Control(FakeState(), remote)
