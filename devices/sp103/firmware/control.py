@@ -103,15 +103,20 @@ class Control:
         if target == "key":             # also works in standby: that is how the amp turns on
             if query.get("name") not in ir_codes.COMMANDS:
                 raise ValueError("Unknown key")
-            return await self._ir(query["name"])
-        if self.state.power != "on":
-            raise ValueError("The amp isn't on")
+            await self._ir(query["name"])
+            # The contract's /control answers once done: here, once the key is out.
+            await until(lambda: not self.remote.sending(), SCREEN_MS)
+            return
+        # What was asked is checked first: a wrong request says so, whatever the amp's state.
         if target in STEPPED and query.get("dir") in KEYS:
             work = self.adjust(target, query["dir"])
         elif target in SWITCHES and query.get("on") in ("0", "1"):
             work = self.switch(target, query["on"] == "1")
         else:
             raise ValueError("Unknown control")
+        if self.state.power != "on":
+            work.close()                # never started: no "never awaited" warning
+            raise ValueError("The amp isn't on")
         self.busy = True
         try:
             await work

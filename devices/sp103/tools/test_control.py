@@ -118,4 +118,11 @@ try:
 except ValueError as e:
     assert str(e) == "The amp isn't on"
 assert amp.keys == []
+
+# A wrong request says so even in standby (the amp's state is checked only for a valid one).
+try:
+    run(amp, target="nothing", dir="up")
+    raise AssertionError("unknown in standby")
+except ValueError as e:
+    assert str(e) == "Unknown control"
 print("all good")
