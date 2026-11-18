@@ -21,12 +21,17 @@ assert d["model"] == "Magnat MR 780" and d["name"] == "MR780-D85E"
 assert d["bridge_version"] == "abcd1234"
 assert d["firmware"] == "alemser/device-link/mr780"
 assert d["features"] == ["control", "update", "wifi_setup"]
-assert d["state"] == [], "no state reader yet (docs/plan.md): nothing to show"
-assert d["controls"] == [{"group": "power", "keys": ["power_toggle"]},
-                         {"group": "volume", "keys": ["volume_down", "volume_up", "mute"]},
-                         {"group": "input", "keys": ["prev_input", "next_input"]},
-                         {"group": "transport", "keys": ["previous", "next"]},
-                         {"group": "tuner", "keys": ["tune_down", "tune_up"]}]
+assert d["state"] == [{"id": "power", "type": "enum", "values": ["on", "standby"]},
+                      {"id": "warmup_s", "type": "duration", "label": "Warming up"}]   # the LIGA wire only, so far
+assert [c["group"] for c in d["controls"]] == ["power", "volume", "input", "transport", "tuner"]
+assert d["controls"][0] == {"group": "power", "keys": ["power_toggle"]}
+assert d["controls"][1] == {"group": "volume", "keys": ["volume_down", "volume_up", "mute"]}
+assert d["controls"][3] == {"group": "transport", "keys": ["previous", "next"]}
+assert d["controls"][4] == {"group": "tuner", "keys": ["tune_down", "tune_up"]}
+# The input select (inputs.py): every input, in the cycle's order, pressed as select_<id>.
+sel = d["controls"][2]["select"]
+assert sel["state"] == "input_id" and len(sel["options"]) == 15
+assert sel["options"][2] == {"id": "phono", "name": "PHONO", "key": "select_phono"}
 assert "settings" not in d, "the contract: device, state and remote only"
 # The remote holds exactly the keys the IR sender can send: none missing, none unknown.
 assert device.check() == ([], []), device.check()

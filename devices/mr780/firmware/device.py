@@ -5,8 +5,10 @@ nothing else). Nothing changes while the bridge runs, so the JSON is built once,
 stored bytes afterwards (a Pico should not rebuild 1 KB of JSON per request).
 
 Since 2026-11-18 (owner): the read-only phase, as on the CD-S300 and the KX-393: device, state and remote, nothing
-written to the display. The remote holds the ten keys whose codes are known (ir_codes.py). No state fields yet: power, input and volume come from reading the display's lines (docs/plan.md,
-step 3), and each field goes in here once the bridge really reads it.
+written to the display. The remote holds the ten keys whose codes are known (ir_codes.py), with the input as a
+select that steps the cycle (inputs.py: the bridge tracks the input, plan B until it reads the display). State:
+power and the warm-up from the LIGA wire (power.py); volume and the real input will come from reading the display's
+lines (docs/plan.md, step 3), and each field goes in here once the bridge really reads it.
 
 describe() runs the same in MicroPython (Pico) and in the computer's Python (tools/test_device.py).
 """
@@ -22,19 +24,23 @@ MODEL = "Magnat MR 780"         # the full name: in /device and, as "label", in 
 FIRMWARE = "alemser/device-link/mr780"   # its releases: alemser/device-link, tagged mr780-<version> (send.py --publish)
 FEATURES = ("control", "update", "wifi_setup")
 
-STATE = ()
+STATE = (
+    {"id": "power", "type": "enum", "values": ["on", "standby"]},     # the LIGA wire (power.py)
+    {"id": "warmup_s", "type": "duration", "label": "Warming up"},    # the valves' 30 s; null outside it
+)
 
 CONTROLS = (
     ("power", ("power_toggle",)),
     ("volume", ("volume_down", "volume_up", "mute")),
-    ("input", ("prev_input", "next_input")),
+    ("input", None),                            # the select below (inputs.py, plan B: the bridge tracks the input)
     ("transport", ("previous", "next")),        # the remote's ◄◄ ►►: Bluetooth and USB
     ("tuner", ("tune_down", "tune_up")),
 )
+SELECT_KEYS = ("prev_input", "next_input")      # IR keys the select drives, not shown as buttons
 
 # The inputs in the order of the SOURCE knob and the remote, with groove-rig's ids
 # (internal/catalog/profiles/magnat_mr780.yaml). The names are the manual's; the display's come from the captures.
-# Not in the description yet: they become the "input" select once the bridge can read the input.
+# The "input" select's options, each pressed as the key select_<id> (inputs.py steps the cycle to it).
 INPUTS = (("usb_audio", "USB"), ("bluetooth", "BT"), ("phono", "PHONO"), ("cd", "CD"), ("dvd", "DVD"),
           ("aux1", "AUX 1"), ("aux2", "AUX 2"), ("tape", "TAPE"), ("line_in", "LINE IN"), ("fm", "FM"),
           ("dab", "DAB"), ("opt1", "OPT 1"), ("opt2", "OPT 2"), ("coax1", "COAX 1"), ("coax2", "COAX 2"))
@@ -43,16 +49,24 @@ net = None                      # ponte.py sets it: the discovery name comes fro
 _cached = None
 
 
+def _select():
+    return {"state": "input_id",
+            "options": [{"id": i, "name": n, "key": "select_" + i} for i, n in INPUTS]}
+
+
 def describe(version, name):
-    controls = [{"group": g, "keys": list(keys)} for g, keys in CONTROLS]
+    controls = [{"group": g, "keys": list(keys)} if keys else {"group": g, "select": _select()}
+                for g, keys in CONTROLS]
     return {"api": API, "kind": KIND, "model": MODEL, "name": name, "bridge_version": version,
             "firmware": FIRMWARE, "features": list(FEATURES), "state": list(STATE), "controls": controls}
 
 
 def check():
-    """Every key in the remote is one the IR sender knows, and every known one is in the remote (tools/test_device.py)."""
-    listed = [k for _, keys in CONTROLS for k in keys]
-    return sorted(set(listed) - set(ir_codes.KEYS)), sorted(set(ir_codes.KEYS) - set(listed))
+    """Every key in the remote is one the IR sender knows, and every known one is in the remote or driven by the
+    select (tools/test_device.py)."""
+    listed = [k for _, keys in CONTROLS if keys for k in keys]
+    known = set(ir_codes.KEYS) - set(SELECT_KEYS)
+    return sorted(set(listed) - known), sorted(known - set(listed))
 
 
 async def handle(req, writer):

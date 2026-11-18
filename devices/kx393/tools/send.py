@@ -234,8 +234,8 @@ def main():
                     help="publish firmware/ as a GitHub release (where device.FIRMWARE says), for the DeviceLink app")
     args = ap.parse_args()
     if args.publish:
-        from device import FIRMWARE
-        return publish(FIRMWARE)
+        import device       # not "from device import FIRMWARE": that would make FIRMWARE local to all of main()
+        return publish(device.FIRMWARE)
     host = args.host
 
     try:

@@ -101,4 +101,32 @@ assert call(ctl, "POST", "/ir/send?code=12") == (400, {"error": "busy"})
 assert call(ctl, "GET", "/control?target=key&name=next_input")[0] == 404
 assert len(remote.sent) == 5
 
+# The input select: select_<id> goes to the selector; next/prev sent alone are reported to it for the tracking.
+class FakeSelector:
+    def __init__(self):
+        self.busy = False
+        self.selected, self.raws = [], []
+
+    async def select(self, input_id):
+        self.selected.append(input_id)
+        return None if input_id == "cd" else "unknown input"
+
+    def raw(self, key):
+        self.raws.append(key)
+
+
+sel, remote = FakeSelector(), FakeRemote()
+ctl = control.Control(FakeState(), remote, sel)
+assert call(ctl, "POST", "/control?target=key&name=select_cd")[0] == 200
+assert call(ctl, "POST", "/control?target=key&name=select_nope") == (400, {"error": "unknown input"})
+assert sel.selected == ["cd", "nope"] and remote.sent == []
+assert call(ctl, "POST", "/control?target=key&name=next_input")[0] == 200
+assert call(ctl, "POST", "/control?target=key&name=volume_up")[0] == 200
+assert sel.raws == ["next_input"]
+sel.busy = True
+assert call(ctl, "POST", "/control?target=key&name=volume_up") == (400, {"error": "busy"})
+# Without a selector, select_ keys are just unknown.
+assert call(control.Control(FakeState(), FakeRemote()), "POST", "/control?target=key&name=select_cd") == (
+    400, {"error": "unknown key"})
+
 print("all good")

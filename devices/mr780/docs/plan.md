@@ -90,6 +90,17 @@ Firmware since 2026-11-18: the IR sender, `/control` and `/ir/send` (from the KX
 the oceano-0003 board (groove-rig's codebook, NEC 40/BF): power, volume down and up, mute, inputs back and forward,
 ◄◄ ►► and tuning down and up (`firmware/ir_codes.py`). Any other remote key can be tried with `tools/ir_try.py`.
 
+Installed on 2026-11-18 (Pico 2 W, `MR780-D8A4`), wired to 7 wires on the display board's joints
+(`docs/measurements.md`): IR control works, and the state has power (the LIGA wire, `power.py`) and the valves'
+30 s warm-up (`warmup_s`, counted by the bridge from power-on). **Pending:** the A, B, C data wires don't reach the
+Pico (to fix at the next opening); then the display's protocol, captured with `tools/bus_capture.py` (the bridge's
+own `/capture` route: triggered, can send an IR key on cue).
+
+**Plan B for the input (owner, 2026-11-18), until the display reader:** the app shows the 15 inputs as a select; the
+bridge tracks the input itself (`inputs.py`, `input.json`) and steps the cycle the shorter way, with groove-rig's
+measured timing. The first choice only tells it where the amp is (pick what the display shows); turning SOURCE or
+using the remote throws it off, and `GET /input?set=<id>` tells it again. The display reader will replace this.
+
 ## The flat cable (measured on 2026-10-30)
 
 - 21 lines, 1.0 mm pitch, ~22 mm wide.

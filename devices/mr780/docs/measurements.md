@@ -18,8 +18,15 @@ Everything measured with the amp **unplugged**, multimeter black probe on PHONO 
 | 12 | DIRECT button | Certain (goes to ~0 when pressed: no series resistor) |
 | 13, 14 | VOLUME | Both change when turning. Endless potentiometer or encoder without clicks: left for the analyzer |
 | 15, 16 | SOURCE (encoder with clicks, contacts A and B) | Certain |
-| 21 | Remote receiver, leg 1: **signal** | Likely (direct beep with the leg) |
-| 1, 2, 3, 4, 6, 18 | To be found: logic power, receiver power and the VFD data | — |
+| 21 | Remote receiver: **signal**, idle at 3.46 V | Certain (2026-11-18: beeps with the top joint of cable 5) |
+| 18 | **Receiver power**, 4.8 V in standby and on | Certain (2026-11-18: beeps with the receiver's power joint) |
+| 4 | **Switched 5 V**: 0.02 V in standby, 4.78 V on. The Pico's "amp on" signal | Certain (2026-11-18) |
+| 1, 2, 3 | **VFD data**: ~0.1 V in standby, oscillating up to ~4.6 V when on | Likely (2026-11-18); which joint is which still ambiguous |
+| 6 | Unknown: beeps with no joint on the display board's back | — |
+
+**2026-11-18 (amp powered):** the display's logic is **5 V**. On the display board's back, **cable 5** (the lilac
+wires at the left edge, seen from behind) is the IR receiver's: 4 joints, top = signal (pin 21), 2nd from top = power
+(pin 18), 2nd from bottom = GND. See the log for where each line reaches.
 
 What this means for the project:
 
@@ -34,14 +41,14 @@ What this means for the project:
 
 Open:
 
-1. **Receiver leg 3** (the right-hand one), its power: it is known not to go to 1–3 or 7–17; pins 4, 6, 18 and 21
-   are still to be measured. It also remains to note whether the receiver was viewed from the front (dome facing the
-   viewer) or from behind.
+1. ~~Receiver leg 3~~: pin 18 (2026-11-18).
 2. **Flat pin 1**: confirm which end it is (white mark on the board or via CN8).
 3. Confirm that the multimeter was on kΩ.
-4. **With the amp plugged in**: voltages of pins 1, 2, 3, 4, 6, 18 and 21, in standby and on. On the flat, only with
-   the 22P extension (1.0 mm pitch is too narrow for the probe with the amp on). Before that, safely: the main board's
-   power connector (`D5V`) and the `APD`, `SYS` and `POW/OF` wires.
+4. ~~Voltages of pins 1, 2, 3, 4, 18 and 21~~: done 2026-11-18. Pin 6 still without a voltage.
+5. **Pins 1, 2 and 3 against the 6 joints of the 3 upright resistors** left of the centre screw, in Ω rather than
+   beep: which joint is each pin's direct one (log, 2026-11-18).
+6. **`D5V`** on the main board's power connector, standby and on: whether pin 18 (4.8 V) is the same line, i.e.
+   whether pin 18 can power the Pico.
 
 ## Flat cable numbering rule
 
@@ -55,12 +62,12 @@ Open:
 
 | Pin | GND? (beep) | kΩ to GND | Connected to | Standby (V) | On (V) | Notes |
 |---|---|---|---|---|---|---|
-| 1 | no | 13.53 | | | | |
-| 2 | no | 8.62 | | | | |
-| 3 | no | 8.62 | | | | |
-| 4 | no | 6.98 | | | | |
+| 1 | no | 13.53 | group 2, joints 2 and 3 (?) | ~0.1 | oscillates | VFD data (likely) |
+| 2 | no | 8.62 | group 2, joints 1 and 2 (?) | ~0.1 | oscillates, 3.6–4.6 | VFD data (likely) |
+| 3 | no | 8.62 | group 2, joint 1 (?) | ~0.1 | oscillates, 3.6–4.0 | VFD data (likely) |
+| 4 | no | 6.98 | VFD row, 7th joint from the right | 0.02 | 4.78 | Switched 5 V: amp on |
 | 5 | **yes** | 0 | | | | |
-| 6 | no | 4.5 | | | | |
+| 6 | no | 4.5 | nothing found | | | |
 | 7 | no | 3.00 | | | | ON/STBY button |
 | 8 | no | 6.0 | | | | ►► button (likely) |
 | 9 | no | 10.45 | | | | MONO button (likely) |
@@ -72,10 +79,10 @@ Open:
 | 15 | no | 10.42 | | | | SOURCE, contact A |
 | 16 | no | 8.74 | | | | SOURCE, contact B |
 | 17 | **yes** | 0 | | | | |
-| 18 | no | 3.66 | | | | |
+| 18 | no | 3.66 | VFD row, 13th joint from the right; cable 5, 2nd from top | 4.8 | 4.8 | IR receiver power |
 | 19 | **yes** | 0 | | | | |
 | 20 | **yes** | 0 | | | | |
-| 21 | no | 8.74 | | | | Remote receiver, leg 1 (signal, likely) |
+| 21 | no | 8.74 | cable 5, top joint | 3.46 | 3.46 | IR receiver signal |
 
 ## Log
 
@@ -193,3 +200,74 @@ Superseded later: VOLUME is on pins 13 and 14 (not 11 and 10) and SOURCE on 15 a
   idles high. Strong candidate: **pin 21 = remote signal**.
 - **Leg 3** (the right-hand one), in Ω: pins **1 to 3** and **7 to 17**: no value (open). Pins 4, 6, 18 and 21 are
   still missing.
+
+### 2026-11-18, joints on the display board's back, then voltages
+
+Taken with the bench sheet (Claude's measurement page); the owner's text, as copied from it. "Group 2" is the group of
+joints just above and to the right of the flat connector (seen from behind, the screw on its left); "group 3" is the
+long row of VFD pins, counted from the right along its lower part, joints without solder counted too.
+
+Amp unplugged, beep:
+
+- **Cable 5** (lilac wires at the left edge): 4 joints. Top = pin 21 (IR signal); 2nd from bottom = GND; 2nd from top
+  = pin 18 (the receiver's power).
+- Pin 1: group 2, joints 2 and 3. Pin 2: group 2, joints 1 and 2. Pin 3: group 2, joint 1.
+- Pin 4: group 3, 7th joint. Pin 18: group 3, 13th joint.
+- Pin 6: beeps with nothing found.
+
+The group 2 beeps overlap (joint 1 with pins 2 and 3, joint 2 with pins 1 and 2), yet joints 2 and 3 read different
+voltages with the amp on, so they are not one node. Likely the beep sounding on a low resistance through a component,
+or the probe bridging two joints. To redo in Ω: each of pins 1, 2, 3 against each of the 3 joints.
+
+"Group 2" here is the owner's: **the 3 upright resistors just left of the centre screw** (seen from behind, above
+and right of the flat connector; owner's crop, 2026-11-18). Each line goes through one of them, so each has a joint on
+the flat's side and one beyond the resistor: a low-value resistor beeps at both ends, which explains the overlap. The bench
+sheet's first photo marked a different group (2 joints, above and left of the connector) as "2"; the first Ω
+attempt was made there by mistake: pins 1/2/3 against its joints 1 and 2 read 23.5/18.5/16.5 Ω (both joints the
+same), and against a third point 12.5/8/6.5 Ω. None near 0: that group is not one of these lines. To redo on the
+owner's group 2, noting the leads' own resistance first.
+
+Amp plugged in, black probe on GND, V DC, standby | on (values per group 2 joint where the owner gave them):
+
+| Line | Standby | On | Notes |
+|---|---|---|---|
+| Group 2, joint 1 | 0.10 | 3.64–4.0, oscillating | During the valve warm-up countdown |
+| Group 2, joint 2 | 0.10 (once 0.10–4.58) | 4.0–4.58, oscillating; once 4.50 | During the warm-up |
+| Group 2, joint 3 | 0.11 | 0.20 | |
+| Pin 4 | 0.02 | 4.78 | |
+| Pin 18 | 4.8 | 4.8 | |
+| Pin 21 | 3.46 | 3.46 | |
+
+Pins 1–3 against the bottom joint of each upright resistor (res1 left, res2 middle, res3 right), in Ω, as the owner
+read them ("0" = the meter showed 0.0): pin 1: 19.7 / 119.7 / 0; pin 2: 14.7 / 0 / 0; pin 3: 0 / 0 / 14.7.
+Inconsistent: 0.0 on res3 for pins 1 and 2, and on res2 for pins 2 and 3, would mean pins 1–3 shorted together,
+which their different voltages rule out (likely the probe bridging two 1.0 mm legs). Not needed anyway: **the three resistors are the three VFD data lines** (voltages above), and
+which one is clock or data is the logic analyzer's job. Esperas go on each resistor's bottom joint, labelled A, B, C
+from left to right.
+
+### 2026-11-18, the esperas (wires for the Pico), soldered
+
+Seven wires, each added on an existing joint of the display board (nothing removed), amp unplugged:
+
+| Label | Where | Wire colour |
+|---|---|---|
+| IR | Cable 5, top joint (pin 21) | blue |
+| 5V | Cable 5, 2nd from top (pin 18) | red |
+| GND | Cable 5, 2nd from bottom | white |
+| A | Left upright resistor, bottom joint | orange |
+| B | Middle upright resistor, bottom joint | olive |
+| C | Right upright resistor, bottom joint | purple |
+| LIGA | VFD row, lower part, 7th from the right (pin 4) | orange (same as A: labelled) |
+
+**PENDING (2026-11-18, amp closed again):** with the Pico wired, A, B and C read 0 all the time, also through a
+power-on and its countdown (triggered capture, `tools/bus_capture.py`), while LIGA reads right through the same PIO.
+So A, B and C don't reach GP2, GP3, GP4 (the same symptom as the IR wire, whose solder had come off). To check end to
+end with the beep at the next opening, resolder with strain relief, then capture power-on and volume.
+
+Checks, amp unplugged: blue/red/white beep with pins 21/18 and PHONO GROUND; no beep between neighbours (IR, 5V,
+GND among themselves; A–B, B–C; A, B, C against GND). Still to do with the amp on: display, remote and warm-up as
+before, and 4.8 V between red and white.
+
+What it means: the display's logic is 5 V, switched on with the amp (pin 4); pins 1–3 carry the VFD's data (the
+oscillation while the countdown runs); pin 18 is the only flat line alive in standby; the IR line idles at 3.46 V, so
+the Pico (3.3 V) can sit on it directly. `D5V`, `APD`, `SYS` and `POW/OF` were not measured.

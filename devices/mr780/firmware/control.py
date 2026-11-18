@@ -1,6 +1,7 @@
 """Commands to the MR 780 over the network (the contract's "control" group).
 
     POST /control?target=key&name=next_input   one remote key (ir_codes.KEYS); answers with the state
+    POST /control?target=key&name=select_cd    the input select: steps the cycle to that input (inputs.py), a few s
     POST /ir/send?cmd=next_input               the same key; answers with the IR line's status
     POST /ir/send?code=1A                      any command byte (hex), at the amp's address or &address=XX: for
                                                finding the keys nobody captured yet (tools/ir_try.py)
@@ -39,15 +40,25 @@ def parse_code(text):
 
 
 class Control:
-    def __init__(self, state, remote):
+    def __init__(self, state, remote, selector=None):
         self.state = state
         self.remote = remote
+        self.selector = selector        # inputs.Selector: the select_<id> keys and the input tracking
 
     def _press(self, key):
-        error = check(key, self.remote.sending())
+        busy = self.remote.sending() or (self.selector is not None and self.selector.busy)
+        error = check(key, busy)
         if error is None:
             self.remote.send(key)
+            if self.selector is not None and key in ("next_input", "prev_input"):
+                self.selector.raw(key)
         return error
+
+    async def _press_any(self, key):
+        """A remote key, or select_<id> for the input select (inputs.py)."""
+        if key and key.startswith("select_") and self.selector is not None:
+            return await self.selector.select(key[len("select_"):])
+        return self._press(key)
 
     def _press_code(self, query):
         command = parse_code(query.get("code"))
@@ -69,7 +80,7 @@ class Control:
         if req.path == "/control":
             if req.query.get("target") != "key":
                 return await reply_json(writer, {"error": "unknown target"}, "400 Bad Request")
-            error = self._press(req.query.get("name"))
+            error = await self._press_any(req.query.get("name"))
         elif "code" in req.query:
             error = self._press_code(req.query)
         else:
