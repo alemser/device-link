@@ -146,7 +146,19 @@ fun Hint(text: String, color: Color = MaterialTheme.colorScheme.onSurfaceVariant
 }
 
 @Composable
-fun SwitchRow(label: String, checked: Boolean, hint: String? = null, onChange: (Boolean) -> Unit) {
+fun SwitchRow(label: String, checked: Boolean?, hint: String? = null, onChange: (Boolean) -> Unit) {
+    if (checked == null) {
+        // Unknown is not off (docs/contract-v2.md, "For the app" 5): no switch position to guess, both choices offered.
+        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+            Column(Modifier.weight(1f)) {
+                Text(label)
+                Hint(hint ?: "Unknown")
+            }
+            TextButton(onClick = { onChange(false) }) { Text("Off") }
+            TextButton(onClick = { onChange(true) }) { Text("On") }
+        }
+        return
+    }
     Row(
         Modifier
             .fillMaxWidth()

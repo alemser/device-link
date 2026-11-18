@@ -105,7 +105,11 @@ async def reply_json(writer, obj, status="200 OK"):
     answers.append((status, obj))
 
 
-web.reply, web.reply_json = reply, reply_json
+async def not_found(writer, text="not found"):
+    answers.append(("404 Not Found", {"error": text}))
+
+
+web.reply, web.reply_json, web.not_found = reply, reply_json, not_found
 
 
 class Reader:

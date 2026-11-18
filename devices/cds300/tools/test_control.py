@@ -20,11 +20,16 @@ class FakeRemote:
     def __init__(self):
         self.keys = []
         self.busy = False
+        self.out = 0            # polls of sending() until the last key is out
 
     def sending(self):
+        if self.out:
+            self.out -= 1
+            return True
         return self.busy
 
     def send(self, key):
+        self.out = 3
         self.keys.append(key)
 
     def status(self):
@@ -66,6 +71,7 @@ ctl = control.Control(FakeState(), remote)
 
 # One key through /control: it goes out, and the answer is the state.
 assert call(ctl, "POST", "/control?target=key&name=play") == (200, {"power": None, "version": 0})
+assert remote.out == 0   # /control answered only once the key was out (contract: when done)
 assert remote.keys == ["play"]
 
 # The same key through /ir/send: the answer is the line's status.

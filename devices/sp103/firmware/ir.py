@@ -118,11 +118,11 @@ class Remote:
 
     async def handle(self, req, writer):
         """/ir routes (see web.Publisher and docs/api-state.md)."""
-        from web import reply, reply_json
+        from web import reply_json, not_found
         if req.path == "/ir" and req.method == "GET":
             return await reply_json(writer, self.status())
         if req.method != "POST" or req.path != "/ir/send":
-            return await reply(writer, "404 Not Found", "text/plain", b"not found\n")
+            return await not_found(writer)
         command = req.query.get("cmd")
         if self.sending():
             return await reply_json(writer, {"error": "busy"}, "400 Bad Request")

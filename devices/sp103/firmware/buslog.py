@@ -124,7 +124,7 @@ class BusLog:
 
     async def handle(self, req, writer):
         """Route /bus (see web.Publisher)."""
-        from web import reply, reply_json
+        from web import reply_json, not_found
         now = time.ticks_ms()
         if req.path == "/bus.json":
             await reply_json(writer, self.stats(now))
@@ -147,4 +147,4 @@ class BusLog:
                 writer.write(part.encode())
                 await writer.drain()            # here the listener keeps running between chunks
         else:
-            await reply(writer, "404 Not Found", "text/plain", b"not found\n")
+            await not_found(writer)

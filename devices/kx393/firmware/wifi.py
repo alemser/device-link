@@ -313,9 +313,9 @@ class Wifi:
 
     async def page(self, req, writer):
         """GET /: the setup page, only with the setup network open (the Pico has no web page otherwise)."""
-        from web import reply
+        from web import reply, not_found
         if req.path != "/" or not self.setup_open():
-            return await reply(writer, "404 Not Found", "text/plain", b"not found\n")
+            return await not_found(writer)
         await reply(writer, "200 OK", "text/html; charset=utf-8", PAGE.replace("NAME", self.setup_ssid).encode())
 
     # --- discovery ---

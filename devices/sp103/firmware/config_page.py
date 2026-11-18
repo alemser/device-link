@@ -18,11 +18,11 @@ net = None                      # proxy.py sets it: the setup page goes first wh
 
 async def handle(req, writer):
     """Routes / and /config (see web.Publisher)."""
-    from web import reply
+    from web import reply, not_found
     if req.path == "/" and net is not None and net.setup_open():
         return await net.page(req, writer)
     if req.path not in ("/", "/config"):
-        return await reply(writer, "404 Not Found", "text/plain", b"not found\n")
+        return await not_found(writer)
     name = net.name if net is not None else "SP103"
     await reply(writer, "200 OK", "text/html; charset=utf-8", PAGE.replace("NAME", name).encode())
 

@@ -39,6 +39,14 @@ class BridgeClientTest {
     }
 
     @Test
+    fun anotherApiIsRefused() = runBlocking {
+        answer("""{"api": 3, "kind": "amplifier", "name": "X-1"}""")
+        val failed = runCatching { client.description() }.exceptionOrNull()
+        assertTrue(failed is BridgeError)
+        assertTrue(failed!!.message!!.contains("api 3"))
+    }
+
+    @Test
     fun aBadAnswerIsAnIoError() = runBlocking {
         answer("<html>")
         val failed = runCatching { client.description() }.exceptionOrNull()

@@ -154,12 +154,12 @@ class Routes:
         self.apply = apply
 
     async def handle(self, req, writer):
-        from web import reply, reply_json
+        from web import reply_json, not_found
         body = await req.reader.readexactly(req.length) if req.length else b""
         if req.path == "/settings/fields":
             return await reply_json(writer, fields(self.get_cfg()["inputs"]))
         if req.path != "/settings":
-            return await reply(writer, "404 Not Found", "text/plain", b"not found\n")
+            return await not_found(writer)
         error = None
         try:
             if req.method == "PATCH":

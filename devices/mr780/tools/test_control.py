@@ -21,14 +21,19 @@ class FakeRemote:
     def __init__(self):
         self.sent = []          # (address, command)
         self.busy = False
+        self.out = 0            # polls of sending() until the last key is out
 
     def sending(self):
+        if self.out:
+            self.out -= 1
+            return True
         return self.busy
 
     def send(self, key):
         self.send_command(ir_codes.COMMANDS[key])
 
     def send_command(self, command, address=ir_codes.ADDRESS):
+        self.out = 3
         self.sent.append((address, command))
 
     def status(self):
@@ -79,6 +84,7 @@ A = ir_codes.ADDRESS
 # One key through /control: it goes out as IR, and the answer is the state.
 assert call(ctl, "POST", "/control?target=key&name=next_input") == (200, {"power": None, "version": 0})
 assert call(ctl, "POST", "/control?target=key&name=volume_down") == (200, {"power": None, "version": 0})
+assert remote.out == 0   # /control answered only once the key was out (contract: when done)
 assert remote.sent == [(A, 0x1A), (A, 0x1F)]
 
 # /ir/send: a key, or any byte at the amp's address or a given one.

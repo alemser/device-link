@@ -16,7 +16,12 @@ with its silence); power_toggle about 200 ms.
 check() and parse_code() run the same in MicroPython (Pico) and in the computer's Python (tools/test_control.py).
 """
 
+import asyncio
+
 import ir_codes
+
+# /control answers once the key is out: a key takes about 650 ms (six frames). A cap, in case the line never goes quiet.
+DONE_MAX_MS = 3000
 
 POWER = "power_toggle"
 
@@ -70,9 +75,17 @@ class Control:
         self.remote.send_command(command, address)
         return None
 
+    async def _done(self):
+        """Waits for the IR line to go quiet: /control answers when the device has done it (docs/contract-v2.md,
+        Controls), so the app's next tap doesn't get "busy". /ir/send too, so its status shows the key sent."""
+        for _ in range(DONE_MAX_MS // 10):
+            if not self.remote.sending():
+                return
+            await asyncio.sleep(0.01)
+
     async def handle(self, req, writer):
         """Routes /control and /ir (see web.Publisher)."""
-        from web import reply, reply_json
+        from web import reply_json, not_found
         if req.path == "/ir" and req.method == "GET":
             return await reply_json(writer, self.remote.status())
         if req.path == "/ir/hold" and req.method == "POST":
@@ -84,7 +97,7 @@ class Control:
                 return await reply_json(writer, {"error": "bad ms"}, "400 Bad Request")
             return await reply_json(writer, self.remote.status())
         if req.method != "POST" or req.path not in ("/control", "/ir/send"):
-            return await reply(writer, "404 Not Found", "text/plain", b"not found\n")
+            return await not_found(writer)
         if req.path == "/control":
             if req.query.get("target") != "key":
                 return await reply_json(writer, {"error": "unknown target"}, "400 Bad Request")
@@ -96,4 +109,5 @@ class Control:
             error = "unknown key" if key == POWER else await self._press(key)
         if error:
             return await reply_json(writer, {"error": error}, "400 Bad Request")
+        await self._done()
         await reply_json(writer, self.state.to_dict() if req.path == "/control" else self.remote.status())

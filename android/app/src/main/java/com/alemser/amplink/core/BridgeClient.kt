@@ -46,8 +46,17 @@ class BridgeClient(val host: String) {
         .readTimeout(IDLE_TIMEOUT_S, TimeUnit.SECONDS)
         .build()
 
-    /** The device's description, read once when its screen opens. */
-    suspend fun description(): Description = decode(send(request("/device")))
+    /**
+     * The device's description, read once when its screen opens. A device on another `api` is refused: the number
+     * changes only when something stops being compatible (docs/contract-v2.md).
+     */
+    suspend fun description(): Description {
+        val d = decode<Description>(send(request("/device")))
+        if (d.api != DEVICELINK_API) {
+            throw BridgeError("This device speaks DeviceLink api ${d.api}; this app knows api $DEVICELINK_API. Update the ${if (d.api > DEVICELINK_API) "app" else "device"}.")
+        }
+        return d
+    }
 
     /** One key of the device's remote, by name. */
     suspend fun press(key: String) {

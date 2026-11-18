@@ -54,9 +54,9 @@ async def handle(req, writer):
     """Route /device (see web.Publisher)."""
     global _cached
     import ota
-    from web import reply
+    from web import reply, not_found
     if req.path != "/device":
-        return await reply(writer, "404 Not Found", "text/plain", b"not found\n")
+        return await not_found(writer)
     if _cached is None:
         from ponte import net
         _cached = json.dumps(describe(await ota.current_version(), net.name)).encode()

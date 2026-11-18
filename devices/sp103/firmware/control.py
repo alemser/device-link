@@ -128,9 +128,9 @@ class Control:
 
     async def handle(self, req, writer):
         """/control route (see web.Publisher)."""
-        from web import reply, reply_json
+        from web import reply_json, not_found
         if req.path != "/control" or req.method != "POST":
-            return await reply(writer, "404 Not Found", "text/plain", b"not found\n")
+            return await not_found(writer)
         try:
             await self.run(req.query)
         except ValueError as e:

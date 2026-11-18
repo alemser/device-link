@@ -90,8 +90,8 @@ async def confirm_update():
 
 
 async def not_found(req, writer):
-    from web import reply
-    await reply(writer, "404 Not Found", "text/plain", b"display reader not running\n")
+    import web
+    await web.not_found(writer, "display reader not running")
 
 
 async def main():

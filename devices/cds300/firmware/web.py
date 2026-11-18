@@ -57,6 +57,11 @@ async def reply_json(writer, obj, status="200 OK"):
     await reply(writer, status, "application/json", json.dumps(obj).encode())
 
 
+async def not_found(writer, text="not found"):
+    """404 in the contract's error shape: {"error": "text"} (docs/contract-v2.md, Transport)."""
+    await reply_json(writer, {"error": text}, "404 Not Found")
+
+
 class Publisher:
     def __init__(self, state, port=80, routes=None):
         self.state = state
@@ -102,7 +107,7 @@ class Publisher:
             elif "/" + route in self.routes:
                 await self.routes["/" + route](req, writer)
             else:
-                await reply(writer, "404 Not Found", "text/plain", b"not found\n")
+                await not_found(writer)
         except Exception as e:
             print("http:", e)
         try:

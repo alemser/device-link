@@ -16,3 +16,6 @@ firmware/secrets.py
 
 # The VU relay's binaries
 relay/bin/
+
+# A stray `go build` output (the Makefile builds into bin/)
+relay/relay

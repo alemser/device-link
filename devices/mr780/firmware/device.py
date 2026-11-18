@@ -73,9 +73,9 @@ async def handle(req, writer):
     """The /device route (see web.Publisher)."""
     global _cached
     import ota
-    from web import reply
+    from web import reply, not_found
     if req.path != "/device":
-        return await reply(writer, "404 Not Found", "text/plain", b"not found\n")
+        return await not_found(writer)
     if _cached is None:
         _cached = json.dumps(describe(await ota.current_version(), net.name if net else NAME)).encode()
     await reply(writer, "200 OK", "application/json", _cached)

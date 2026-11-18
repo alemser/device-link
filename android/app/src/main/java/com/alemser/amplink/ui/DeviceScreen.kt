@@ -260,7 +260,7 @@ private fun ControlSection(
                 onUp = { commands.run { client.step(bound.target, true) } })
         }
         group.switches.forEach { bound ->
-            val on = bound.state?.let { at(state, it) as? JsonPrimitive }?.booleanOrNull ?: false
+            val on = bound.state?.let { at(state, it) as? JsonPrimitive }?.booleanOrNull   // null: unknown, not off
             SwitchRow(bound.label ?: groupTitle(bound.target), on) { commands.run { client.switch(bound.target, it) } }
         }
         group.select?.let { select ->
