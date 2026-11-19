@@ -232,6 +232,28 @@ with that prefix (`WifiNetworkSpecifier`) and the system shows the matching ones
 5. **Don't treat `null` as off.** After a bridge restarts with its device in standby, `power` stays `null`.
 6. **Discovery repeats every 5 s, but only while the device list is visible.**
 
+## For groove-rig
+
+[groove-rig](https://github.com/alemser/groove-rig) (`docs/devicelink.md` there) is the other client: it sets a device
+up from its description and controls it with no IR. What a bridge can count on from it:
+
+1. **Bound by `name`.** The rig keeps a device by its discovery `name` and follows its IP: a new IP is the same
+   device. A `name` that changes is a new device to the rig.
+2. **Discovery every 60 s, only while switched on in the rig** (off by default): the same three probes over 2 s, then
+   one `GET /device` per bridge that answered, every round (a description may change with no sign in the answer).
+   Three missed rounds read offline.
+3. **One `/events` per device**, held all the time while the device is added: the amplifier's as its state provider,
+   another device's only when its description lists `state`. With the app's own, that is two of the SP103's three.
+4. **`/control` one request at a time per device**, each waited for up to 30 s; the `{"error"}` text is shown to the
+   person as worded, so it is written for them.
+5. **What it sends:** every key as `target=key`; an amplifier's input by its option's `key`, which must be
+   `select_<id>`; steps `volume`, `bass`, `treble`, `balance` and switches `loudness`, `speakers`, by those `target`
+   names. A description with any other step or switch, a step, switch or select on a device that isn't an amplifier,
+   or an amplifier without exactly one select is refused whole, not set up in part.
+6. **What it reads from an amplifier's state:** the flat fields `power` (`on`, `standby`), `volume_db`, `input_id`,
+   `bass_db`, `treble_db`, `balance` (`{"side", "db"}`), `loudness`, `speakers`, and `warmup_s` (seconds of warm-up
+   left after a power-on; present, even `null`, means the bridge reports warm-up). Renaming one breaks the rig.
+
 ## Decided (2026-11-16 and 17)
 
 - One repository for everything (2026-11-17): the contract, the app, the shared base and every device
