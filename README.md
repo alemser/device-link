@@ -22,8 +22,7 @@ the necessary electronics experience; otherwise, consult a qualified technician.
 
 The app lists every device on the Wi-Fi by itself, marks a new one, and opens each one's screen, built from the
 device's own description. It sets up a new device's Wi-Fi through the `DeviceLink-…` network the device opens, and
-updates each device from its GitHub releases. The app also recognizes the legacy `AmpLink-…` setup networks during
-the transition. (`api` 1, the first amplifier-only contract, was removed on 2026-11-17.)
+updates each device from its GitHub releases.
 
 Each device folder holds its bridge's firmware (`firmware/`, exactly what goes on its Pico, base copies included), its
 tools and tests (`tools/`), its docs and its captures. The devices had their own repositories until 2026-11-17
