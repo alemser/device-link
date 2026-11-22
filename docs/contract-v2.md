@@ -198,9 +198,10 @@ against a bad version. `main.py` and `secrets.py` go only by USB.
 To set up a bridge's Wi-Fi without a cable. The bridge side's details are in `devices/sp103/docs/wifi.md`.
 
 **The setup network.** With no saved network, or unable to connect for 2 minutes, the bridge opens its own network
-`AmpLink-<name>` (e.g. `AmpLink-SP103-D85E`), WPA2, fixed key **`amplink-setup`**, and keeps trying the home network.
-On it, the bridge is `192.168.4.1`. Every setup network starts with `AmpLink-`: on Android, the app asks for a network
-with that prefix (`WifiNetworkSpecifier`) and the system shows the matching ones, without location permission.
+`DeviceLink-<name>` (e.g. `DeviceLink-SP103-D85E`), WPA2, fixed key **`amplink-setup`**, and keeps trying the home
+network. On it, the bridge is `192.168.4.1`. The app also recognizes the legacy `AmpLink-` prefix during the
+transition. Android asks for a matching network (`WifiNetworkSpecifier`) and shows the available choices without
+location permission.
 
 | Route | What |
 |---|---|
@@ -212,7 +213,7 @@ with that prefix (`WifiNetworkSpecifier`) and the system shows the matching ones
 
 **The app's flow:**
 
-1. Join the `AmpLink-…` network and read `GET /wifi/networks`.
+1. Join the `DeviceLink-…` network (or the legacy `AmpLink-…`) and read `GET /wifi/networks`.
 2. `PUT /wifi` with the chosen network, and read `GET /wifi` every second until `connected` or `failed`. Some answers
    get lost along the way: the bridge's radio moves to the home network's channel, and the setup network moves with
    it. The bridge gives up a network after 15 s and then goes back to the previous one; wait up to about 40 s.

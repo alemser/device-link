@@ -14,7 +14,7 @@ describe() runs the same in MicroPython (Pico) and CPython (tools/test_device.py
 import ir_codes
 
 API = 2
-NAME = "kx393"                  # the discovery and network name (kx393.local, AmpLink-KX393-XXXX); send.py reads it
+NAME = "kx393"                  # the discovery and network name (kx393.local, DeviceLink-KX393-XXXX); send.py reads it
 KIND = "tape_deck"
 MODEL = "Yamaha KX-393"
 FIRMWARE = "alemser/device-link/kx393"   # its releases: alemser/device-link, tagged kx393-<version> (send.py --publish)

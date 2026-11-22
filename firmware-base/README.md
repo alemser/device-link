@@ -8,7 +8,7 @@ MicroPython runs the copy.
 
 | File | What it does |
 |---|---|
-| `firmware/wifi.py` | The home network, the `AmpLink-…` setup network and discovery (`docs/contract-v2.md`, Discovery) |
+| `firmware/wifi.py` | The home network, the `DeviceLink-…` setup network and discovery (`docs/contract-v2.md`, Discovery) |
 | `firmware/web.py` | The HTTP server: `/state`, `/events` and the routes the bridge registers; `/device` from the bridge's `describe()` (`serve_description`), JSON errors (`not_found`), query decoding (`hex_byte` for `/ir/send?code=`) |
 | `firmware/listeners.py` | Who may stay on `/events` |
 | `firmware/ota.py` | Updates over Wi-Fi, with automatic rollback, no password |

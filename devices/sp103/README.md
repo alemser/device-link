@@ -47,7 +47,7 @@ Function button ◄──(GP0 reads, GP1 pulls to 0 only)── Pico 2 W
 | Control the amp | the app (power, volume, input, tone, loudness, speakers), or `curl -X POST "http://sp103.local/control?target=bass&dir=up"` (`docs/api-state.md`) |
 | See the bus | `curl http://sp103.local/status` (the counters) and `curl http://sp103.local/bus` |
 | Download the log | `curl http://sp103.local/bus.csv` |
-| Set up or change the Wi-Fi network | no cable: join the Pico's `AmpLink-SP103-XXXX` network (password `amplink-setup`) and open `http://192.168.4.1/` (`docs/wifi.md`) |
+| Set up or change the Wi-Fi network | no cable: join the Pico's `DeviceLink-SP103-XXXX` network (password `amplink-setup`) and open `http://192.168.4.1/` (`docs/wifi.md`) |
 | Update the Pico's program | `python3 tools/send.py`, or from the app once a release is published (`python3 tools/send.py --publish`) |
 | Test on the computer | `python3 tools/test_proxy.py` (and the other `tools/test_*.py`); the bridge: `cd relay && make test` |
 

@@ -37,15 +37,16 @@ class LocalNetwork(context: Context) {
     }
 
     /**
-     * Asks Android to join a network whose name starts with [SETUP_PREFIX]. Android shows its own dialog with the
-     * matching networks; the person picks one. Returns an HTTP client bound to that network and its name.
+     * Asks Android to join a current or legacy setup network. Android shows its own dialog with matching networks;
+     * the person picks one. Returns an HTTP client bound to that network and its name.
      * The phone stays on it until [leaveSetup].
      */
     @RequiresApi(Build.VERSION_CODES.Q)
     suspend fun joinSetup(): Pair<OkHttpClient, String> = suspendCancellableCoroutine { waiting ->
         leaveSetup()
         val specifier = WifiNetworkSpecifier.Builder()
-            .setSsidPattern(PatternMatcher(SETUP_PREFIX, PatternMatcher.PATTERN_PREFIX))
+            // Both current and legacy setup SSIDs contain "Link-"; setupSsid() filters broader matches.
+            .setSsidPattern(PatternMatcher(".*Link-.*", PatternMatcher.PATTERN_ADVANCED_GLOB))
             .setWpa2Passphrase(SETUP_KEY)
             .build()
         val request = NetworkRequest.Builder()
@@ -57,11 +58,20 @@ class LocalNetwork(context: Context) {
             override fun onAvailable(network: Network) {
                 val http = OkHttpClient.Builder().socketFactory(network.socketFactory).build()
                 val ssid = setupSsid(network)
-                if (waiting.isActive) waiting.resume(http to ssid)
+                if (ssid.isEmpty()) {
+                    leaveSetup()
+                    if (waiting.isActive) {
+                        waiting.resumeWithException(IOException("Didn't join a DeviceLink setup network"))
+                    }
+                } else if (waiting.isActive) {
+                    waiting.resume(http to ssid)
+                }
             }
 
             override fun onUnavailable() {
-                if (waiting.isActive) waiting.resumeWithException(IOException("Didn't join the amp's setup network"))
+                if (waiting.isActive) {
+                    waiting.resumeWithException(IOException("Didn't join a DeviceLink setup network"))
+                }
             }
         }
         setupCallback = callback
@@ -73,7 +83,7 @@ class LocalNetwork(context: Context) {
     private fun setupSsid(network: Network): String {
         val info = connectivity.getNetworkCapabilities(network)?.transportInfo
         val ssid = (info as? android.net.wifi.WifiInfo)?.ssid?.trim('"').orEmpty()
-        return if (ssid.startsWith(SETUP_PREFIX)) ssid else ""
+        return if (isSetupSsid(ssid)) ssid else ""
     }
 
     /** Gives the setup network back: the phone returns to its own Wi-Fi by itself. */

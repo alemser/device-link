@@ -12,10 +12,10 @@ Decided on 2026-11-08, after testing both approaches on the bench:
 
 ## How it works
 
-1. **With no saved network**, the Pico immediately opens the setup network **`AmpLink-SP103-XXXX`** (XXXX = the end of the
-   chip's address). The password is **`amplink-setup`**, the same on every Pico; the app knows it. Every setup network starts
-   with `AmpLink-` (the MR 780 will open `AmpLink-MR780-XXXX`): the app asks Android for a network with that prefix, without
-   needing the location permission to scan for networks.
+1. **With no saved network**, the Pico immediately opens the setup network **`DeviceLink-SP103-XXXX`** (XXXX = the end of
+   the chip's address). The password is **`amplink-setup`**, the same on every Pico; the app knows it. The app also
+   recognizes the legacy `AmpLink-` prefix for devices that have not yet been updated, without needing location
+   permission to scan for networks.
 2. **With a saved network that does not connect** (router password changed, router off), the Pico keeps trying every
    30 s and, after 2 minutes without success, also opens the setup network.
 3. Whoever joins the setup network (the app, or the phone's browser at `http://192.168.4.1/`) picks the network and

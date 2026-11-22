@@ -21,7 +21,7 @@ unplugged, the GND lines, all the buttons, VOLUME, SOURCE and the remote's signa
 (`docs/measurements.md`). Next step: the voltages with the amp powered, then the logic analyzer (`docs/plan.md`).
 
 The firmware started on 2026-11-09, without the amp: the **bridge base** (`firmware/ponte.py`), which sets up Wi-Fi
-without a cable through the `AmpLink-MR780-XXXX` network, is found by the DeviceLink app with no IP typed in, and
+without a cable through the `DeviceLink-MR780-XXXX` network, is found by the DeviceLink app with no IP typed in, and
 updates itself over Wi-Fi. It already runs on the shared base (`firmware-base/`) (see "Folders"); updates
 over Wi-Fi take no password (a contract v2 decision; `firmware/secrets.example.py` explains). The bridge is on the
 DeviceLink contract `api` 2 since 2026-11-17 (`firmware/device.py`), with no state, controls or settings yet, and
@@ -84,5 +84,5 @@ python3 ../../firmware-base/copy_base.py --check    # are the base copies up to 
 mpremote fs cp firmware/*.py : + reset
 ```
 
-With no saved network, the Pico opens the `AmpLink-MR780-XXXX` network (key `amplink-setup`): in the DeviceLink app,
+With no saved network, the Pico opens the `DeviceLink-MR780-XXXX` network (key `amplink-setup`): in the DeviceLink app,
 "Set up a new device's Wi-Fi". From then on, updates go over Wi-Fi: `python3 tools/send.py`.
