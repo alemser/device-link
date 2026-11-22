@@ -104,6 +104,6 @@ python3 ../../firmware-base/copy_base.py --check    # are the base copies up to 
 mpremote fs cp firmware/*.py : + reset
 ```
 
-With no saved network, the Pico opens the `AmpLink-CDS300-XXXX` network (key `amplink-setup`): in the DeviceLink app,
+With no saved network, the Pico opens the `DeviceLink-CDS300-XXXX` network (key `amplink-setup`): in the DeviceLink app,
 "Set up a new device's Wi-Fi". From then on, updates go over Wi-Fi: `python3 tools/send.py`, or from the app once a
 release is published (`python3 tools/send.py --publish`).

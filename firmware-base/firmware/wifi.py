@@ -6,10 +6,10 @@ The home network lives in wifi.json (written by the setup, never by OTA). Withou
 WIFI_PASSWORD apply, for Picos installed before this version.
 
 With no saved network, or unable to connect for OPEN_SETUP_AFTER_S, the Pico opens the setup network
-"AmpLink-<PREFIX>-XXXX" (WPA2, key SETUP_KEY, the same on every Pico; the app knows it) and keeps trying the saved
-network. Every setup network starts with SETUP_PREFIX: the app asks Android for "a network starting with AmpLink-",
-which fits any device. Whoever joins it (the app, or a browser at http://192.168.4.1/) uses the routes below. Once
-connected, the setup network closes by itself after CLOSE_SETUP_AFTER_S, time for whoever set it up to read the IP.
+"DeviceLink-<PREFIX>-XXXX" (WPA2, key SETUP_KEY, the same on every Pico; the app knows it) and keeps trying the saved
+network. The app also recognizes the legacy "AmpLink-" prefix for devices that have not yet been updated. Whoever
+joins the setup network (the app, or a browser at http://192.168.4.1/) uses the routes below. Once connected, the
+setup network closes by itself after CLOSE_SETUP_AFTER_S, time for whoever set it up to read the IP.
 
     GET    /wifi            {"state", "detail", "ip", "ssid", "setup": {"open", "ssid"}}
                             state and detail: the last attempt (idle, connecting, connected, or failed with the
@@ -41,7 +41,7 @@ import socket
 import udp
 
 SETUP_KEY = "amplink-setup"
-SETUP_PREFIX = "AmpLink-"
+SETUP_PREFIX = "DeviceLink-"
 PROBE = b"DEVICELINK?"          # discovery: what the DeviceLink app broadcasts
 NET_FILE = "wifi.json"
 DISCOVERY_PORT = 47800

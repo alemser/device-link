@@ -15,7 +15,7 @@ describe() runs the same in MicroPython (Pico) and in the computer's Python (too
 from amp_state import INPUTS, INPUT_IDS
 
 API = 2                         # only changes when something stops being compatible
-NAME = "sp103"                  # the discovery and network name (sp103.local, AmpLink-SP103-XXXX); send.py reads it
+NAME = "sp103"                  # the discovery and network name (sp103.local, DeviceLink-SP103-XXXX); send.py reads it
 KIND = "amplifier"
 MODEL = "Acoustic Solutions SP103"
 FIRMWARE = "alemser/device-link/sp103"   # its releases: alemser/device-link, tagged sp103-<version> (send.py --publish)

@@ -20,7 +20,7 @@ import kotlin.concurrent.thread
 
 /** Answers copied from the SP103 firmware on the bench Pico, 2026-11-08. */
 private const val STATUS = """{"state": "connected", "ip": "10.185.11.138", "detail": "", "ssid": "Galaxy S26 Ale",
- "setup": {"ssid": "AmpLink-SP103-D85E", "open": false}}"""
+ "setup": {"ssid": "DeviceLink-SP103-D85E", "open": false}}"""
 private const val NETWORKS = """[{"rssi": -42, "secure": true, "ssid": "Galaxy S26 Ale"},
  {"rssi": -52, "secure": false, "ssid": "nhow"}]"""
 
@@ -48,13 +48,22 @@ class WifiSetupTest {
         val status = client.status()
         assertEquals("connected", status.state)
         assertEquals("10.185.11.138", status.ip)
-        assertEquals(SetupNetwork(open = false, ssid = "AmpLink-SP103-D85E"), status.setup)
+        assertEquals(SetupNetwork(open = false, ssid = "DeviceLink-SP103-D85E"), status.setup)
         assertEquals("SP103-D85E", bridgeName(status.setup.ssid))
         val networks = client.networks()
         assertEquals(listOf("Galaxy S26 Ale", "nhow"), networks.map { it.ssid })
         assertFalse(networks[1].secure)
         assertEquals("/wifi", server.takeRequest().path)
         assertEquals("/wifi/networks", server.takeRequest().path)
+    }
+
+    @Test
+    fun recognizesCurrentAndLegacySetupNetworkNames() {
+        assertTrue(isSetupSsid("DeviceLink-SP103-D85E"))
+        assertTrue(isSetupSsid("AmpLink-SP103-D85E"))
+        assertFalse(isSetupSsid("OtherLink-SP103-D85E"))
+        assertEquals("SP103-D85E", bridgeName("DeviceLink-SP103-D85E"))
+        assertEquals("SP103-D85E", bridgeName("AmpLink-SP103-D85E"))
     }
 
     @Test

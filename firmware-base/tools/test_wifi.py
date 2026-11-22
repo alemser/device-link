@@ -102,7 +102,7 @@ def fresh(name, saved=None, routers=None):
     FakeWLAN.routers = routers or {}
     net = wifi.Wifi(model="demo", hostname="demo", prefix="DEMO", net_file=path)
     net.sta, net.ap = FakeWLAN("sta"), FakeWLAN("ap")
-    net.name, net.setup_ssid = "DEMO-D85E", "AmpLink-DEMO-D85E"
+    net.name, net.setup_ssid = "DEMO-D85E", "DeviceLink-DEMO-D85E"
     return net
 
 
@@ -166,11 +166,11 @@ assert fresh("nothing").saved() is None
 
 net = fresh("first-time")
 net._supervise()
-assert net.setup_open() and net.ap.cfg == {"ssid": "AmpLink-DEMO-D85E", "key": "amplink-setup"}
+assert net.setup_open() and net.ap.cfg == {"ssid": "DeviceLink-DEMO-D85E", "key": "amplink-setup"}
 assert request(net, "GET", "/")[0] == 200
 assert "DEMO-D85E" in request(net, "GET", "/")[1]
 status, body = request(net, "GET", "/wifi")
-assert status == 200 and body["setup"] == {"open": True, "ssid": "AmpLink-DEMO-D85E"} and body["ssid"] == ""
+assert status == 200 and body["setup"] == {"open": True, "ssid": "DeviceLink-DEMO-D85E"} and body["ssid"] == ""
 assert request(net, "GET", "/wifi/networks")[1][0]["ssid"] == "Home"
 assert json.loads(net.answer()) == {"name": "DEMO-D85E", "model": "demo", "ip": "192.168.4.1", "api": 2}
 # The full name and the kind only appear when the bridge provides them.

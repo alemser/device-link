@@ -24,7 +24,8 @@ import java.util.concurrent.TimeUnit
  * [SETUP_KEY]. The app joins it and uses [WifiSetupClient] at [SETUP_HOST]. On the home network, [discover] finds
  * the bridges by a UDP broadcast.
  */
-const val SETUP_PREFIX = "AmpLink-"
+const val SETUP_PREFIX = "DeviceLink-"
+const val LEGACY_SETUP_PREFIX = "AmpLink-"
 const val SETUP_KEY = "amplink-setup"
 const val SETUP_HOST = "192.168.4.1"
 const val DISCOVERY_PORT = 47800
@@ -160,5 +161,13 @@ internal fun parseAnswer(text: String): FoundBridge? = try {
     null
 }
 
-/** The bridge's name from its setup network: "AmpLink-SP103-D85E" → "SP103-D85E". */
-fun bridgeName(setupSsid: String): String = setupSsid.removePrefix(SETUP_PREFIX)
+/** Whether an SSID belongs to a current or legacy DeviceLink setup network. */
+fun isSetupSsid(setupSsid: String): Boolean =
+    setupSsid.startsWith(SETUP_PREFIX) || setupSsid.startsWith(LEGACY_SETUP_PREFIX)
+
+/** The bridge's name from its setup network, such as "DeviceLink-SP103-D85E" → "SP103-D85E". */
+fun bridgeName(setupSsid: String): String = when {
+    setupSsid.startsWith(SETUP_PREFIX) -> setupSsid.removePrefix(SETUP_PREFIX)
+    setupSsid.startsWith(LEGACY_SETUP_PREFIX) -> setupSsid.removePrefix(LEGACY_SETUP_PREFIX)
+    else -> setupSsid
+}

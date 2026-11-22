@@ -17,7 +17,7 @@ describe() runs the same in MicroPython (Pico) and in the computer's Python (too
 import ir_codes
 
 API = 2                         # changes only when something stops being compatible
-NAME = "mr780"                  # the name in discovery and on the network (mr780.local, AmpLink-MR780-XXXX); send.py reads it
+NAME = "mr780"                  # the name in discovery and on the network (mr780.local, DeviceLink-MR780-XXXX); send.py reads it
 KIND = "amplifier"
 MODEL = "Magnat MR 780"         # the full name: in /device and, as "label", in discovery
 FIRMWARE = "alemser/device-link/mr780"   # its releases: alemser/device-link, tagged mr780-<version> (send.py --publish)

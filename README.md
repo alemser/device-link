@@ -1,11 +1,14 @@
 # device-link (DeviceLink)
 
-The modified audio devices and what links them: the contract, the shared bridge firmware, each device's bridge and the
-Android app, **DeviceLink**. One repository for all of it since 2026-11-17.
+DeviceLink is a hobby project that connects audio equipment—such as amplifiers, CD players, and cassette decks—to Wi-Fi.
+Supported devices can report their state and, where implemented, accept commands. A shared protocol lets the Android app
+discover compatible devices and build a control screen for each one.
 
-A **bridge** is the board installed inside a device (an amplifier, a CD player), which reads what the device shows,
-publishes it on the network and takes commands. A **client** is whoever uses the bridge: the Android app, groove-rig,
-a `curl`.
+The same protocol also makes it possible for other apps to discover these devices and build additional integrations.
+
+Each device is modified internally by soldering a Raspberry Pi Pico 2 W to selected signal points. This is an invasive
+hardware modification that may void the device's warranty or damage it if done incorrectly. Attempt it only if you have
+the necessary electronics experience; otherwise, consult a qualified technician.
 
 | Where | What |
 |---|---|
@@ -18,8 +21,9 @@ a `curl`.
 | [devices/kx393/](devices/kx393/README.md) | Yamaha KX-393 tape deck: power and IR control, no state yet (on the deck since 2026-11-18) |
 
 The app lists every device on the Wi-Fi by itself, marks a new one, and opens each one's screen, built from the
-device's own description. It sets up a new device's Wi-Fi through the `AmpLink-…` network the device opens, and updates
-each device from its GitHub releases. (`api` 1, the first amplifier-only contract, was removed on 2026-11-17.)
+device's own description. It sets up a new device's Wi-Fi through the `DeviceLink-…` network the device opens, and
+updates each device from its GitHub releases. The app also recognizes the legacy `AmpLink-…` setup networks during
+the transition. (`api` 1, the first amplifier-only contract, was removed on 2026-11-17.)
 
 Each device folder holds its bridge's firmware (`firmware/`, exactly what goes on its Pico, base copies included), its
 tools and tests (`tools/`), its docs and its captures. The devices had their own repositories until 2026-11-17

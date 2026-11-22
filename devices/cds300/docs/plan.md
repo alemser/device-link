@@ -137,8 +137,9 @@ stay out of the contract, on a web page the bridge serves itself.
 oceano) can subscribe to each device's `/events` and apply rules between them; that is a later step, outside this
 project.
 
-**The name.** The contract and the app are DeviceLink. The setup networks are still `AmpLink-…` (key
-`amplink-setup`); discovery is `DEVICELINK?` only since 2026-11-17.
+**The name.** The contract and the app are DeviceLink. New setup networks use `DeviceLink-…`; the app also accepts
+the legacy `AmpLink-…` prefix during the transition (key `amplink-setup`). Discovery is `DEVICELINK?` only since
+2026-11-17.
 
 ## Ideas
 
