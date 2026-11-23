@@ -13,6 +13,7 @@ groove-rig (the amplifier's "state provider") can rely on; changes to it must al
 | `GET /settings`, `PATCH /settings` | What that page edits, as flat ids, `{"inputs.TUNER": "Rega Planar 2", "vu.on": true, ...}`. `PATCH` takes only what changes; a refusal is `400 {"error", "id"}` (`firmware/settings.py`). Not part of the DeviceLink contract |
 | `GET /settings/fields` | What the page draws: each id's type, label, group, hint, `when` (shown only while other ids have those values) and placeholder |
 | `GET /status` | The bridge's counters (bus reads and writes, VU, info screens), for diagnosis |
+| `GET /panel`, `POST /panel` | The Function button wires, for diagnosis: `GET` gives the widths of the leg 6 pulses (GP0); `POST` presses once and also gives the pulses seen on leg 13 (GP1) meanwhile, `0` when GP1 never pulled the line (`firmware/panel.py`) |
 | `GET /state` | The current state, as JSON |
 | `GET /events` | Server-Sent Events: one `data: {json}` with the current state right on connect, and another on every change. At most 4 states a second, always the latest. A `: ping` comment every 1 s keeps the connection alive: with nothing for about 5 s, the client should reconnect |
 | `GET /ir` | Accepted commands, sends made, and readings of the IR line and the volume knob |
@@ -84,7 +85,7 @@ The client asks for the result, and the Pico does the clicks (`firmware/control.
 | `target=speakers&on=1` or `0` | The same, on Speakers |
 | `target=key&name=<command>` | Sends a remote control key, such as `power_toggle` or `select_cd`. Also works in standby |
 
-All were tested on the amp on 2026-11-06. In about 1 click in 8, Function also switches the input to PHONO;
+All were tested on the amp on 2026-11-23. In about 1 click in 32, Function also switches the input to PHONO;
 the Pico notices and restores the previous input in about 1 s. If it does not know the input yet, right after restarting,
 it cannot restore it.
 

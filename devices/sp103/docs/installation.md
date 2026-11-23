@@ -67,7 +67,7 @@ Soldered under the board, without resistors. Programs: `firmware/ir.py`, `firmwa
   standby after seeing the amp enter that state.
 
 - **Function button:** the controller pulses leg 6 and reads leg 13. When pressed, the button connects the two. The PIO
-  imitates this: inside each long pulse on GP0, it pulls GP1 to 0. GP1 never goes to 1. In about 1 click out of 8, the
+  imitates this: while GP0 is at 0, it pulls GP1 to 0. GP1 never goes to 1. In about 1 click out of 32, the
   amp also switches the input to PHONO, for no known reason, and `control.py` restores the previous input.
 - **Symptom of a solder bridge:** on 2026-11-06, after soldering P6 and P13, any key on the remote sent the amp to
   PHONO, while the front button worked. It went away after checking the solder joints. If it comes back, look at these

@@ -325,7 +325,7 @@ async def main():
     global pub
     config = settings.Routes(lambda: texts, set_texts).handle
     pub = Publisher(state, routes={"/settings": config, "/status": status_route, "/update": ota.handle,
-                                   "/bus": log.handle, "/device": device.handle, "/ir": remote.handle, "/control": control.handle,
+                                   "/bus": log.handle, "/device": device.handle, "/ir": remote.handle, "/control": control.handle, "/panel": front_panel.handle,
                                    "/wifi": net.handle, "/": config_page.handle, "/config": config_page.handle})
     log.clear(time.ticks_ms())
     asyncio.create_task(net.task(wifi_result))
