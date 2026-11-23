@@ -3,6 +3,7 @@ package com.alemser.amplink.core
 import kotlinx.serialization.Serializable
 import okhttp3.OkHttpClient
 import okhttp3.Request
+import java.io.IOException
 
 /**
  * The GitHub releases of a repository, as the app reads them: its own (`app-<n>`, [AppUpdate]) and the devices'
@@ -36,6 +37,16 @@ internal suspend fun OkHttpClient.newestReleases(
         if (releases.size < RELEASE_PAGE) break
     }
     return emptyList()
+}
+
+/** Whether [repo] has a release tagged [tag]: one request, `404` meaning no. Any other failure is an [IOException]. */
+internal suspend fun OkHttpClient.releaseExists(api: String, repo: String, tag: String): Boolean {
+    val a = answer(Request.Builder().url("$api/repos/$repo/releases/tags/$tag").build())
+    return when {
+        a.ok -> true
+        a.code == 404 -> false
+        else -> throw IOException("GitHub answered ${a.code} for the release $tag")
+    }
 }
 
 /**

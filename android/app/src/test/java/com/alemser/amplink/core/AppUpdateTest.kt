@@ -110,6 +110,54 @@ class FirmwareReleaseTest {
         assertEquals(true, failed is NoRelease)
     }
 
+    /** The MR 780's release list with [newest] as its only release, and that release's manifest. */
+    private fun mr780Newest(newest: String) {
+        val manifest = server.url("/mr780.json").toString()
+        server.enqueue(MockResponse().setBody("""[{"tag_name": "mr780-$newest", "assets": [{"name": "firmware.json", "browser_download_url": "$manifest"}]}]"""))
+        server.enqueue(MockResponse().setBody("""{"version": "$newest", "files": {}}"""))
+    }
+
+    // 2026-11-23: the MR 780 ran eade5870, sent from a computer, while its newest release was da9ebc2b. The app offered
+    // da9ebc2b and the update took the bridge back a day (device-link#9). A version no release has is ahead.
+    @Test
+    fun aVersionNoReleaseHasIsAheadAndNothingIsOffered() = runBlocking {
+        mr780Newest("da9ebc2b")
+        server.enqueue(MockResponse().setResponseCode(404).setBody("""{"message": "Not Found"}"""))
+        val check = updater.check("alemser/device-link/mr780", "eade5870")
+        assertEquals(Offer.AHEAD, check.offer)
+        assertEquals("da9ebc2b", check.release.version)
+        server.takeRequest()
+        server.takeRequest()
+        assertEquals("/repos/alemser/device-link/releases/tags/mr780-eade5870", server.takeRequest().path)
+    }
+
+    @Test
+    fun anOlderReleaseIsOfferedTheNewest() = runBlocking {
+        mr780Newest("eade5870")
+        server.enqueue(MockResponse().setBody("""{"tag_name": "mr780-da9ebc2b", "assets": []}"""))
+        assertEquals(Offer.UPDATE, updater.check("alemser/device-link/mr780", "da9ebc2b").offer)
+    }
+
+    @Test
+    fun theNewestReleaseIsUpToDateWithNoTagLookup() = runBlocking {
+        mr780Newest("eade5870")
+        assertEquals(Offer.UP_TO_DATE, updater.check("alemser/device-link/mr780", "eade5870").offer)
+        assertEquals(2, server.requestCount)
+    }
+
+    @Test
+    fun aFailedTagLookupIsAnErrorNotAnOffer() = runBlocking {
+        mr780Newest("da9ebc2b")
+        server.enqueue(MockResponse().setResponseCode(403).setBody("""{"message": "API rate limit exceeded"}"""))
+        val failed = runCatching { updater.check("alemser/device-link/mr780", "eade5870") }.exceptionOrNull()
+        assertEquals(true, failed is java.io.IOException && failed !is NoRelease)
+    }
+
+    @Test
+    fun aDeviceThatDoesNotSayItsVersionIsOfferedTheNewest() {
+        assertEquals(Offer.UPDATE, offer(null, "eade5870", isRelease = false))
+    }
+
     @Test
     fun aBridgeFromBeforeTheMoveStillReadsItsOwnRepository() = runBlocking {
         val manifest = server.url("/old.json").toString()

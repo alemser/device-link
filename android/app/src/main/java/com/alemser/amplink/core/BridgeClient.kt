@@ -167,8 +167,13 @@ class BridgeClient(val host: String) {
     }
 }
 
-/** One request, answered or failed: a bridge error comes back as [BridgeError] with the bridge's own message. */
-internal suspend fun OkHttpClient.fetch(request: Request): String = suspendCancellableCoroutine { waiting ->
+/** An HTTP answer, whatever its status: the code and the body as bytes. */
+internal class Answer(val code: Int, val body: ByteArray) {
+    val ok get() = code in 200..299
+}
+
+/** One request, answered (any status) or failed ([IOException]). [fetch] and [fetchBytes] are built on it. */
+internal suspend fun OkHttpClient.answer(request: Request): Answer = suspendCancellableCoroutine { waiting ->
     val call = newCall(request)
     waiting.invokeOnCancellation { call.cancel() }
     call.enqueue(object : Callback {
@@ -177,16 +182,18 @@ internal suspend fun OkHttpClient.fetch(request: Request): String = suspendCance
         }
 
         override fun onResponse(call: Call, response: Response) {
-            val outcome = runCatching {
-                response.use {
-                    val body = it.body?.string().orEmpty()
-                    if (!it.isSuccessful) throw BridgeError(errorMessage(body, it.code))
-                    body
-                }
-            }
+            val outcome = runCatching { response.use { Answer(it.code, it.body?.bytes() ?: ByteArray(0)) } }
             if (waiting.isActive) outcome.fold(waiting::resume, waiting::resumeWithException)
         }
     })
+}
+
+/** One request, answered or failed: a bridge error comes back as [BridgeError] with the bridge's own message. */
+internal suspend fun OkHttpClient.fetch(request: Request): String {
+    val a = answer(request)
+    val body = a.body.decodeToString()
+    if (!a.ok) throw BridgeError(errorMessage(body, a.code))
+    return body
 }
 
 internal inline fun <reified T> decode(body: String): T = try {

@@ -1,18 +1,12 @@
 package com.alemser.amplink.core
 
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.serialization.Serializable
-import okhttp3.Call
-import okhttp3.Callback
 import okhttp3.OkHttpClient
 import okhttp3.Request
-import okhttp3.Response
 import java.io.IOException
 import java.security.MessageDigest
 import java.util.concurrent.TimeUnit
-import kotlin.coroutines.resume
-import kotlin.coroutines.resumeWithException
 
 /**
  * Firmware updates from the app (docs/contract-v2.md, "Updates from the app"). A device names where its firmware is
@@ -27,6 +21,31 @@ data class Release(val version: String, val files: Map<String, String>)
 
 /** The firmware place has no release for this device: not a failure, just nothing to offer. */
 class NoRelease(message: String) : IOException(message)
+
+/**
+ * What the firmware screen offers a device, given the newest release (docs/contract-v2.md, Updates step 2). Versions
+ * are content hashes and can't be ordered, so the releases order them: a release is newer only than an older release.
+ */
+enum class Offer {
+    /** The device runs the newest release. */
+    UP_TO_DATE,
+
+    /** The device runs an older release (or doesn't say which): the newest is offered. */
+    UPDATE,
+
+    /** The device runs a version no release has, sent from a computer: newer than every release, nothing offered. */
+    AHEAD,
+}
+
+/** [Offer] for a device running [running], the newest release being [newest]; [isRelease] says whether [running] is. */
+fun offer(running: String?, newest: String, isRelease: Boolean): Offer = when {
+    running == newest -> Offer.UP_TO_DATE
+    running == null || isRelease -> Offer.UPDATE
+    else -> Offer.AHEAD
+}
+
+/** The newest release for a device, the URL of each of its assets, and what to offer. */
+data class Check(val release: Release, val assets: Map<String, String>, val offer: Offer)
 
 /** Where an update stands, for the screen. */
 sealed interface UpdateStep {
@@ -51,6 +70,19 @@ class Updater(
         val assets = release.assets.associate { it.name to it.browserDownloadUrl }
         val manifest = assets["firmware.json"] ?: throw IOException("The release for $firmware has no firmware.json")
         return decode<Release>(http.fetch(Request.Builder().url(manifest).build())) to assets
+    }
+
+    /**
+     * The newest release for [firmware] and what to offer a device running [running]. In the shared repository a
+     * version is a release when the tag `<device>-<version>` exists. A bare `owner/repo` (a bridge from before
+     * 2026-11-17) tags its releases otherwise, so any other version is taken for an older release there.
+     */
+    suspend fun check(firmware: String, running: String?): Check {
+        val (release, assets) = latest(firmware)
+        val parts = firmware.split('/')
+        val isRelease = running != null && running != release.version &&
+            (parts.size != 3 || http.releaseExists(api, parts[0] + "/" + parts[1], parts[2] + "-" + running))
+        return Check(release, assets, offer(running, release.version, isRelease))
     }
 
     /** The newest release of [repo] tagged [prefix]… (the app's own and the other devices' share the list). */
@@ -116,24 +148,10 @@ class Updater(
 }
 
 /** A download, as bytes (a firmware file must arrive byte for byte, so not through [fetch]'s text). */
-internal suspend fun OkHttpClient.fetchBytes(request: Request): ByteArray = suspendCancellableCoroutine { waiting ->
-    val call = newCall(request)
-    waiting.invokeOnCancellation { call.cancel() }
-    call.enqueue(object : Callback {
-        override fun onFailure(call: Call, e: IOException) {
-            if (waiting.isActive) waiting.resumeWithException(e)
-        }
-
-        override fun onResponse(call: Call, response: Response) {
-            val outcome = runCatching {
-                response.use {
-                    if (!it.isSuccessful) throw IOException("Download failed: ${it.code}")
-                    it.body?.bytes() ?: ByteArray(0)
-                }
-            }
-            if (waiting.isActive) outcome.fold(waiting::resume, waiting::resumeWithException)
-        }
-    })
+internal suspend fun OkHttpClient.fetchBytes(request: Request): ByteArray {
+    val a = answer(request)
+    if (!a.ok) throw IOException("Download failed: ${a.code}")
+    return a.body
 }
 
 internal fun sha256(data: ByteArray): String =

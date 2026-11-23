@@ -188,7 +188,10 @@ against a bad version. `main.py` and `secrets.py` go only by USB.
    device's `tools/send.py --publish`. The app takes the newest release with the device's prefix through the GitHub
    API, so a device can be updated without the app knowing it in advance. A bare `owner/repo` (bridges from before
    2026-11-17, when each device had its own repository) means that repository's latest release.
-2. The device screen shows "Version ... is available" when the release's version differs from `bridge_version`.
+2. The device screen shows "Version ... is available" when the release is newer than `bridge_version`. Versions are
+   content hashes, so releases order them: `bridge_version` is older when the tag `<device>-<bridge_version>` is a
+   release of the same repository. A version no release has (sent from a computer with `send.py`) is newer than every
+   release, and nothing is offered: an older release would undo it.
 3. On "Update", the app downloads the files, uploads only those whose hash differs from `GET /update` (as `send.py`
    does), deletes the ones the release no longer has, applies, and follows `GET /update` until the bridge confirms or
    rolls back, showing which.
