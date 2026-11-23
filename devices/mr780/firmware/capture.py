@@ -15,8 +15,9 @@ Each sample is 4 bits: bit 0 = GP2 (A), bit 1 = GP3 (B), bit 2 = GP4 (C), bit 3 
 32-bit word, the earliest in the lowest nibble; words little-endian. The PIO samples once per cycle (one `in` and a
 wrap), a DMA channel moves its FIFO into the buffer, so Python and Wi-Fi can't make it miss a sample.
 
-SAFETY: the pins are only read. The PIO's `in` reads the pads whatever function they have; nothing here sets a pin
-direction or a pull, and the IR line (GP6) is not among them.
+SAFETY: the pins are only read. Each is set up as an input with no pull before sampling: on the RP2350 a pad comes
+out of reset isolated, with its input buffer off and a pull-down on, so the PIO reads 0 from a pin nothing configured.
+Nothing here drives a pin, and the IR line (GP6) is not among them.
 
 parse() and plan() run the same in MicroPython and in the computer's Python (tools/test_capture.py).
 """
@@ -88,6 +89,8 @@ class Capture:
             in_(pins, 4)
             wrap()
 
+        for n in range(BASE_PIN, BASE_PIN + len(PINS)):
+            Pin(n, Pin.IN, pull=None)   # input only, no pull (the amp drives every level)
         nbytes = samples // 2
         if self.buf is None:
             self.buf = bytearray(MAX_SAMPLES // 2)
