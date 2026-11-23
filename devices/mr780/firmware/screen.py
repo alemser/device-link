@@ -23,8 +23,12 @@ FM_PREFIX, FM_UNIT = "FM ", "MHz"
 
 # Line 2: what last changed, for a few seconds. Mute On stays while muted.
 VOLUME_PREFIX, VOLUME_UNIT = "Volume", "dB"    # "   Volume  -36dB"
-MUTE_ON, MUTE_OFF = "Mute On", "Mute Off"
+# The on/off texts line 2 shows for a key, and the Screen field each sets (seen on the amp 2026-11-23: the remote's
+# mute, the panel's DIRECT).
+SWITCHES_SHOWN = {"Mute On": ("muted", True), "Mute Off": ("muted", False),
+                  "Direct on": ("direct", True), "Direct off": ("direct", False)}
 WARM_UP_PREFIX = "WARM UP"                      # "  WARM UP  19   ", counting down after power-on
+OTHER_KEPT = 8                                  # chosen: enough distinct non-line frames to tell a DIM press apart
 
 
 def line_of(frame):
@@ -82,12 +86,19 @@ class Screen:
         self.input_id = None
         self.volume_db = None           # the last volume the display showed
         self.muted = None
+        self.direct = None
         self.warmup_s = None
+        self.frames = 0
+        self.other = {}                 # frames that aren't a line write, as hex -> times seen (OTHER_KEPT at most)
 
     def apply(self, frame):
         """One frame. Returns True when the text on the display changed."""
+        self.frames += 1
         got = line_of(frame)
         if got is None:
+            key = bytes(frame).hex()
+            if key in self.other or len(self.other) < OTHER_KEPT:
+                self.other[key] = self.other.get(key, 0) + 1
             return False
         line, text = got
         self.seen = True
@@ -102,10 +113,12 @@ class Screen:
         volume = volume_shown(text)
         if volume is not None:
             self.volume_db = volume
-        t = text.strip()
-        if t == MUTE_ON:
-            self.muted = True
-        elif t == MUTE_OFF:
-            self.muted = False
+        switch = SWITCHES_SHOWN.get(text.strip())
+        if switch is not None:
+            setattr(self, switch[0], switch[1])
         self.warmup_s = warm_up_shown(text)
         return True
+
+    def debug(self):
+        """GET /display: what the reader saw, for mapping screens it doesn't read yet (docs/protocol.md)."""
+        return {"lines": self.lines, "frames": self.frames, "other": self.other}

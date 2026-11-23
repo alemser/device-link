@@ -30,3 +30,10 @@ class Display:
 
     async def task(self):
         await self.sniffer.follow(self._feed, self.on_change, POLL_MS)
+
+    async def handle(self, req, writer):
+        """GET /display: the reader's view (screen.Screen.debug), outside the contract."""
+        from web import reply_json, not_found
+        if req.method != "GET" or req.path != "/display":
+            return await not_found(writer)
+        await reply_json(writer, self.screen.debug())

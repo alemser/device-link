@@ -28,6 +28,7 @@ STATE = (
     {"id": "warmup_s", "type": "duration", "label": "Warming up"},    # the display's countdown; null outside it
     {"id": "lcd", "type": "lines", "label": "Display", "columns": screen.COLUMNS},
     {"id": "muted", "type": "bool", "label": "Mute"},
+    {"id": "direct", "type": "bool", "label": "Direct"},              # the tone controls bypassed (panel button)
 )   # volume_db is the volume step's value, so it isn't repeated here (contract, State fields)
 
 # The steps (contract: volume is a step): the IR key each direction presses (control.py), and the state field that

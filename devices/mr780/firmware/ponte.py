@@ -35,7 +35,7 @@ class State:
         scr = self.display.screen if self.display else None
         return {"power": self.power.state if self.power else None,
                 "warmup_s": scr.warmup_s if scr else None, "volume_db": scr.volume_db if scr else None,
-                "muted": scr.muted if scr else None,
+                "muted": scr.muted if scr else None, "direct": scr.direct if scr else None,
                 "input": sel.name() if sel else None, "input_id": sel.current if sel else None,
                 "lcd": list(scr.lines) if scr and scr.seen else [],
                 "updated_at": time.ticks_ms(), "version": self.version}
@@ -113,10 +113,11 @@ async def main():
     state.display = start("display", _display)
     from capture import Capture     # the display lines, raw, for working out the protocol (tools/bus_capture.py)
     capture = Capture(control.remote)
-    pub = Publisher(state, routes={"/update": ota.handle, "/device": device.handle,
-                                   "/control": control.handle, "/ir": control.handle,
-                                   "/capture": capture.handle, "/input": state.selector.handle,
-                                   "/wifi": net.handle, "/": net.page})
+    routes = {"/update": ota.handle, "/device": device.handle, "/control": control.handle, "/ir": control.handle,
+              "/capture": capture.handle, "/input": state.selector.handle, "/wifi": net.handle, "/": net.page}
+    if state.display:
+        routes["/display"] = state.display.handle
+    pub = Publisher(state, routes=routes)
     asyncio.create_task(net.task(wifi_result))
     await asyncio.sleep(0.1)            # Wi-Fi comes up before the server opens its socket
     await pub.serve()

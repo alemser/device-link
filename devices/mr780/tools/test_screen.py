@@ -86,12 +86,32 @@ for quiet in ("standby-15s", "fm-no-transfers"):
     scr, changed = replay(quiet)
     assert not changed and not scr.seen and scr.lines == [BLANK, BLANK], quiet
 
+def line_frame(line, text):
+    """The frame the amp sends to write text on line (0 or 1): screen.LINE_COMMANDS, 0x00, right to left."""
+    cmd = next(c for c, n in screen.LINE_COMMANDS.items() if n == line)
+    return bytearray([cmd, 0]) + bytes(reversed(text.ljust(screen.COLUMNS).encode()))
+
+
 # A DAB station keeps the input; FM's frequency names FM; the warm-up ends when line 2 moves on.
 scr, _ = replay("opt1-no-signal")
 for line, text in ((0, "DAB/DAB+"), (0, "Onic 80s"), (1, "   No Service   ")):
-    frame = bytearray([{0: 0x90, 1: 0x10}[line], 0]) + bytes(reversed(text.ljust(16).encode()))
-    scr.apply(frame)
+    scr.apply(line_frame(line, text))
 assert scr.input_id == "dab" and scr.lines[0] == "Onic 80s        ", scr.lines
+
+# DIRECT, as the panel button showed it on the amp (2026-11-23): off, then on.
+assert scr.direct is None
+scr.apply(line_frame(1, "   Direct off   "))
+assert scr.direct is False and scr.muted is None
+scr.apply(line_frame(1, "   Direct on    "))
+assert scr.direct is True
+
+# A frame that isn't a line write (a brightness command, say) is kept for GET /display, OTHER_KEPT kinds at most.
+scr.apply(bytearray([0x44]))
+scr.apply(bytearray([0x44]))
+for i in range(screen.OTHER_KEPT + 3):
+    scr.apply(bytearray([0x50, i]))
+d = scr.debug()
+assert d["other"]["44"] == 2 and len(d["other"]) == screen.OTHER_KEPT and d["lines"] == scr.lines, d
 assert screen.input_shown("FM    100.75MHz ") == "fm"
 assert screen.warm_up_shown("    Mute Off    ") is None and screen.volume_shown("Volume  MIN dB") is None
 

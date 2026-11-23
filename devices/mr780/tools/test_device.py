@@ -24,7 +24,8 @@ assert d["features"] == ["control", "update", "wifi_setup"]
 assert d["state"] == [{"id": "power", "type": "enum", "values": ["on", "standby"]},
                       {"id": "warmup_s", "type": "duration", "label": "Warming up"},
                       {"id": "lcd", "type": "lines", "label": "Display", "columns": 16},
-                      {"id": "muted", "type": "bool", "label": "Mute"}]
+                      {"id": "muted", "type": "bool", "label": "Mute"},
+                      {"id": "direct", "type": "bool", "label": "Direct"}]
 assert [c["group"] for c in d["controls"]] == ["power", "volume", "mute", "input", "transport", "tuner"]
 assert d["controls"][0] == {"group": "power", "keys": ["power_toggle"]}
 # Volume in the contract's one form for it: a step, its value the volume the display shows (device-link#4).
