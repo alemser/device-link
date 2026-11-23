@@ -259,10 +259,18 @@ Seven wires, each added on an existing joint of the display board (nothing remov
 | C | Right upright resistor, bottom joint | purple |
 | LIGA | VFD row, lower part, 7th from the right (pin 4) | orange (same as A: labelled) |
 
-**PENDING (2026-11-18, amp closed again):** with the Pico wired, A, B and C read 0 all the time, also through a
-power-on and its countdown (triggered capture, `tools/bus_capture.py`), while LIGA reads right through the same PIO.
-So A, B and C don't reach GP2, GP3, GP4 (the same symptom as the IR wire, whose solder had come off). To check end to
-end with the beep at the next opening, resolder with strain relief, then capture power-on and volume.
+**A, B and C reach the Pico (2026-11-23).** They read 0 on 2026-11-18 because `firmware/capture.py` never set GP2–GP4
+up as inputs (an RP2350 pad is isolated, with its input off, until configured); LIGA read because `power.py` sets GP5
+up. With the pins configured, amp on after the warm-up, untriggered, 2 MHz for 30 ms:
+
+| Line | Rest | Transitions in 30 ms | Widths |
+|---|---|---|---|
+| A | 1 | 4 | low ~3.13 ms, high 12.5 µs: a frame or strobe every ~3.1 ms |
+| B | 1 | 576 (19.2 k/s) | high 6–6.5 µs, low 13–14 µs, in bursts: the clock |
+| C | 0 | 98 (3.3 k/s) | high ~20 µs, lows from 19 to 152 µs: the data |
+
+Which is clock or data is read from the widths only, not decoded yet. A and B rest at 1, so the capture's trigger
+(start when A, B or C leaves 0) fires at once: it cannot wait for a display change.
 
 Checks, amp unplugged: blue/red/white beep with pins 21/18 and PHONO GROUND; no beep between neighbours (IR, 5V,
 GND among themselves; A–B, B–C; A, B, C against GND). Still to do with the amp on: display, remote and warm-up as

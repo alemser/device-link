@@ -2,8 +2,9 @@
 
     POST /capture?rate=2000000&ms=30     samples GP2..GP5 at `rate` per second for `ms` (capped by MAX_SAMPLES);
                                          answers {"rate", "samples", "bytes", "parts", "part_bytes", "pins"}
-         &trigger=1                      starts only when A, B or C leaves 0 (they rest at 0: the bus only talks
-                                         when the display changes); gives up after `wait` s (default 10)
+         &trigger=1                      starts only when A, B or C leaves 0; gives up after `wait` s (default 10).
+                                         A and B rest at 1 while the amp is on (docs/measurements.md, 2026-11-23),
+                                         so it starts at once then; it only waits while the amp is in standby
          &key=volume_up                  sends that remote key by IR right after arming, so the change comes on cue
     GET  /capture?part=0                 one part of the last capture, raw bytes (PART_BYTES each)
     GET  /capture                        what the last capture holds, as POST answers

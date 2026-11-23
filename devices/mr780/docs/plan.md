@@ -92,9 +92,9 @@ the oceano-0003 board (groove-rig's codebook, NEC 40/BF): power, volume down and
 
 Installed on 2026-11-18 (Pico 2 W, `MR780-D8A4`), wired to 7 wires on the display board's joints
 (`docs/measurements.md`): IR control works, and the state has power (the LIGA wire, `power.py`) and the valves'
-30 s warm-up (`warmup_s`, counted by the bridge from power-on). **Pending:** the A, B, C data wires don't reach the
-Pico (to fix at the next opening); then the display's protocol, captured with `tools/bus_capture.py` (the bridge's
-own `/capture` route: triggered, can send an IR key on cue).
+30 s warm-up (`warmup_s`, counted by the bridge from power-on). The A, B, C data wires reach the
+Pico (first capture 2026-11-23, `docs/measurements.md`). **Pending:** the display's protocol, captured with
+`tools/bus_capture.py` (the bridge's own `/capture` route: can send an IR key on cue).
 
 **Plan B for the input (owner, 2026-11-18), until the display reader:** the app shows the 15 inputs as a select; the
 bridge tracks the input itself (`inputs.py`, `input.json`) and steps the cycle the shorter way, with groove-rig's
