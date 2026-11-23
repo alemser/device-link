@@ -49,10 +49,9 @@ captured.
 | Volume key, for a few seconds | `    USB AUDIO   ` | `   Volume  -36dB` | `volume-up-36db-*`, `volume-down-37db-*` |
 | Mute on, stays while muted | `    USB AUDIO   ` | `    Mute On     ` | `mute-on-*` |
 | Mute off, for a few seconds | `    USB AUDIO   ` | `    Mute Off    ` | `mute-off-*` |
-
 | Input selector open (after a next/prev press) | `<   USB AUDIO  >` | (blank) | `selector-open-usb-*` |
 | A digital input with nothing connected, after ~5 s | `  DIGITAL OPT1  ` | `    No Signal   ` | `opt1-no-signal-*` |
-| USB with an unsupported stream, after ~5 s | `    USB AUDIO   ` | scrolls `Sample Rate Not Supported`, then blank | `usb-sample-rate-scroll-*` |
+| USB, after ~5 s | `    USB AUDIO   ` | scrolls `Sample Rate Not Supported`, then blank | `usb-sample-rate-scroll-*` |
 | Power key to standby, for ~2 s | `    STANDBY     ` | (blank) | `standby-entering-*` |
 | Standby, after ~15 s | no transfers: A, B and C stay at 0 (the display's 5 V is off) | | `standby-15s-*` |
 | Power-on, the valves' warm-up | ` MAGNAT  MR780  ` | `  WARM UP  19   ` (counting down from ~30) | `warm-up-19-*` |
@@ -80,4 +79,5 @@ In the amp's cycle order, with `firmware/device.py`'s ids (all seen on 2026-11-2
 
 ## Still to capture
 
+- USB with nothing connected: another message follows `Sample Rate Not Supported` (owner, 2026-11-23).
 - DIM, DIRECT and the tone knobs (panel only), Bluetooth with a phone connected, DAB and FM with a station playing.

@@ -6,15 +6,15 @@ stored bytes afterwards (a Pico should not rebuild 1 KB of JSON per request).
 
 Since 2026-11-18 (owner): the read-only phase, as on the CD-S300 and the KX-393: device, state and remote, nothing
 written to the display. The remote holds the ten keys whose codes are known (ir_codes.py), with the input as a
-select that steps the cycle (inputs.py: the bridge tracks the input, plan B until it reads the display). State:
-power and the warm-up from the LIGA wire (power.py); volume and the real input will come from reading the display's
-lines (docs/plan.md, step 3), and each field goes in here once the bridge really reads it.
+select that steps the cycle (inputs.py). State: power from the LIGA wire (power.py); the display's two lines, the
+volume, mute, the warm-up and the input from reading the display (screen.py, docs/protocol.md).
 
 describe() runs the same in MicroPython (Pico) and in the computer's Python (tools/test_device.py).
 """
 
 
 import ir_codes
+import screen
 
 API = 2                         # changes only when something stops being compatible
 NAME = "mr780"                  # the name in discovery and on the network (mr780.local, DeviceLink-MR780-XXXX); send.py reads it
@@ -25,13 +25,16 @@ FEATURES = ("control", "update", "wifi_setup")
 
 STATE = (
     {"id": "power", "type": "enum", "values": ["on", "standby"]},     # the LIGA wire (power.py)
-    {"id": "warmup_s", "type": "duration", "label": "Warming up"},    # the valves' 30 s; null outside it
+    {"id": "warmup_s", "type": "duration", "label": "Warming up"},    # the display's countdown; null outside it
+    {"id": "lcd", "type": "lines", "label": "Display", "columns": screen.COLUMNS},
+    {"id": "volume_db", "type": "number", "label": "Volume", "unit": "dB"},     # the last volume the display showed
+    {"id": "muted", "type": "bool", "label": "Mute"},
 )
 
 CONTROLS = (
     ("power", ("power_toggle",)),
     ("volume", ("volume_down", "volume_up", "mute")),
-    ("input", None),                            # the select below (inputs.py, plan B: the bridge tracks the input)
+    ("input", None),                            # the select below (inputs.py steps the cycle to the chosen input)
     ("transport", ("previous", "next")),        # the remote's ◄◄ ►►: Bluetooth and USB
     ("tuner", ("tune_down", "tune_up")),
 )

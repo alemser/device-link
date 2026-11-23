@@ -1,13 +1,15 @@
-"""Plan B for choosing the MR 780's input from the app, until the display reader exists (owner, 2026-11-18).
+"""Choosing the MR 780's input from the app, and knowing which one the amp is on.
 
 The MR 780 has no direct code per input: the remote only steps the input cycle (next_input, prev_input), and the
-cycle wraps. So the bridge keeps track of the input itself, in input.json, and reaches a chosen one by stepping the
-shorter way round. It cannot see the amp, so the tracking is only as good as the presses it knows of:
+cycle wraps. So the bridge reaches a chosen input by stepping the shorter way round from the current one.
+
+The current input comes from the display (display.py calls seen()), so turning SOURCE or using the remote shows up
+within a screen. Until the display has named an input since the Pico started (a DAB station on screen names none),
+the bridge falls back to tracking the presses it sends, kept in input.json:
 
 - The first time (nothing tracked), choosing an input in the app only tells the bridge where the amp is: the person
   picks the input the amp's display shows. No IR goes out.
-- Turning SOURCE or using the remote moves the amp without the bridge knowing. GET /input?set=<id> (this bridge's own
-  route, outside the contract) tells it again. The display reader will replace all this.
+- GET /input?set=<id> (this bridge's own route, outside the contract) tells it where the amp is.
 
 The selector's timing, measured by groove-rig on this amp (internal/catalog/profiles/magnat_mr780.yaml):
 - With the selector closed, a press only opens it (shows the input, doesn't move): the "arming" press.
@@ -83,6 +85,7 @@ class Selector:
         self.last_ms = None             # when the last next/prev press went out
         self.last_was_arm = False
         self.busy = False
+        self.read = False               # the display has named an input: from then on it is the only source
 
     def _load(self):
         try:
@@ -109,10 +112,18 @@ class Selector:
     def _since(self):
         return None if self.last_ms is None else _diff(self.now(), self.last_ms)
 
+    def seen(self, value):
+        """The input the display names (display.py): it replaces whatever the presses made of it."""
+        if value in IDS:
+            self.read = True
+            self._set(value)
+
     def raw(self, key):
-        """A next/prev key sent on its own (POST /control): keeps the tracking honest about it."""
+        """A next/prev key sent on its own (POST /control): keeps the tracking honest about it, until the display
+        reads the input."""
         since = self._since()
-        self._set(after_raw(self.current, key, since, self.last_was_arm))
+        if not self.read:
+            self._set(after_raw(self.current, key, since, self.last_was_arm))
         self.last_was_arm = since is None or since >= CLOSED_MS
         self.last_ms = self.now()
 
@@ -152,7 +163,8 @@ class Selector:
                 if i < steps - 1:
                     await self.sleep(STEP_MS)
             self.last_was_arm = False
-            self._set(target)
+            if not self.read:
+                self._set(target)       # a guess: with the display read, the display says where the amp landed
         finally:
             self.busy = False
         return None
@@ -166,5 +178,5 @@ class Selector:
             if value not in IDS:
                 return await reply_json(writer, {"error": "unknown input", "inputs": list(IDS)}, "400 Bad Request")
             self._set(value)
-        await reply_json(writer, {"input_id": self.current, "input": self.name(), "tracked": True,
+        await reply_json(writer, {"input_id": self.current, "input": self.name(), "read": self.read,
                                   "inputs": list(IDS)})

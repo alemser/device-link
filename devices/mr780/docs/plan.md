@@ -91,15 +91,15 @@ the oceano-0003 board (groove-rig's codebook, NEC 40/BF): power, volume down and
 ◄◄ ►► and tuning down and up (`firmware/ir_codes.py`). Any other remote key can be tried with `tools/ir_try.py`.
 
 Installed on 2026-11-18 (Pico 2 W, `MR780-D8A4`), wired to 7 wires on the display board's joints
-(`docs/measurements.md`): IR control works, and the state has power (the LIGA wire, `power.py`) and the valves'
-30 s warm-up (`warmup_s`, counted by the bridge from power-on). The A, B, C data wires reach the
-Pico (first capture 2026-11-23, `docs/measurements.md`). **Pending:** the display's protocol, captured with
-`tools/bus_capture.py` (the bridge's own `/capture` route: can send an IR key on cue).
+(`docs/measurements.md`): IR control works, and the state has power (the LIGA wire, `power.py`). The A, B, C data
+wires reach the Pico (first capture 2026-11-23); the display's protocol is in `docs/protocol.md`.
 
-**Plan B for the input (owner, 2026-11-18), until the display reader:** the app shows the 15 inputs as a select; the
-bridge tracks the input itself (`inputs.py`, `input.json`) and steps the cycle the shorter way, with groove-rig's
-measured timing. The first choice only tells it where the amp is (pick what the display shows); turning SOURCE or
-using the remote throws it off, and `GET /input?set=<id>` tells it again. The display reader will replace this.
+**The display reader** (step 4, 2026-11-23): `display.py` listens to A, B, C with the CD-S300's bus sniffer
+(`firmware-base/firmware/clocked_bus.py`) and `screen.py` reads the two lines: the input, the last volume shown, mute
+and the warm-up's countdown go into `/state` with the lines themselves. The app's input select (`inputs.py`) steps
+the cycle the shorter way, with groove-rig's measured timing, from the input the display names; turning SOURCE or
+using the remote shows up within a screen. Until the display has named an input since the Pico started (a DAB
+station names none), the bridge falls back to tracking its own presses (`input.json`; `GET /input?set=<id>`).
 
 ## The flat cable (measured on 2026-10-30)
 

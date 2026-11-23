@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Tests plan B for the input select (firmware/inputs.py) on the computer, with a fake IR line and a fake clock.
+"""Tests the input select (firmware/inputs.py) on the computer, with a fake IR line and a fake clock.
 
     python3 tools/test_inputs.py
 """
@@ -114,5 +114,22 @@ with tempfile.TemporaryDirectory() as d:
     # Remembered across restarts.
     again = inputs.Selector(remote, lambda: None, path=path, now=clock.now, sleep=clock.sleep)
     assert again.current == "bluetooth"
+
+    # 2026-11-23: stepping through the inputs, the amp stopped at OPT 1 while the presses said usb_audio. Once the
+    # display names the input, it is the input: a select's guess and raw presses no longer move it.
+    sel.seen("opt1")
+    assert sel.current == "opt1" and sel.read
+    clock.t += 10_000
+    remote.sent.clear()
+    assert run(sel.select("usb_audio")) is None
+    assert [k for _, k in remote.sent] == ["next_input"] * 5, remote.sent     # opt1 -> usb_audio: arming + 4 steps
+    assert sel.current == "opt1", "the display, not the guess, says where the amp landed"
+    sel.seen("usb_audio")
+    assert sel.current == "usb_audio"
+    clock.t += 1500
+    sel.raw("next_input")
+    assert sel.current == "usb_audio", "a raw press waits for the display"
+    sel.seen("nope")
+    assert sel.current == "usb_audio", "an id outside the cycle is ignored"
 
 print("all good")
