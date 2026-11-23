@@ -13,6 +13,8 @@ commands, VU meter and information screens.
 and its remote (IR by wire), on the DeviceLink contract and nothing beyond it. Nothing is written to the display, and
 nothing on the amp is cut or desoldered: the Pico's wires go on existing joints (`docs/plan.md`, "The read-only
 phase"). The remote has the ten keys learned on the oceano-0003 board: power, volume, mute, inputs, ◄◄ ►► and tuning.
+The description offers volume as the contract's volume step, its value the volume the display shows; the inputs as a
+select.
 
 Before that, **phase 1: read the state only** (what goes to the display, on or standby), without cutting anything. The
 display is a **dot-matrix VFD, 2 lines × 16 characters**, with its controller inside the glass, connected to the main

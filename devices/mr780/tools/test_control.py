@@ -92,7 +92,8 @@ assert call(ctl, "GET", "/ir") == (200, {"sent": 5, "sending": False})
 # Nothing goes out when the request is wrong or the line is busy.
 assert call(ctl, "POST", "/control?target=key&name=nope") == (400, {"error": "unknown key"})
 assert call(ctl, "POST", "/control?target=key") == (400, {"error": "unknown key"})
-assert call(ctl, "POST", "/control?target=volume&dir=up") == (400, {"error": "unknown target"})
+assert call(ctl, "POST", "/control?target=bass&dir=up") == (400, {"error": "unknown target"})
+assert call(ctl, "POST", "/control?target=volume&dir=left") == (400, {"error": "dir must be up or down"})
 assert call(ctl, "POST", "/ir/send") == (400, {"error": "unknown key"})
 assert call(ctl, "POST", "/ir/send?code=xyz") == (400, {"error": "bad code"})
 assert call(ctl, "POST", "/ir/send?code=12&address=400") == (400, {"error": "bad code"})
@@ -101,6 +102,28 @@ assert call(ctl, "POST", "/control?target=key&name=next_input") == (400, {"error
 assert call(ctl, "POST", "/ir/send?code=12") == (400, {"error": "busy"})
 assert call(ctl, "GET", "/control?target=key&name=next_input")[0] == 404
 assert len(remote.sent) == 5
+
+# The volume step (contract: volume is a step). On 2026-11-19 groove-rig sent target=volume&dir=up and got
+# "unknown target" (groove-rig#16). Each direction presses its IR key, and /control answers once the display shows the
+# new volume (or after VOLUME_SHOWN_MS when it doesn't change, at the end of the range).
+class VolumeState:
+    def __init__(self, remote):
+        self.remote, self.volume = remote, -37.0
+
+    def to_dict(self):
+        if not self.remote.out and self.remote.sent:        # the display follows the key once it is out
+            self.volume = {0x1B: -36.0, 0x1F: -37.0}.get(self.remote.sent[-1][1], self.volume)
+        return {"volume_db": self.volume}
+
+
+remote = FakeRemote()
+ctl = control.Control(VolumeState(remote), remote)
+assert call(ctl, "POST", "/control?target=volume&dir=up") == (200, {"volume_db": -36.0})
+assert call(ctl, "POST", "/control?target=volume&dir=down") == (200, {"volume_db": -37.0})
+assert remote.sent == [(A, 0x1B), (A, 0x1F)]
+remote.busy = True
+assert call(ctl, "POST", "/control?target=volume&dir=up") == (400, {"error": "busy"})
+assert len(remote.sent) == 2
 
 # The input select: select_<id> goes to the selector; next/prev sent alone are reported to it for the tracking.
 class FakeSelector:

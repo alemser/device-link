@@ -24,15 +24,17 @@ assert d["features"] == ["control", "update", "wifi_setup"]
 assert d["state"] == [{"id": "power", "type": "enum", "values": ["on", "standby"]},
                       {"id": "warmup_s", "type": "duration", "label": "Warming up"},
                       {"id": "lcd", "type": "lines", "label": "Display", "columns": 16},
-                      {"id": "volume_db", "type": "number", "label": "Volume", "unit": "dB"},
                       {"id": "muted", "type": "bool", "label": "Mute"}]
-assert [c["group"] for c in d["controls"]] == ["power", "volume", "input", "transport", "tuner"]
+assert [c["group"] for c in d["controls"]] == ["power", "volume", "mute", "input", "transport", "tuner"]
 assert d["controls"][0] == {"group": "power", "keys": ["power_toggle"]}
-assert d["controls"][1] == {"group": "volume", "keys": ["volume_down", "volume_up", "mute"]}
-assert d["controls"][3] == {"group": "transport", "keys": ["previous", "next"]}
-assert d["controls"][4] == {"group": "tuner", "keys": ["tune_down", "tune_up"]}
+# Volume in the contract's one form for it: a step, its value the volume the display shows (device-link#4).
+assert d["controls"][1] == {"group": "volume", "steps": [{"target": "volume", "state": "volume_db", "label": "Volume"}]}
+assert d["controls"][2] == {"group": "mute", "keys": ["mute"]}
+assert d["controls"][4] == {"group": "transport", "keys": ["previous", "next"]}
+assert d["controls"][5] == {"group": "tuner", "keys": ["tune_down", "tune_up"]}
+assert not [k for c in d["controls"] for k in c.get("keys", []) if k.startswith("volume")], "no volume keys"
 # The input select (inputs.py): every input, in the cycle's order, pressed as select_<id>.
-sel = d["controls"][2]["select"]
+sel = d["controls"][3]["select"]
 assert sel["state"] == "input_id" and len(sel["options"]) == 15
 assert sel["options"][2] == {"id": "phono", "name": "PHONO", "key": "select_phono"}
 assert "settings" not in d, "the contract: device, state and remote only"

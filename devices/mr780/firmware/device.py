@@ -27,18 +27,23 @@ STATE = (
     {"id": "power", "type": "enum", "values": ["on", "standby"]},     # the LIGA wire (power.py)
     {"id": "warmup_s", "type": "duration", "label": "Warming up"},    # the display's countdown; null outside it
     {"id": "lcd", "type": "lines", "label": "Display", "columns": screen.COLUMNS},
-    {"id": "volume_db", "type": "number", "label": "Volume", "unit": "dB"},     # the last volume the display showed
     {"id": "muted", "type": "bool", "label": "Mute"},
-)
+)   # volume_db is the volume step's value, so it isn't repeated here (contract, State fields)
+
+# The steps (contract: volume is a step): the IR key each direction presses (control.py), and the state field that
+# holds the value, the last volume the display showed (screen.py).
+STEPS = {"volume": {"up": "volume_up", "down": "volume_down", "state": "volume_db", "label": "Volume"}}
 
 CONTROLS = (
     ("power", ("power_toggle",)),
-    ("volume", ("volume_down", "volume_up", "mute")),
-    ("input", None),                            # the select below (inputs.py steps the cycle to the chosen input)
+    ("volume", "steps"),
+    ("mute", ("mute",)),                        # a group holds one kind of control: the mute key has its own
+    ("input", "select"),                        # the select below (inputs.py steps the cycle to the chosen input)
     ("transport", ("previous", "next")),        # the remote's ◄◄ ►►: Bluetooth and USB
     ("tuner", ("tune_down", "tune_up")),
 )
 SELECT_KEYS = ("prev_input", "next_input")      # IR keys the select drives, not shown as buttons
+STEP_KEYS = tuple(s[d] for s in STEPS.values() for d in ("up", "down"))     # IR keys the steps press
 
 # The inputs in the order of the SOURCE knob and the remote, with groove-rig's ids
 # (internal/catalog/profiles/magnat_mr780.yaml). The names are the manual's; the display's come from the captures.
@@ -55,17 +60,28 @@ def _select():
             "options": [{"id": i, "name": n, "key": "select_" + i} for i, n in INPUTS]}
 
 
+def _steps():
+    return [{"target": t, "state": s["state"], "label": s["label"]} for t, s in STEPS.items()]
+
+
+def _group(group, content):
+    if content == "select":
+        return {"group": group, "select": _select()}
+    if content == "steps":
+        return {"group": group, "steps": _steps()}
+    return {"group": group, "keys": list(content)}
+
+
 def describe(version, name):
-    controls = [{"group": g, "keys": list(keys)} if keys else {"group": g, "select": _select()}
-                for g, keys in CONTROLS]
+    controls = [_group(g, c) for g, c in CONTROLS]
     return {"api": API, "kind": KIND, "model": MODEL, "name": name, "bridge_version": version,
             "firmware": FIRMWARE, "features": list(FEATURES), "state": list(STATE), "controls": controls}
 
 
 def check():
     """Every key in the remote is one the IR sender knows, and every known one is in the remote or driven by the
-    select (tools/test_device.py)."""
-    listed = [k for _, keys in CONTROLS if keys for k in keys]
+    select or a step (tools/test_device.py)."""
+    listed = [k for _, c in CONTROLS if isinstance(c, tuple) for k in c] + list(STEP_KEYS)
     known = set(ir_codes.KEYS) - set(SELECT_KEYS)
     return sorted(set(listed) - known), sorted(known - set(listed))
 
