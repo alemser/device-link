@@ -23,6 +23,9 @@ The main board sends the whole screen about every **26 ms**, whether or not it c
 3. A low for ~3.12 ms: 18 bytes, line 2.
 4. A high for ~19.8 ms, until the next screen.
 
+The rhythm stops for more than 131 ms (no transfer at all) a few seconds after switching to FM or DAB, while the
+tuner settles (`fm-no-transfers-*`). A reader keeps the last screen through such a pause.
+
 Each transfer is:
 
 | Byte | Value | Meaning |
@@ -46,11 +49,32 @@ captured.
 | Mute on, stays while muted | `    USB AUDIO   ` | `    Mute On     ` | `mute-on-*` |
 | Mute off, for a few seconds | `    USB AUDIO   ` | `    Mute Off    ` | `mute-off-*` |
 
-Line 1 names the input; line 2 shows what last changed, and goes blank within about 5 s (Mute On stays). The volume
-is in dB, right-aligned, one step per key press (−37 to −36 dB).
+| Input selector open (after a next/prev press) | `<   USB AUDIO  >` | (blank) | `selector-open-usb-*` |
+| A digital input with nothing connected, after ~5 s | `  DIGITAL OPT1  ` | `    No Signal   ` | `opt1-no-signal-*` |
+| USB with an unsupported stream, after ~5 s | `    USB AUDIO   ` | scrolls `Sample Rate Not Supported`, then blank | `usb-sample-rate-scroll-*` |
+| DAB, after ~10 s | `Onic 80s        ` (the station) | `   No Service   ` | — |
+| FM, after ~7 s | `FM    100.75MHz ` | (blank) | — |
+
+Line 1 names the input; line 2 shows what last changed, and goes blank within about 5 s (Mute On and No Signal stay).
+The volume is in dB, right-aligned, one step per key press (−37 to −36 dB). While the input selector is open, line 1
+shows the input between `<` and `>`; the first next/prev press only opens it (`firmware/inputs.py`).
+
+On FM and DAB, line 1 stops naming the input once the tuner has settled: it shows the frequency or the station. A
+reader tells those inputs apart by `FM` at the start of the line, and keeps DAB from the last name it saw.
+
+### The inputs, as line 1 names them
+
+In the amp's cycle order, with `firmware/device.py`'s ids (all seen on 2026-11-23, stepping with the remote keys):
+
+| id | Line 1 | id | Line 1 | id | Line 1 |
+|---|---|---|---|---|---|
+| `usb_audio` | `USB AUDIO` | `aux1` | `AUX 1` | `dab` | `DAB Input` (selector), `DAB/DAB+` |
+| `bluetooth` | `BLUETOOTH` | `aux2` | `AUX 2` | `opt1` | `DIGITAL OPT1` |
+| `phono` | `PHONO` | `tape` | `TAPE` | `opt2` | `DIGITAL OPT2` |
+| `cd` | `CD` | `line_in` | `LINE IN` | `coax1` | `DIGITAL COAX1` |
+| `dvd` | `DVD` | `fm` | `FM Input` (selector), `FM    <freq>MHz` | `coax2` | `DIGITAL COAX2` |
 
 ## Still to capture
 
-- The other 14 inputs' names on line 1 (only `USB AUDIO` seen).
 - The warm-up countdown, standby (the lines rest at ~0.1 V, so likely no transfers), DIM, DIRECT, the tone knobs,
-  DAB and FM text, Bluetooth.
+  Bluetooth with a phone connected, DAB and FM with a station playing.
