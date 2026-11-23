@@ -38,8 +38,10 @@ Each transfer is:
 So a reader waits for A to fall, takes 18 bytes, reverses bytes 2–17, and picks the line from byte 0. A capture
 that starts while A is low begins mid-transfer: skip to the next falling edge of A.
 
-No command other than `0x90` and `0x10` has been seen. Brightness (DIM), custom characters and standby have not been
-captured.
+One other command has been seen: **brightness**, a 2-byte frame `0x50` then the level, sent only when DIM changes it
+(2026-11-23, one press at a time from the lowest: `50 70` medium, `50 ff` highest, `50 20` lowest). The reader keeps
+it for `GET /display` only. Custom characters have not been seen. `GET /display` lists any other frame that isn't a
+line write.
 
 ## Screens seen
 
@@ -49,6 +51,8 @@ captured.
 | Volume key, for a few seconds | `    USB AUDIO   ` | `   Volume  -36dB` | `volume-up-36db-*`, `volume-down-37db-*` |
 | Mute on, stays while muted | `    USB AUDIO   ` | `    Mute On     ` | `mute-on-*` |
 | Mute off, for a few seconds | `    USB AUDIO   ` | `    Mute Off    ` | `mute-off-*` |
+| DIRECT (panel), for a few seconds | the input | `   Direct off   ` / `   Direct on    ` | — |
+| Headphones plugged in, for ~3 s | the input | `    PHONES      ` | — |
 | Input selector open (after a next/prev press) | `<   USB AUDIO  >` | (blank) | `selector-open-usb-*` |
 | A digital input with nothing connected, after ~5 s | `  DIGITAL OPT1  ` | `    No Signal   ` | `opt1-no-signal-*` |
 | USB, after ~5 s | `    USB AUDIO   ` | scrolls `Sample Rate Not Supported`, then blank | `usb-sample-rate-scroll-*` |
@@ -80,4 +84,11 @@ In the amp's cycle order, with `firmware/device.py`'s ids (all seen on 2026-11-2
 ## Still to capture
 
 - USB with nothing connected: another message follows `Sample Rate Not Supported` (owner, 2026-11-23).
-- DIM, DIRECT and the tone knobs (panel only), Bluetooth with a phone connected, DAB and FM with a station playing.
+- Bluetooth with a phone connected, DAB and FM with a station playing.
+
+Nothing on the display (2026-11-23, on AUX 1 and USB): the BASS, MID, TREBLE and BALANCE knobs (analogue, as
+`docs/plan.md` expected), MONO, the remote's ◄◄ and ►►, and unplugging the headphones. So the headphones are not in
+`/state`: the display tells when they go in, never when they come out (owner, 2026-11-23).
+
+The VOLUME knob shows on line 2 like the volume keys, one step per click: `Volume  -37dB` up to `Volume  +02dB`, through
+`Volume   00dB` (2026-11-23, on PHONO and AUX 1).

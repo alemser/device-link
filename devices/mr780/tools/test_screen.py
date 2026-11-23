@@ -105,7 +105,14 @@ assert scr.direct is False and scr.muted is None
 scr.apply(line_frame(1, "   Direct on    "))
 assert scr.direct is True
 
-# A frame that isn't a line write (a brightness command, say) is kept for GET /display, OTHER_KEPT kinds at most.
+# DIM, one press at a time from the lowest, as the amp sent it (2026-11-23): medium, high, low. It shows in
+# GET /display only: not a change of the text.
+assert scr.debug()["brightness"] is None
+for level, want in ((0x70, "medium"), (0xFF, "high"), (0x20, "low")):
+    assert not scr.apply(bytearray([screen.BRIGHTNESS_COMMAND, level])) and scr.debug()["brightness"] == want
+assert scr.debug()["other"] == {}, "a brightness frame is read, not kept as unknown"
+
+# A frame that isn't a line write or a known command is kept for GET /display, OTHER_KEPT kinds at most.
 scr.apply(bytearray([0x44]))
 scr.apply(bytearray([0x44]))
 for i in range(screen.OTHER_KEPT + 3):

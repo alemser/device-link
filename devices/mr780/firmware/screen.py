@@ -28,6 +28,10 @@ VOLUME_PREFIX, VOLUME_UNIT = "Volume", "dB"    # "   Volume  -36dB"
 SWITCHES_SHOWN = {"Mute On": ("muted", True), "Mute Off": ("muted", False),
                   "Direct on": ("direct", True), "Direct off": ("direct", False)}
 WARM_UP_PREFIX = "WARM UP"                      # "  WARM UP  19   ", counting down after power-on
+# The panel's DIM: a 2-byte frame, BRIGHTNESS_COMMAND then the level, sent only when it changes (seen on the amp
+# 2026-11-23, one press at a time from the lowest: 50 70, 50 ff, 50 20).
+BRIGHTNESS_COMMAND = 0x50
+BRIGHTNESS_LEVELS = {0x20: "low", 0x70: "medium", 0xFF: "high"}
 OTHER_KEPT = 8                                  # chosen: enough distinct non-line frames to tell a DIM press apart
 
 
@@ -87,6 +91,7 @@ class Screen:
         self.volume_db = None           # the last volume the display showed
         self.muted = None
         self.direct = None
+        self.brightness = None          # for GET /display; None until DIM is pressed (sent only when it changes)
         self.warmup_s = None
         self.frames = 0
         self.other = {}                 # frames that aren't a line write, as hex -> times seen (OTHER_KEPT at most)
@@ -96,6 +101,9 @@ class Screen:
         self.frames += 1
         got = line_of(frame)
         if got is None:
+            if len(frame) == 2 and frame[0] == BRIGHTNESS_COMMAND and frame[1] in BRIGHTNESS_LEVELS:
+                self.brightness = BRIGHTNESS_LEVELS[frame[1]]
+                return False
             key = bytes(frame).hex()
             if key in self.other or len(self.other) < OTHER_KEPT:
                 self.other[key] = self.other.get(key, 0) + 1
@@ -121,4 +129,4 @@ class Screen:
 
     def debug(self):
         """GET /display: what the reader saw, for mapping screens it doesn't read yet (docs/protocol.md)."""
-        return {"lines": self.lines, "frames": self.frames, "other": self.other}
+        return {"lines": self.lines, "brightness": self.brightness, "frames": self.frames, "other": self.other}
