@@ -23,7 +23,8 @@ assert d["firmware"] == "alemser/device-link/mr780"
 assert d["features"] == ["control", "update", "wifi_setup"]
 assert d["state"] == [{"id": "power", "type": "enum", "values": ["on", "standby"]},
                       {"id": "warmup_s", "type": "duration", "label": "Warming up"},
-                      {"id": "lcd", "type": "lines", "label": "Display", "columns": 16},
+                      {"id": "lcd", "type": "lines", "label": "Display", "columns": 16,
+                       "glass": "#0B0C0E", "ink": "#E9F1FF", "glow": True},
                       {"id": "muted", "type": "bool", "label": "Mute"},
                       {"id": "direct", "type": "bool", "label": "Direct"}]
 assert [c["group"] for c in d["controls"]] == ["power", "volume", "mute", "input", "transport", "tuner"]

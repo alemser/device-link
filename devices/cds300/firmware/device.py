@@ -23,7 +23,8 @@ STATE = (
     {"id": "media.elapsed_s", "type": "duration", "label": "Time"},
     {"id": "disc.tracks", "type": "int", "label": "Tracks"},
     {"id": "disc.total_s", "type": "duration", "label": "Total"},
-    {"id": "lcd", "type": "lines", "label": "Display", "columns": 12},
+    {"id": "lcd", "type": "lines", "label": "Display", "columns": 12,
+     "glass": "#0B0C0E", "ink": "#E9F1FF", "glow": True},     # the VFD: black glass, white glowing text
 )
 
 CONTROLS = (

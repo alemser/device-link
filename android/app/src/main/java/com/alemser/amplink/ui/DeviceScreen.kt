@@ -170,7 +170,7 @@ private fun StatusSection(fields: List<StateField>, state: JsonObject?, feed: Fe
             // The device says its width; blank lines (an amp in standby) must not make one huge column.
             if (!lines.isNullOrEmpty()) {
                 val columns = field.columns ?: maxOf(lines.maxOf { it.length }, DEFAULT_COLUMNS)
-                Lcd(lines, columns, dim = state == null)
+                Lcd(lines, columns, dim = state == null, look = lookOf(field))
             }
         }
         fields.filter { it.type != "lines" }.forEach { field ->

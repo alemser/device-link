@@ -23,7 +23,8 @@ FEATURES = ("control", "update", "wifi_setup")
 
 STATE = (
     {"id": "power", "type": "enum", "values": ["on", "standby"]},
-    {"id": "lcd", "type": "lines", "label": "Display", "columns": 16},
+    {"id": "lcd", "type": "lines", "label": "Display", "columns": 16,
+     "glass": "#A9C94A", "ink": "#1B2410"},                   # the backlit green LCD, black text
     {"id": "volume_db", "type": "number", "label": "Volume", "unit": "dB"},
     {"id": "input_name", "type": "text", "label": "Input"},
     {"id": "bass_db", "type": "number", "label": "Bass", "unit": "dB"},

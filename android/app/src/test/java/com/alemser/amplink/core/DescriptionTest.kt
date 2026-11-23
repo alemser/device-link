@@ -36,6 +36,20 @@ class DescriptionTest {
     }
 
     @Test
+    fun readsTheDisplaysLook() {
+        val f = decode<StateField>("""{"id": "lcd", "type": "lines", "glass": "#0B0C0E", "ink": "#E9F1FF", "glow": true}""")
+        assertEquals(0xFF0B0C0EL, argb(f.glass))
+        assertEquals(0xFFE9F1FFL, argb(f.ink))
+        assertTrue(f.glow)
+        // An older bridge says nothing; a bad colour is as good as none.
+        val old = decode<StateField>("""{"id": "lcd", "type": "lines"}""")
+        assertNull(old.glass)
+        assertEquals(false, old.glow)
+        assertNull(argb("green"))
+        assertNull(argb("#12345"))
+    }
+
+    @Test
     fun readsTheLiveStateAsJson() {
         val state = parseFeed("""data: {"transport": "playing", "media": {"track": 3, "elapsed_s": 127}, "lcd": ["  3    2:07 "]}""")!!
         assertEquals("playing", state["transport"]!!.jsonPrimitive.content)

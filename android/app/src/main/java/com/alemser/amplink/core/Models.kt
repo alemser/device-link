@@ -44,7 +44,17 @@ data class StateField(
     val unit: String? = null,
     /** For `lines`: the display's width in characters. */
     val columns: Int? = null,
+    /** For `lines`: the display's background and text colours ("#RRGGBB"), and whether its text glows (a VFD). */
+    val glass: String? = null,
+    val ink: String? = null,
+    val glow: Boolean = false,
 )
+
+/** "#RRGGBB" as 0xAARRGGBB, opaque; null for anything else, so a bad colour falls back to the app's own. */
+fun argb(hex: String?): Long? {
+    if (hex == null || hex.length != 7 || hex[0] != '#') return null
+    return hex.substring(1).toLongOrNull(16)?.let { 0xFF000000L or it }
+}
 
 /** One row or pad of the remote. A group holds keys, steps, switches or a select. */
 @Serializable

@@ -113,7 +113,7 @@ knows by id.
 | `duration` | | Seconds as `m:ss` |
 | `bool` | | On / off |
 | `text` | | The text |
-| `lines` | `columns` | Monospaced lines, as on the device's own display, `columns` characters wide (16 if absent) |
+| `lines` | `columns`, `glass`, `ink`, `glow` | Monospaced lines, as on the device's own display, `columns` characters wide (16 if absent). `glass` and `ink` are the display's background and text colours (`#RRGGBB`); `glow` is true when the text shines (a VFD). Without them the app uses its own blue |
 
 A field that a control already shows (the volume next to its − and +) is not repeated in the status.
 

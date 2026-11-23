@@ -26,7 +26,8 @@ FEATURES = ("control", "update", "wifi_setup")
 STATE = (
     {"id": "power", "type": "enum", "values": ["on", "standby"]},     # the LIGA wire (power.py)
     {"id": "warmup_s", "type": "duration", "label": "Warming up"},    # the display's countdown; null outside it
-    {"id": "lcd", "type": "lines", "label": "Display", "columns": screen.COLUMNS},
+    {"id": "lcd", "type": "lines", "label": "Display", "columns": screen.COLUMNS,
+     "glass": "#0B0C0E", "ink": "#E9F1FF", "glow": True},     # the VFD: black glass, white glowing text
     {"id": "muted", "type": "bool", "label": "Mute"},
     {"id": "direct", "type": "bool", "label": "Direct"},              # the tone controls bypassed (panel button)
 )   # volume_db is the volume step's value, so it isn't repeated here (contract, State fields)
