@@ -25,8 +25,8 @@ without a cable through the `DeviceLink-MR780-XXXX` network, is found by the Dev
 updates itself over Wi-Fi. It already runs on the shared base (`firmware-base/`) (see "Folders"); updates
 over Wi-Fi take no password (a contract v2 decision; `firmware/secrets.example.py` explains). The bridge is on the
 DeviceLink contract `api` 2 since 2026-11-17 (`firmware/device.py`), with no state, controls or settings yet, and
-`/state` still comes back all `null`: reading the display and
-controlling the amp depend on the captures (the plan's open steps 2 to 4). Even so, the Pico can already go inside the
+`/state` does not read the display yet: its protocol is decoded
+(`docs/protocol.md`, 2026-11-23), and the reader in the firmware is the plan's step 4. Even so, the Pico can already go inside the
 amp and get the rest over Wi-Fi.
 
 ## What comes from the SP103
@@ -52,6 +52,7 @@ All of this is detailed in `docs/plan.md`.
 | [`docs/plan.md`](docs/plan.md) | The plan, step by step, and the questions the first measurements need to answer |
 | [`docs/research.md`](docs/research.md) | What is known about the MR 780 from the web, the manual and the photos: display, boards, buttons, remote |
 | [`docs/measurements.md`](docs/measurements.md) | All the multimeter readings, with the table of the flat cable's 21 lines |
+| [`docs/protocol.md`](docs/protocol.md) | What the main board sends to the display, decoded from the captures, and the screens seen |
 | [`docs/history/brief-2026-10.md`](docs/history/brief-2026-10.md) | The brief of 2026-10-28 to 30: first photos, flat cable measurements and the phase decisions. It does not describe the current state |
 
 The official manual stays in the local copy only, in `docs/manual/` (copyrighted, not on GitHub).

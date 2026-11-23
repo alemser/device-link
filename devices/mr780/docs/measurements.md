@@ -265,12 +265,12 @@ up. With the pins configured, amp on after the warm-up, untriggered, 2 MHz for 3
 
 | Line | Rest | Transitions in 30 ms | Widths |
 |---|---|---|---|
-| A | 1 | 4 | low ~3.13 ms, high 12.5 µs: a frame or strobe every ~3.1 ms |
+| A | 1 | 4 | two lows of ~3.13 ms, 12.5 µs apart: chip select |
 | B | 1 | 576 (19.2 k/s) | high 6–6.5 µs, low 13–14 µs, in bursts: the clock |
 | C | 0 | 98 (3.3 k/s) | high ~20 µs, lows from 19 to 152 µs: the data |
 
-Which is clock or data is read from the widths only, not decoded yet. A and B rest at 1, so the capture's trigger
-(start when A, B or C leaves 0) fires at once: it cannot wait for a display change.
+The protocol is in `docs/protocol.md`. A and B rest at 1, so the capture's trigger (start when A, B or C leaves 0)
+fires at once: it cannot wait for a display change.
 
 Checks, amp unplugged: blue/red/white beep with pins 21/18 and PHONO GROUND; no beep between neighbours (IR, 5V,
 GND among themselves; A–B, B–C; A, B, C against GND). Still to do with the amp on: display, remote and warm-up as
