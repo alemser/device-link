@@ -24,7 +24,8 @@ The main board sends the whole screen about every **26 ms**, whether or not it c
 4. A high for ~19.8 ms, until the next screen.
 
 The rhythm stops for more than 131 ms (no transfer at all) a few seconds after switching to FM or DAB, while the
-tuner settles (`fm-no-transfers-*`). A reader keeps the last screen through such a pause.
+tuner settles (`fm-no-transfers-*`). During the warm-up countdown screens come far less often: most 60 ms windows
+held none. A reader keeps the last screen through such a pause.
 
 Each transfer is:
 
@@ -52,6 +53,9 @@ captured.
 | Input selector open (after a next/prev press) | `<   USB AUDIO  >` | (blank) | `selector-open-usb-*` |
 | A digital input with nothing connected, after ~5 s | `  DIGITAL OPT1  ` | `    No Signal   ` | `opt1-no-signal-*` |
 | USB with an unsupported stream, after ~5 s | `    USB AUDIO   ` | scrolls `Sample Rate Not Supported`, then blank | `usb-sample-rate-scroll-*` |
+| Power key to standby, for ~2 s | `    STANDBY     ` | (blank) | `standby-entering-*` |
+| Standby, after ~15 s | no transfers: A, B and C stay at 0 (the display's 5 V is off) | | `standby-15s-*` |
+| Power-on, the valves' warm-up | ` MAGNAT  MR780  ` | `  WARM UP  19   ` (counting down from ~30) | `warm-up-19-*` |
 | DAB, after ~10 s | `Onic 80s        ` (the station) | `   No Service   ` | — |
 | FM, after ~7 s | `FM    100.75MHz ` | (blank) | — |
 
@@ -76,5 +80,4 @@ In the amp's cycle order, with `firmware/device.py`'s ids (all seen on 2026-11-2
 
 ## Still to capture
 
-- The warm-up countdown, standby (the lines rest at ~0.1 V, so likely no transfers), DIM, DIRECT, the tone knobs,
-  Bluetooth with a phone connected, DAB and FM with a station playing.
+- DIM, DIRECT and the tone knobs (panel only), Bluetooth with a phone connected, DAB and FM with a station playing.
