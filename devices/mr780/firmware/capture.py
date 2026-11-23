@@ -9,8 +9,8 @@
     GET  /capture?part=0                 one part of the last capture, raw bytes (PART_BYTES each)
     GET  /capture                        what the last capture holds, as POST answers
 
-Outside the DeviceLink contract: a diagnosis route of this bridge's own, used by tools/bus_capture.py. It goes away (or
-stays, unused) once the display reader exists.
+Outside the DeviceLink contract: a diagnosis route of this bridge's own, used by tools/bus_capture.py to capture
+screens the display reader doesn't know yet (docs/protocol.md, "Still to capture").
 
 Each sample is 4 bits: bit 0 = GP2 (A), bit 1 = GP3 (B), bit 2 = GP4 (C), bit 3 = GP5 (LIGA). Eight samples per
 32-bit word, the earliest in the lowest nibble; words little-endian. The PIO samples once per cycle (one `in` and a
@@ -23,16 +23,14 @@ Nothing here drives a pin, and the IR line (GP6) is not among them.
 parse() and plan() run the same in MicroPython and in the computer's Python (tools/test_capture.py).
 """
 
+from pio_ring import PIO_BASE, RXF0, DREQ_PIO_RX0
+
 BASE_PIN = 2                    # GP2..GP5
 PINS = ("A", "B", "C", "LIGA")
 MAX_SAMPLES = 1 << 16           # 65536 samples = 32 KB: Wi-Fi and the rest of the program keep their memory
 PART_BYTES = 2048
 MIN_RATE, MAX_RATE = 10_000, 50_000_000
-SM_ID = 4                       # PIO1, state machine 0: the IR sender has PIO0
-
-_PIO_BASE = (0x50200000, 0x50300000, 0x50400000)
-_RXF0 = 0x020                   # RX FIFO of state machine 0; the others follow every 4 bytes
-_DREQ_PIO_RX0 = (4, 12, 20)     # DMA request "RX FIFO has data"
+SM_ID = 4                       # PIO1, state machine 0: the IR sender has PIO0, the display reader PIO1's 1
 
 
 def plan(rate, ms):
@@ -113,8 +111,8 @@ class Capture:
         dma = rp2.DMA()
         full = False
         try:
-            ctrl = dma.pack_ctrl(size=2, inc_read=False, inc_write=True, treq_sel=_DREQ_PIO_RX0[pio] + smi)
-            dma.config(read=_PIO_BASE[pio] + _RXF0 + 4 * smi, write=self.buf, count=nbytes // 4, ctrl=ctrl,
+            ctrl = dma.pack_ctrl(size=2, inc_read=False, inc_write=True, treq_sel=DREQ_PIO_RX0[pio] + smi)
+            dma.config(read=PIO_BASE[pio] + RXF0 + 4 * smi, write=self.buf, count=nbytes // 4, ctrl=ctrl,
                        trigger=True)
             sm.active(1)
             if key and self.remote is not None:

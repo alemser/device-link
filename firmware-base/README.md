@@ -15,6 +15,8 @@ MicroPython runs the copy.
 | `firmware/main.py` | The update gatekeeper. Imports the project's `ponte.py`. Goes to the Pico by USB only |
 | `firmware/udp.py` | Reading a UDP socket without waiting |
 | `firmware/waits.py` | `until(ready, ms)`: waiting for something (an IR key to go out, a screen) without stopping the bridge |
+| `firmware/pio_ring.py` | A PIO state machine's words copied nonstop into a ring buffer by DMA (`PioRing`), and the RP2350's PIO and DMA addresses |
+| `firmware/clocked_bus.py` | Only for the CD-S300 and the MR 780 (`ONLY` in `copy_base.py`): listening to a chip-select/clock/data VFD bus (`Sniffer`) and cutting the words into frames (`Framer`) |
 | `tools/send.py` | Sends the new program to the Pico over Wi-Fi; `--publish` makes the GitHub release the DeviceLink app updates from |
 | `tools/test_wifi.py`, `tools/test_listeners.py`, `tools/test_web.py` | The base's tests, on the computer |
 

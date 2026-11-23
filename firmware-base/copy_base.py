@@ -9,7 +9,8 @@ From the repository's root:
 
 The files go byte for byte, so each devices/<name>/firmware/ stays exactly what goes on its Pico. A copy that differs
 from the base means someone changed it in the device: take the change to the base before copying, because the copy
-overwrites it. A device that keeps a base file of its own is listed in KEEP (the SP103's main.py).
+overwrites it. A device that keeps a base file of its own is listed in KEEP (the SP103's main.py); a base file only
+some devices use is listed in ONLY, with those devices.
 """
 
 import argparse
@@ -21,6 +22,8 @@ DEVICES = os.path.join(HERE, "..", "devices")
 FOLDERS = ("firmware", "tools")
 # Base files a device keeps on its own. The SP103's main.py imports escuta.py and shows errors on the LCD.
 KEEP = {"sp103": ("firmware/main.py",)}
+# Base files only some devices use, and which: the others don't get them.
+ONLY = {"firmware/clocked_bus.py": ("cds300", "mr780")}
 
 
 def base_files():
@@ -49,7 +52,7 @@ def devices():
 def sync(project, skip, check):
     """Copies (or checks) one device; returns how many files differed."""
     name = os.path.basename(project)
-    skip = set(skip) | set(KEEP.get(name, ()))
+    skip = set(skip) | set(KEEP.get(name, ())) | {rel for rel, users in ONLY.items() if name not in users}
     differs = 0
     for rel in base_files():
         if rel in skip:

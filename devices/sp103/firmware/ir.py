@@ -25,6 +25,7 @@ import rp2
 from machine import Pin, mem32
 
 import ir_codes
+from pio_ring import PIO_BASE, TXF0, DREQ_PIO_TX0
 
 IR_PIN, KNOB_PIN = 15, 14
 KNOB_POLL_MS = 5
@@ -32,9 +33,6 @@ WAKE_WINDOW_MS = 1000           # two E1 changes within this time = someone turn
 WAKE_COOLDOWN_MS = 5000         # the command is the same for on and off: never send two in a row
 _PADS_BANK0 = 0x40038000
 _DRIVE_MASK = 0x3 << 4
-_PIO_BASE = (0x50200000, 0x50300000, 0x50400000)
-_TXF0 = 0x010                   # input (TX) FIFO of state machine 0; the others follow every 4
-_DREQ_PIO_TX0 = (0, 8, 16)      # DMA request "the TX FIFO has room"
 
 
 @rp2.asm_pio(set_init=rp2.PIO.IN_LOW)
@@ -64,10 +62,10 @@ class Remote:
         mem32[pad] = mem32[pad] & ~_DRIVE_MASK & ~1     # 2 mA, slow edge
         self.sm.active(1)
         pio, sm = divmod(sm_id, 4)
-        self._fifo = _PIO_BASE[pio] + _TXF0 + 4 * sm
+        self._fifo = PIO_BASE[pio] + TXF0 + 4 * sm
         self.dma = rp2.DMA()
         self._ctrl = self.dma.pack_ctrl(size=2, inc_read=True, inc_write=False,
-                                        treq_sel=_DREQ_PIO_TX0[pio] + sm)
+                                        treq_sel=DREQ_PIO_TX0[pio] + sm)
         self._words = None              # the DMA reads from here: it must outlive the send
         self._until = time.ticks_ms()
         self.sent = 0

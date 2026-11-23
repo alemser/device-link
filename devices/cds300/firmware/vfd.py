@@ -12,12 +12,12 @@ The protocol comes from the logic-analyzer capture captures/02-playing.lac (docs
     other configuration (0x50 brightness?, 0x63, 0x70); kept raw
 - The microcontroller rewrites everything every ~38 ms.
 
-The sniffer hands over 32-bit words: MARKER when /CS falls (a frame begins), otherwise a data byte in bits 24-31.
+The sniffer (clocked_bus.py) hands over 32-bit words, and its Framer turns them back into frames.
 
 Runs the same in MicroPython (Pico) and CPython (tools/test_vfd.py).
 """
 
-MARKER = 0xFFFFFFFF
+from clocked_bus import MARKER, Framer   # noqa: F401  (MARKER: the tests build sniffer words with it)
 
 # Icon dots ("grid.byte.bit", see Screen.lit), mapped on the device on 2026-11-16 with the panel keys:
 ICON_PLAY = "13.0.3"
@@ -83,13 +83,6 @@ class Player:
         return out
 
 
-def byte_of(word):
-    """The data byte of a sniffer word, or None for a frame marker or a malformed word."""
-    if word == MARKER or word & 0xFFFFFF:
-        return None
-    return word >> 24
-
-
 class Screen:
     """The display's contents, rebuilt from the frames the microcontroller sends to the glass."""
 
@@ -98,33 +91,28 @@ class Screen:
         self.custom = {}                            # custom character number -> 5 bytes
         self.config = {}                            # command byte -> data bytes (hex), for unknown commands
         self.frames = 0
-        self.bad = 0                                # words that were neither a marker nor a byte
+        self.framer = Framer()
         self.changes = []                           # [(ms, text, icons hex)], newest last
         self.icon_changes = []                      # [(ms, text, lit dots)] when the icons change, newest last
-        self._frame = None
         self._last = (self.text(), self.icons().hex())     # a blank screen is not a change
 
     # ---------------------------------------------------------------- input
 
+    @property
+    def bad(self):
+        """Words that were neither a marker nor a byte."""
+        return self.framer.bad
+
     def feed(self, word, now_ms=0):
         """One word from the sniffer. Returns True when what the display shows changed."""
-        if word == MARKER:
-            return self._close(now_ms)
-        b = byte_of(word)
-        if b is None:
-            self.bad += 1
-            return False
-        if self._frame is not None:
-            self._frame.append(b)
-        return False
+        return self._take(self.framer.feed(word), now_ms)
 
     def flush(self, now_ms=0):
         """Closes the frame in progress (the last one stays open until the next marker)."""
-        return self._close(now_ms, reopen=False)
+        return self._take(self.framer.close(), now_ms)
 
-    def _close(self, now_ms, reopen=True):
-        frame, self._frame = self._frame, (bytearray() if reopen else None)
-        if not frame:
+    def _take(self, frame, now_ms):
+        if frame is None:
             return False
         self.frames += 1
         self._apply(frame)
