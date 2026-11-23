@@ -64,13 +64,15 @@ class Capture:
         self.info = {"rate": 0, "samples": 0, "bytes": 0, "parts": 0, "part_bytes": PART_BYTES, "pins": list(PINS),
                      "triggered": False}
         self.busy = False
+        self.programs = None            # (untriggered, triggered), assembled once: see _programs()
 
-    async def run(self, rate, samples, trigger=False, wait_s=10, key=None):
-        """True if the capture filled; False if the trigger never came within wait_s."""
-        import time
-        import asyncio
+    def _programs(self):
+        """The two PIO programs, assembled on the first capture and reused. MicroPython loads a program it has not
+        seen into the PIO's 32-instruction memory and never frees the old one, so assembling them on every capture
+        filled PIO1 after about 30 captures (2026-11-23), and every later capture failed until a restart."""
+        if self.programs is not None:
+            return self.programs
         import rp2
-        from machine import Pin
 
         @rp2.asm_pio(in_shiftdir=rp2.PIO.SHIFT_RIGHT, out_shiftdir=rp2.PIO.SHIFT_RIGHT, autopush=True,
                      push_thresh=32, fifo_join=rp2.PIO.JOIN_RX)
@@ -90,12 +92,23 @@ class Capture:
             in_(pins, 4)
             wrap()
 
+        self.programs = (_sample, _triggered)
+        return self.programs
+
+    async def run(self, rate, samples, trigger=False, wait_s=10, key=None):
+        """True if the capture filled; False if the trigger never came within wait_s."""
+        import time
+        import asyncio
+        import rp2
+        from machine import Pin
+
+        sample, triggered = self._programs()
         for n in range(BASE_PIN, BASE_PIN + len(PINS)):
             Pin(n, Pin.IN, pull=None)   # input only, no pull (the amp drives every level)
         nbytes = samples // 2
         if self.buf is None:
             self.buf = bytearray(MAX_SAMPLES // 2)
-        sm = rp2.StateMachine(SM_ID, _triggered if trigger else _sample, freq=rate, in_base=Pin(BASE_PIN))
+        sm = rp2.StateMachine(SM_ID, triggered if trigger else sample, freq=rate, in_base=Pin(BASE_PIN))
         pio, smi = divmod(SM_ID, 4)
         dma = rp2.DMA()
         full = False
