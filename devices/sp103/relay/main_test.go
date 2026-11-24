@@ -71,6 +71,9 @@ func TestReadGate(t *testing.T) {
 	}{
 		{`{"state":"programme","rms_threshold":0.01}`, true, true},
 		{`{"state":"idle"}`, false, true},
+		{`{"state":"idle","playback_source":"tape"}`, false, true},
+		{`{"state":"idle","playback_source":"airplay"}`, true, true},
+		{`{"state":"idle","playback_source":"bluetooth"}`, true, true},
 		{`{"state":"weird"}`, false, false},
 		{`not json`, false, false},
 	}

@@ -133,19 +133,22 @@ func packet(frame []byte, flags byte) []byte {
 	return p
 }
 
-// readGate reads the "state" from the detector's gate file.
+// readGate reads from the detector's gate file whether music is playing: a programme,
+// or a stream. While AirPlay or Bluetooth plays, the detector holds the gate idle and
+// names the stream in "playback_source" (its DET-STR-016), but the VU still follows it.
 func readGate(path string) (programme, ok bool) {
 	data, err := os.ReadFile(path)
 	if err != nil {
 		return false, false
 	}
 	var g struct {
-		State string `json:"state"`
+		State  string `json:"state"`
+		Source string `json:"playback_source"`
 	}
 	if json.Unmarshal(data, &g) != nil || (g.State != "programme" && g.State != "idle") {
 		return false, false
 	}
-	return g.State == "programme", true
+	return g.State == "programme" || g.Source == "airplay" || g.Source == "bluetooth", true
 }
 
 func (r *relay) watchGate(path string, every time.Duration) {
